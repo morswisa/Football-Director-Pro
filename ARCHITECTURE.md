@@ -1,0 +1,83 @@
+# Architecture
+
+## Overview
+
+Football Director Pro is a Next.js web app with a client-side deterministic simulation engine. The app runs offline after load and persists saves locally in IndexedDB.
+
+## Layers
+
+- `src/app`: App Router pages and route shells.
+- `src/components`: React UI components and shadcn-style primitives.
+- `src/store`: Zustand client state that coordinates UI actions, persistence, and engine functions.
+- `src/game`: Pure TypeScript game model, schemas, deterministic random helpers, world generation, and simulation engine.
+- `src/lib`: Shared utilities.
+- `tests`: Unit tests for deterministic game logic.
+- `e2e`: Playwright browser smoke tests.
+- `capacitor.config.ts`: Capacitor app metadata and static web directory.
+
+## Data Flow
+
+1. New game form creates a `GameSave` through `createNewGame`.
+2. Zustand stores the active save in memory.
+3. Engine actions return a new `GameSave`; UI never mutates game data directly.
+4. Autosave writes the active save to IndexedDB.
+5. Load game validates and migrates the saved payload before hydrating Zustand.
+6. Production build emits static files to `out/` for future Capacitor sync.
+7. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
+8. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
+
+## Navigation
+
+- `/game` is a single client-side career surface.
+- Primary sections are selected by local tab state from dashboard metric buttons: Dashboard, Standings, Roster, Manager, Finances, Stadium, History, and Settings.
+- There is no separate top section grid or bottom navigation; non-dashboard sections provide a Back to Dashboard action.
+- Standings are derived from `leagueTable(save)` and rendered from the current division records.
+- Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
+- Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
+- Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
+- Facility management is launched from dashboard cards via local modal state.
+- Training and Youth facility management is launched from their dashboard metric cards only.
+
+## Portraits
+
+- `PersonAvatar` in `src/components/game-client.tsx` renders all player and manager portraits.
+- Portraits are generated as inline SVG from deterministic seeds; entity IDs are used when available, with names as fallback for match events that only store scorer names.
+- The shared face template varies skin tone, hair color, hair style, face shape, eye/brow details, nose, mouth, glasses, shirt color, and manager styling.
+- No bitmap portrait assets are stored in V1; the portrait system is deterministic and local-only.
+
+## Event Queue
+
+- `GameSave.eventQueue` stores pending `GameEvent` objects.
+- `GameSave.currentEvent` stores the event currently blocking or informing the player.
+- `GameSave.seenEventKeys` prevents repeated one-off events such as season intros and transfer-window announcements.
+- `GameSave.transferBudget` stores the active chairman budget stance for the current transfer window.
+- `GameSave.pendingDeals` stores staged sale flows between incoming bid, sale ready, and sale confirmed.
+- `GameSave.financialSnapshot` stores the latest generated financial breakdown for display and persistence.
+- Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
+- Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
+- Paid buy proposals are resolved inside `resolveEvent` with fee, wage, and years terms. Selling clubs may reject low fees, and players may reject weak contracts.
+- Legacy `activeProposal` still exists for compatibility with older code/tests, but the UI now wraps manager proposals into event cards.
+
+## Calendar And Economy
+
+- Internal progress still uses `week` and `currentRound`, but UI presents `monthForWeek`.
+- Transfer-window gating currently allows buy/sell proposals in August and January.
+- Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
+
+## Core Constraints
+
+- Engine modules must not import React, DOM APIs, Zustand, or Dexie.
+- Manager-led transfers are the only transfer flow in V1.
+- Manager-led proposals must be approve/reject decisions; no manual scouting/search UI.
+- Blocking decision UI must not introduce new game systems outside the original V1 plan.
+- Core engine position model is G/D/M/F.
+- All save data must include a schema version.
+- Public UI text and fictional content must be original.
+
+## Verification
+
+- `npm run lint`
+- `npm test`
+- `npm run build`
+- `npm run e2e`
+- Manual mobile browser smoke test at `430x932`

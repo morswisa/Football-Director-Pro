@@ -1,0 +1,49 @@
+# Session Log
+
+## 2026-05-28
+
+- Confirmed the original workspace was empty and not a Git repository.
+- Scaffolded a Next.js 16 app through a temporary lowercase project because the target directory name contains spaces and uppercase letters.
+- Merged the scaffold into the intended project folder.
+- Read the generated `AGENTS.md` and relevant local Next.js docs before editing code.
+- Installed core dependencies: Zustand, Dexie, Zod, lucide-react, class utilities, Vitest, Playwright.
+- Adopted Full Core V1 plan with chairman-only transfer control: the manager proposes transfer/contract actions, the chairman approves or rejects.
+- Implemented pure TypeScript game engine under `src/game`.
+- Implemented mobile-first UI under `src/components` and App Router pages for `/`, `/new-game`, `/load-game`, and `/game`.
+- Implemented local IndexedDB persistence with save validation and migration entry point.
+- Added unit tests, Playwright e2e test, and Capacitor configuration.
+- Verified with `npm run lint`, `npm test`, `npm run build`, Playwright e2e, and an in-browser mobile viewport smoke test.
+- Fixed two QA findings: phone frame height on long screens and ordinal formatting such as `3rd`.
+- Responded to UX feedback: changed the main menu primary action to `Create Club`, made club creation clearer at game start, adjusted the app frame for small-screen bottom visibility, and moved required decisions into blocking modal dialogs.
+- Re-verified the update with `npm run lint`, `npm test`, `npm run build`, manual 430x932 browser smoke test, and `npm run e2e`.
+- Responded to navigation feedback: added an always-visible section grid under the club header and added a full Standings tab. Verified Standings, Roster, and Stadium navigation in the browser.
+- Re-verified with `npm run lint`, `npm test`, `npm run build`, and `npm run e2e`.
+- Responded to core-loop feedback: simplified positions to G/D/M/F, added colored position badges, changed the header/load-save display from week labels to calendar months, added a season intro modal, added a central Dashboard `Continue` flow for finance update -> match preview -> sim result, and changed facilities to 1-99 ratings with visible upgrade cost/upkeep.
+- Added transfer-window gating for buy/sell manager proposals using English-window timing assumptions, while contract proposals can happen outside windows.
+- Added manager trust changes on proposal approval/rejection and season award payments at season end.
+- Re-verified with `npm run lint`, `npm run build`, `npm run e2e`, `npm test`, and manual browser testing of a new save.
+- Improved roster sorting: default sort is now position order G/D/M/F, with clickable `Pos` and `Rate` column controls. Verified with lint, unit tests, build, e2e, and browser smoke test.
+- Added `Player` name sorting to the roster.
+- Moved Youth Academy and Training Ground management into dashboard modals with level, next upgrade cost, weekly upkeep impact, upgrade, and lower-level actions. Lowering a level reduces upkeep without refunding money.
+- Removed Training as a primary navigation section and kept achievements under History.
+- Implemented the Continue-driven chairman loop with save-backed `GameEvent` state: `eventQueue`, `currentEvent`, transfer budget, pending deals, financial snapshots, and seen-event keys.
+- Replaced the temporary Dashboard flow modals with a reusable event card template that renders club, manager, or player headers and blocks progression until required decisions are resolved.
+- Added event handling for season intro, season summary, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration, manager retirement hint, contract offer/response, incoming bid, sale ready/confirmed, youth contract/promotion, Hall of Fame, match preview, and match result.
+- Added transfer budget modes and manager-trust effects for budget, contract, buy, sale, and rejection decisions.
+- Expanded Dashboard metrics with squad rating, manager rating, training, youth, fan happiness, trust, trophies, achievements, stadium condition, and last-10 W/D/L form.
+- Enhanced facility modals to preview and apply `+1` through `+5` upgrade/downgrade levels with current/new weekly cost and bank balance.
+- Added unit coverage for event queue blocking, transfer budget resolution, and match preview/result simulation through events.
+- Updated Playwright e2e to match the new Dashboard Continue flow.
+- Verified with `npm run lint`, `npm test`, `npm run build`, `npm run e2e`, and a local browser smoke check of `/game`.
+- Restarted the local development server on port 3000 because port 3001 is occupied by another process.
+- Responded to dashboard/UI feedback: removed the duplicate top section grid and bottom navigation, made dashboard metric cards the actual entry points to League, Roster, Manager, Training, Youth, Finances, Stadium, and History, and removed duplicate Youth/Training facility cards.
+- Added deterministic generated portrait avatars for players and managers in event headers, roster rows, match preview, and match event/result lists.
+- Reworked paid buy proposals from immediate approval into negotiation: chairman now offers a transfer fee plus wage and contract length, with separate selling-club and player acceptance checks.
+- Added transfer-fee paid/received transaction entries and refreshed queued financial reports so same-week transfers appear in `feesOut` or `feesIn`.
+- Updated Playwright navigation expectation for `/game/`, added unit coverage for paid-transfer negotiation and financial snapshot fees, and re-verified with `npm run lint`, `npm test`, `npm run build`, and `npm run e2e`.
+- Restarted the local development server on port 3000 after verification.
+- Replaced initials-only portraits with a shared deterministic SVG face generator for players and managers. The generator derives skin tone, hair color/style, face shape, eyes, brows, nose, mouth, shirt, glasses, and manager styling from a stable seed.
+- Updated player/manager avatar usage to seed from entity IDs where available so portraits remain consistent across the save and across UI surfaces.
+- Verified generated face rendering in the in-app browser and re-verified with `npm run lint`, `npm test`, `npm run build`, and `npm run e2e`.
+- Restarted the local development server on port 3000 after verification.
+- Prepared the full current workspace for publishing to GitHub so the project can be shared externally.

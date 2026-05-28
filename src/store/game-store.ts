@@ -1,0 +1,160 @@
+"use client";
+
+import { create } from "zustand";
+import {
+  advanceToNextMatch,
+  approveTransferProposal,
+  createNewGame,
+  fireManager,
+  downgradeTraining,
+  downgradeYouthAcademy,
+  generateNextEvents,
+  hireManager,
+  rejectTransferProposal,
+  repairStadium,
+  resolveEvent,
+  upgradeStand,
+  upgradeTraining,
+  upgradeYouthAcademy,
+} from "@/game/engine";
+import { loadGame, saveGame } from "@/game/persistence";
+import type { ClubSetupInput, GameSave, TransferBudgetMode } from "@/game/types";
+import type { ContractTerms } from "@/game/types";
+
+interface GameStore {
+  save?: GameSave;
+  hydrated: boolean;
+  message?: string;
+  create: (input: ClubSetupInput) => Promise<void>;
+  load: (slotId?: string) => Promise<void>;
+  persist: () => Promise<void>;
+  advance: () => Promise<void>;
+  continueGame: () => Promise<void>;
+  resolveCurrentEvent: (decision?: { action?: string; terms?: ContractTerms; mode?: TransferBudgetMode }) => Promise<void>;
+  hire: (managerId: string) => Promise<void>;
+  fire: () => Promise<void>;
+  approveProposal: (terms?: ContractTerms) => Promise<void>;
+  rejectProposal: () => Promise<void>;
+  upgradeStand: (standId: string) => Promise<void>;
+  repair: () => Promise<void>;
+  upgradeTraining: (levels?: number) => Promise<void>;
+  upgradeYouth: (levels?: number) => Promise<void>;
+  downgradeTraining: (levels?: number) => Promise<void>;
+  downgradeYouth: (levels?: number) => Promise<void>;
+  clearMessage: () => void;
+}
+
+async function persistSave(save?: GameSave) {
+  if (save) await saveGame(save.slotId, save);
+}
+
+export const useGameStore = create<GameStore>((set, get) => ({
+  hydrated: false,
+  async create(input) {
+    const save = createNewGame(input);
+    await persistSave(save);
+    set({ save, hydrated: true, message: "Club created and saved." });
+  },
+  async load(slotId = "slot-1") {
+    const save = await loadGame(slotId);
+    set({ save, hydrated: true, message: save ? "Save loaded." : "No local save found." });
+  },
+  async persist() {
+    await persistSave(get().save);
+  },
+  async advance() {
+    const current = get().save;
+    if (!current) return;
+    const save = advanceToNextMatch(current);
+    await persistSave(save);
+    set({ save, message: save.lastMatch ? "Match day complete." : "Season advanced." });
+  },
+  async continueGame() {
+    const current = get().save;
+    if (!current) return;
+    const save = generateNextEvents(current);
+    await persistSave(save);
+    set({ save });
+  },
+  async resolveCurrentEvent(decision) {
+    const current = get().save;
+    if (!current?.currentEvent) return;
+    const save = resolveEvent(current, current.currentEvent.id, decision);
+    await persistSave(save);
+    set({ save });
+  },
+  async hire(managerId) {
+    const current = get().save;
+    if (!current) return;
+    const save = hireManager(current, managerId);
+    await persistSave(save);
+    set({ save, message: "Manager hired." });
+  },
+  async fire() {
+    const current = get().save;
+    if (!current) return;
+    const save = fireManager(current);
+    await persistSave(save);
+    set({ save, message: "Manager dismissed. New candidates are available." });
+  },
+  async approveProposal(terms) {
+    const current = get().save;
+    if (!current) return;
+    const save = approveTransferProposal(current, terms);
+    await persistSave(save);
+    set({ save, message: "Proposal approved." });
+  },
+  async rejectProposal() {
+    const current = get().save;
+    if (!current) return;
+    const save = rejectTransferProposal(current);
+    await persistSave(save);
+    set({ save, message: "Proposal rejected." });
+  },
+  async upgradeStand(standId) {
+    const current = get().save;
+    if (!current) return;
+    const before = current.clubs[current.userClubId].finances.balance;
+    const save = upgradeStand(current, standId);
+    await persistSave(save);
+    set({ save, message: save.clubs[save.userClubId].finances.balance === before ? "Not enough funds." : "Stand upgraded." });
+  },
+  async repair() {
+    const current = get().save;
+    if (!current) return;
+    const save = repairStadium(current);
+    await persistSave(save);
+    set({ save, message: "Stadium repaired if funds were available." });
+  },
+  async upgradeTraining(levels = 1) {
+    const current = get().save;
+    if (!current) return;
+    const save = upgradeTraining(current, levels);
+    await persistSave(save);
+    set({ save, message: "Training investment processed." });
+  },
+  async upgradeYouth(levels = 1) {
+    const current = get().save;
+    if (!current) return;
+    const save = upgradeYouthAcademy(current, levels);
+    await persistSave(save);
+    set({ save, message: "Youth academy investment processed." });
+  },
+  async downgradeTraining(levels = 1) {
+    const current = get().save;
+    if (!current) return;
+    const save = downgradeTraining(current, levels);
+    await persistSave(save);
+    set({ save, message: "Training upkeep reduced." });
+  },
+  async downgradeYouth(levels = 1) {
+    const current = get().save;
+    if (!current) return;
+    const save = downgradeYouthAcademy(current, levels);
+    await persistSave(save);
+    set({ save, message: "Youth academy upkeep reduced." });
+  },
+  clearMessage() {
+    set({ message: undefined });
+  },
+}));
