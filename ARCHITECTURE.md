@@ -44,6 +44,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Live match playback renders as the only active career surface while it is running and advances one minute per tick, preventing background dashboard controls or final-result data from being visible before final whistle.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
+- Event entity headers are subject-driven: `playerId` renders player context, explicit `managerId` renders manager context, and other club events render the club header.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
 - Training and Youth facility management is launched from their dashboard metric cards only.
@@ -65,6 +66,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `GameSave.pendingDeals` stores staged sale flows between incoming bid, sale ready, and sale confirmed.
 - `GameSave.financialSnapshot` stores the latest generated financial breakdown for display and persistence.
 - `latestFinancialSnapshot(save)` is the shared read model for Dashboard, Finance, and financial event cards, including opening balance, closing balance, income, expenses, and period profit/loss.
+- `buildFinancialLines` is the shared weekly finance line-item model for both balance mutation and financial snapshots. Weekly operations use the operating subset, while report snapshots also fold in same-week transfer, loan, manager, prize, and cup transactions that already changed the balance.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
 - Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
@@ -91,6 +93,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Season impact deltas are captured inside `finishSeason` from the actual mutated club state, including promotion/relegation reputation changes, so the UI does not duplicate the season-outcome formula.
 - Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
 - Debt warnings are generated from the current club finance state and include debt headroom; `checkDebtAndBankruptcy` is the authoritative career-stop gate and writes the exact balance/debt-limit failure context.
+- League matchday income is recorded as a same-week finance transaction for reporting, but the balance is moved by the shared weekly operations calculation, preventing ticket-sales display from disappearing on loss-making home weeks.
 - Promotion/relegation swaps a club between adjacent divisions so division sizes remain stable for future fixture generation.
 - Balance edge cases are covered in unit tests: debt-limit game over, no-refund facility downgrades with lower upkeep, manager action locks, and relegation division movement.
 - Human-style multi-season coverage resolves real Continue events with conservative chairman decisions and periodic facility investments to verify that the playable loop progresses across seasons.

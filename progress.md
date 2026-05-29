@@ -29,13 +29,15 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Started final clean-save acceptance and fixed the player-section label mismatch by changing the dashboard metric to `Roster` and adding a `Roster` summary card above the sortable player list.
 - Fixed another final-acceptance issue where generated clubs could appear as `Name 2`; new saves and normalization now prefer natural unused prefix/suffix combinations.
 - Fixed live-match result leakage by making live playback replace the dashboard while running instead of rendering over an already-resolved dashboard.
+- Fixed a finance consistency issue: weekly balance updates and financial report line items now share one breakdown, and ticket sales are shown even when the period is loss-making.
+- Fixed event-header attribution so financial reports and generic club updates no longer show the current manager by default.
 
 ## Next TODO
 
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
 - Continue final mobile acceptance checks across all V1 surfaces and longer balance runs.
-- Continue balance tuning for wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency across longer human-style careers.
+- Re-run longer balance tuning after the shared finance breakdown change, especially wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after final-acceptance UI fixes: `https://football-director-5v1ggay2f-mor-swisas-projects.vercel.app`.
+- Latest preview after finance consistency pass: `https://football-director-6s36ltubi-mor-swisas-projects.vercel.app`.

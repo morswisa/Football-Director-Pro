@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-5v1ggay2f-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-6s36ltubi-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -20,6 +20,7 @@ Playable V1 includes:
 - Local save/load with IndexedDB.
 - Season dashboard with central `Continue` flow backed by `eventQueue` and `currentEvent`.
 - Event card system for season intro, crowd report, transfer-window opening, transfer budget, financial report, contract offers/responses, incoming bids, sale confirmation, youth decisions, manager frustration/retirement hints, manager contract expiry, match preview, match result, and season summary.
+- Event cards now show player, manager, or club headers only when the event actually belongs to that entity, so club updates such as financial reports do not inherit a random manager header.
 - Season summary now appears before the next season intro after a season transition, with finish, record, goal difference, season award, balance, promotion/relegation/stay status, next division, cup summary, and trophies.
 - Season summaries and History now preserve and display season-level impact deltas for balance, board confidence, manager trust, and club reputation.
 - Dashboard metric buttons are the primary navigation into League, Roster, Manager, Training, Youth, Finances, Stadium, and History; duplicate top/bottom navigation has been removed.
@@ -53,6 +54,7 @@ Playable V1 includes:
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.
 - Financial snapshots include opening balance and closing balance, and financial report copy explains the period balance movement alongside income, expenses, and profit/loss.
+- Weekly finance processing and financial report line items now share one breakdown model, so displayed income/expenses reconcile with the actual balance movement and ticket sales remain visible even in loss-making home periods.
 - Bank warnings and debt-limit career stops now show the current balance, debt limit, and remaining headroom or over-limit amount.
 - Mandatory decision modals for event-queue decisions and missing-manager states; the season cannot continue until the user answers.
 - Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero. The selected budget applies only to the active transfer window and expires outside transfer-window weeks.
@@ -73,6 +75,6 @@ Playable V1 includes:
 - Final-check remaining decision feedback during acceptance playtesting and close any specific choice that still changes trust/fan/finance without visible explanation.
 - Continue checking post-event explanations during acceptance playtesting, especially season-end and finance-heavy flows.
 - Continue final mobile acceptance checks across all V1 surfaces and longer balance runs.
-- Continue final balance tuning against longer human-style careers, especially wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
+- Continue final balance tuning against longer human-style careers, especially after the shared weekly finance breakdown change: wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Verify every planned V1 surface one last time on mobile: Dashboard Continue loop, Roster, League, Manager, Finances, Stadium, Training/Youth popups, History, Settings, match playback, and save/import/export.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.

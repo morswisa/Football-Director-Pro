@@ -907,7 +907,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
   const event = save.currentEvent;
   const current = useCurrent(save)!;
   const player = event?.playerId ? save.players[event.playerId] : undefined;
-  const manager = event?.managerId ? save.managers[event.managerId] : current.manager;
+  const manager = event?.managerId ? save.managers[event.managerId] : undefined;
   const sourceClub = event?.proposal?.fromClubId ? save.clubs[event.proposal.fromClubId] : undefined;
   const targetClub = event?.proposal?.toClubId ? save.clubs[event.proposal.toClubId] : undefined;
   if (player) {

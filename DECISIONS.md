@@ -80,10 +80,12 @@
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
 - Financial surfaces must also show opening balance and closing balance so the player can reconcile report profit/loss with the displayed club balance.
+- Weekly finance updates and financial report line items must share the same income/expense breakdown; reports must not invent display-only lines that were not reflected in the balance movement.
 - Debt warnings and bankruptcy stops must show exact balance/debt-limit context because debt-limit failure is a career-ending state.
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.
 - Header period labels include both month and period number so repeated same-month decisions are clearly part of the same in-game period.
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
+- Event headers must match the event subject: financial and club updates use the club header, player decisions use the player header, and manager-specific events use the manager header.
 - Walking away from an external transfer target must not use squad-contract rejection language.
 - Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.
 - Live match playback is a blocking opaque full-screen state: club navigation resumes after the match result is completed, and the dashboard must not leak the final score behind the live view.

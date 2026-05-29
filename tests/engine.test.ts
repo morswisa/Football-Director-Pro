@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   advanceToNextMatch,
+  calculateMatchdayIncome,
   calculateManagerCompensation,
   calculateRecommendedManagerWage,
   calculateRecommendedPlayerWage,
@@ -14,6 +15,7 @@ import {
   leagueTable,
   latestFinancialSnapshot,
   normalizeGameState,
+  processWeeklyFinances,
   resolveEvent,
   returnSeasonLoans,
   submitManagerHireOffer,
@@ -786,6 +788,25 @@ describe("game engine", () => {
     expect(latest.balanceAfter - latest.balanceBefore).toBe(latest.profit);
     expect(save.currentEvent?.body).toContain("Balance moved from");
     expect(save.currentEvent?.note).toContain("Income");
+  });
+
+  it("ties weekly financial report lines to the actual balance movement", () => {
+    let save = createNewGame({ ...setup, seed: 20260530 });
+    const homeFixture = save.fixtures.find((fixture) => fixture.homeClubId === save.userClubId)!;
+    const club = save.clubs[save.userClubId];
+    club.finances.balance = 1_000_000;
+    club.finances.upkeep = 240_000;
+    const beforeBalance = club.finances.balance;
+    const matchdayIncome = calculateMatchdayIncome(save, homeFixture);
+
+    save = processWeeklyFinances(save, matchdayIncome);
+
+    const snapshot = latestFinancialSnapshot(save);
+    const actualBalanceDelta = save.clubs[save.userClubId].finances.balance - beforeBalance;
+    expect(snapshot.income.ticketSales).toBe(matchdayIncome);
+    expect(snapshot.profit).toBe(actualBalanceDelta);
+    expect(snapshot.profit).toBeLessThan(0);
+    expect(snapshot.balanceAfter - snapshot.balanceBefore).toBe(actualBalanceDelta);
   });
 
   it("runs many seasons without crashing", () => {

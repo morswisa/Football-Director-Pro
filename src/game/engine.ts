@@ -374,29 +374,33 @@ function transferBudgetAmount(save: GameSave, mode: TransferBudgetMode) {
   return 0;
 }
 
-function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
+function buildFinancialLines(save: GameSave, matchdayIncome = 0, includeTransactions = true): Pick<FinancialSnapshot, "expenses" | "income" | "totalExpenses" | "totalIncome" | "profit"> & { weeklyWages: number; merchandise: number } {
   const club = userClub(save);
-  const weekTransactions = club.finances.transactions.filter((tx) => tx.week === save.week);
+  const weekTransactions = includeTransactions ? club.finances.transactions.filter((tx) => tx.week === save.week) : [];
   const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid") || tx.label.toLowerCase().includes("loan fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received") || tx.label.toLowerCase().includes("loan fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const managerCosts = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("manager")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
   const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award") || tx.label.toLowerCase().includes("cup prize")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const cupMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("cup matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
-  const ticketSales = Math.max(0, club.finances.lastWeekProfit > 0 ? Math.round(club.finances.ticketIncome / Math.max(1, club.record.played)) : 0) + cupMatchdayIncome;
+  const leagueMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("league matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
+  const ticketSales = Math.max(0, matchdayIncome + leagueMatchdayIncome + cupMatchdayIncome);
   const sponsorship = Math.round(club.finances.sponsorship / 38);
   const merchandise = Math.round(club.reputation * 85 + club.record.won * 120);
-  const wages = Math.max(0, club.finances.weeklyWages);
-  const stadiumRunning = Math.round(club.finances.upkeep * 0.34);
+  const squad = playersForClub(save, club);
+  const manager = getManager(save, club);
+  const wages = Math.max(0, squad.reduce((sum, player) => sum + playerWeeklyCostForClub(player, club.id), 0) + (manager?.wage ?? 0));
+  const upkeep = club.finances.upkeep + Math.round((100 - club.stadium.condition) * 75);
+  const stadiumRunning = Math.round(upkeep * 0.34);
   const youthAcademy = Math.round(club.youthLevel * 72);
   const trainingFacilities = Math.round(club.trainingLevel * 78);
-  const infrastructure = Math.max(0, club.finances.upkeep - stadiumRunning - youthAcademy - trainingFacilities + managerCosts);
+  const infrastructure = Math.max(0, upkeep - stadiumRunning - youthAcademy - trainingFacilities) + managerCosts;
   const expenses = { wages, stadiumRunning, youthAcademy, trainingFacilities, infrastructure, feesOut };
   const income = {
     feesIn,
     ticketSales,
     foodDrink: Math.round(ticketSales * 0.13),
     merchandise,
-    vip: Math.round(club.stadium.facilityLevel * 850),
+    vip: ticketSales > 0 ? Math.round(club.stadium.facilityLevel * 850) : 0,
     prizeMoney,
     sponsorship,
     tv: Math.round(club.reputation * 130),
@@ -404,17 +408,23 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   const totalExpenses = Object.values(expenses).reduce((sum, value) => sum + value, 0);
   const totalIncome = Object.values(income).reduce((sum, value) => sum + value, 0);
   const profit = totalIncome - totalExpenses;
+  return { expenses, income, totalExpenses, totalIncome, profit, weeklyWages: wages, merchandise };
+}
+
+function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
+  const club = userClub(save);
+  const lines = buildFinancialLines(save);
   const balanceAfter = club.finances.balance;
   return {
     week: save.week,
     month: monthForWeek(save.week),
-    balanceBefore: balanceAfter - profit,
+    balanceBefore: balanceAfter - lines.profit,
     balanceAfter,
-    expenses,
-    income,
-    totalExpenses,
-    totalIncome,
-    profit,
+    expenses: lines.expenses,
+    income: lines.income,
+    totalExpenses: lines.totalExpenses,
+    totalIncome: lines.totalIncome,
+    profit: lines.profit,
   };
 }
 
@@ -715,18 +725,14 @@ export function calculateMatchdayIncome(save: GameSave, fixture: Fixture) {
 export function processWeeklyFinances(input: GameSave, matchdayIncome = 0) {
   const save = clone(input);
   const club = userClub(save);
-  const squad = playersForClub(save, club);
-  const manager = getManager(save, club);
-  const weeklyWages = squad.reduce((sum, player) => sum + playerWeeklyCostForClub(player, club.id), 0) + (manager?.wage ?? 0);
-  const sponsor = Math.round(club.finances.sponsorship / 38);
-  const merch = Math.round(club.reputation * 85 + club.record.won * 120);
-  const upkeep = club.finances.upkeep + Math.round((100 - club.stadium.condition) * 75);
-  const profit = matchdayIncome + sponsor + merch - weeklyWages - upkeep;
-  club.finances.weeklyWages = weeklyWages;
+  const lines = buildFinancialLines(save, matchdayIncome, false);
+  const profit = lines.profit;
+  club.finances.weeklyWages = lines.weeklyWages;
   club.finances.ticketIncome += matchdayIncome;
-  club.finances.merchIncome += merch;
+  club.finances.merchIncome += lines.merchandise;
   club.finances.balance += profit;
   club.finances.lastWeekProfit = profit;
+  if (matchdayIncome > 0) club.finances.transactions.unshift({ id: `tx_matchday_${save.week}_${club.finances.transactions.length}`, week: save.week, label: "League matchday income", amount: matchdayIncome });
   club.finances.transactions.unshift({ id: `tx_${save.week}_${club.finances.transactions.length}`, week: save.week, label: "Weekly operations", amount: profit });
   club.finances.transactions = club.finances.transactions.slice(0, 24);
   return checkDebtAndBankruptcy(save);
