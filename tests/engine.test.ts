@@ -135,6 +135,27 @@ describe("game engine", () => {
     expect(candidate.name).toBeTruthy();
   });
 
+  it("ages manager contracts and clears short-term manager action locks at season change", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const manager = save.managers[club.managerId!];
+    manager.contractYears = 1;
+    manager.compensationFee = calculateManagerCompensation(manager);
+    const startingAge = manager.age;
+    const startingCompensation = calculateManagerCompensation(manager);
+    save.managerActionLockUntilWeek = 45;
+
+    save = finishSeason(save);
+
+    const carriedManager = save.managers[save.clubs[save.userClubId].managerId!];
+    expect(carriedManager.age).toBe(startingAge + 1);
+    expect(carriedManager.contractYears).toBe(0);
+    expect(calculateManagerCompensation(carriedManager)).toBeLessThan(startingCompensation);
+    expect(calculateManagerCompensation(carriedManager)).toBe(0);
+    expect(carriedManager.compensationFee).toBe(0);
+    expect(save.managerActionLockUntilWeek).toBe(0);
+  });
+
   it("calculates wages from rating, division and reputation", () => {
     const save = createNewGame(setup);
     const player = Object.values(save.players)[0];

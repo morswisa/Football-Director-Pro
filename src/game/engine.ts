@@ -222,7 +222,7 @@ function normalizeManager(manager: Manager, status: Manager["status"], clubId?: 
   manager.transferTaste = Math.max(20, Math.min(99, manager.transferTaste ?? manager.reputation ?? 50));
   manager.reputation = managerRating(manager);
   manager.wage = Math.max(100, manager.wage ?? 1_000);
-  manager.contractYears = Math.max(1, manager.contractYears ?? 2);
+  manager.contractYears = manager.contractYears == null ? 2 : Math.max(0, manager.contractYears);
   if (manager.status === "contracted") manager.compensationFee = calculateManagerCompensation(manager);
   return manager;
 }
@@ -1468,7 +1468,9 @@ export function startNextSeason(input: GameSave) {
   save.week = 1;
   save.currentRound = 0;
   save.lastMatch = undefined;
+  save.managerActionLockUntilWeek = 0;
   resetClubRecords(save);
+  save = ageManagers(save);
   save = agePlayers(save);
   save = developPlayers(save);
   save = retirePlayers(save);
@@ -1502,6 +1504,26 @@ export function agePlayers(input: GameSave) {
     player.age += 1;
     player.contractYears = Math.max(0, player.contractYears - 1);
     if (player.age > 30) player.rating = Math.max(20, player.rating - 1);
+  });
+  return save;
+}
+
+export function ageManagers(input: GameSave) {
+  const save = clone(input);
+  Object.values(save.managers).forEach((manager) => {
+    manager.age += 1;
+    if (manager.status === "contracted") {
+      manager.contractYears = Math.max(0, manager.contractYears - 1);
+      manager.compensationFee = calculateManagerCompensation(manager);
+    }
+  });
+  save.managerCandidates = (save.managerCandidates ?? []).map((manager) => {
+    const aged = { ...manager, age: manager.age + 1 };
+    if (aged.status === "contracted") {
+      aged.contractYears = Math.max(0, aged.contractYears - 1);
+      aged.compensationFee = calculateManagerCompensation(aged);
+    }
+    return aged;
   });
   return save;
 }

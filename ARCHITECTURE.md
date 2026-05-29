@@ -93,6 +93,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Player wages scale by division level, rating, age band, squad role, and potential gap.
 - Manager wages scale by division level, rating, reputation, and personality premium.
 - Manager compensation is weekly wage times 4.33 times remaining contract months.
+- Manager contracts are aged during `startNextSeason`, and contracted-manager compensation is recalculated after the remaining years decrease.
 
 ## Managers
 
@@ -101,6 +102,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Team strength uses manager Tactics, Training, and Reputation.
 - Manager candidates can be `free_agent` or `contracted`; contracted candidates carry a compensation fee.
 - Hiring and firing are engine actions with financial consequences and a short action lock, coordinated through Zustand and rendered as Manager tab modals.
+- The manager action lock is season-scoped and clears when a new season starts so late-season changes cannot freeze manager decisions into the next campaign.
 
 ## Core Constraints
 
