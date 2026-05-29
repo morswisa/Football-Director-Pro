@@ -18,7 +18,7 @@ import {
   upgradeTraining,
   upgradeYouthAcademy,
 } from "@/game/engine";
-import { loadGame, saveGame } from "@/game/persistence";
+import { deleteSave, importSave, loadGame, saveGame } from "@/game/persistence";
 import type { ClubSetupInput, GameSave, TransferBudgetMode } from "@/game/types";
 import type { ContractTerms } from "@/game/types";
 
@@ -42,6 +42,9 @@ interface GameStore {
   upgradeYouth: (levels?: number) => Promise<void>;
   downgradeTraining: (levels?: number) => Promise<void>;
   downgradeYouth: (levels?: number) => Promise<void>;
+  importFromJson: (json: string) => Promise<boolean>;
+  resetCareer: () => Promise<void>;
+  updateSettings: (settings: Partial<GameSave["settings"]>) => Promise<void>;
   clearMessage: () => void;
 }
 
@@ -157,6 +160,33 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const save = downgradeYouthAcademy(current, levels);
     await persistSave(save);
     set({ save, message: "Youth academy upkeep reduced." });
+  },
+  async importFromJson(json) {
+    try {
+      const imported = await importSave(json, "slot-1");
+      const save = normalizeGameState(imported);
+      await persistSave(save);
+      set({ save, hydrated: true, message: "Save imported." });
+      return true;
+    } catch {
+      set({ message: "Import failed. Check the save JSON." });
+      return false;
+    }
+  },
+  async resetCareer() {
+    await deleteSave("slot-1");
+    set({ save: undefined, hydrated: true, message: "Local career reset." });
+  },
+  async updateSettings(settings) {
+    const current = get().save;
+    if (!current) return;
+    const save: GameSave = {
+      ...current,
+      settings: { ...current.settings, ...settings },
+      updatedAt: new Date().toISOString(),
+    };
+    await persistSave(save);
+    set({ save, message: "Settings updated." });
   },
   clearMessage() {
     set({ message: undefined });

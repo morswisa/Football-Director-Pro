@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-d9o4cvir1-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-ok2wbkg2y-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -45,11 +45,12 @@ Playable V1 includes:
 - Finances, stadium, training, youth, history, achievements.
 - History now surfaces current-season record context before season-end history exists.
 - Capacitor config and mobile scripts.
+- Settings covers the original local/offline V1 needs: manual save, export copy/download, validated import into Slot 1, reset local career with confirmation, sound toggle, and normal/large text size.
 
 ## Next Steps
 
 - Continue closing remaining items from the original V1 plan only.
-- Improve depth of planned V1 systems where still shallow: cup competition, loans, import/export UI, richer event frequency tuning, wider balance coverage, and season-end progression clarity.
+- Improve depth of planned V1 systems where still shallow: cup competition, loans, richer event frequency tuning, wider balance coverage, and season-end progression clarity.
 - Replace or fully retire the legacy `activeProposal` compatibility path after event-queue coverage is complete.
 - Expand tests around long-run simulation, bankruptcy/debt edge cases, facility economics, manager churn, and multi-season promotion/relegation.
 - Continue tuning the newly implemented wage economy and manager compensation values against longer simulated careers.

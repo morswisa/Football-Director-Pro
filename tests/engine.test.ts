@@ -15,6 +15,7 @@ import {
   submitManagerHireOffer,
   upgradeStand,
 } from "../src/game/engine";
+import { migrateSave } from "../src/game/persistence";
 
 const setup = {
   chairmanName: "Alex Morgan",
@@ -78,6 +79,15 @@ describe("game engine", () => {
     const squadNames = normalized.clubs[normalized.userClubId].playerIds.map((id) => normalized.players[id].name);
     expect(new Set(clubNames).size).toBe(clubNames.length);
     expect(new Set(squadNames).size).toBe(squadNames.length);
+  });
+
+  it("preserves V1 transient fields during save migration", () => {
+    const save = createNewGame(setup);
+    save.managerActionLockUntilWeek = 7;
+    save.liveMatch = { fixtureId: save.fixtures[0].id, currentMinute: 42, revealedEventCount: 2, finished: false };
+    const migrated = migrateSave(JSON.parse(JSON.stringify(save)));
+    expect(migrated.managerActionLockUntilWeek).toBe(7);
+    expect(migrated.liveMatch?.currentMinute).toBe(42);
   });
 
   it("generates manager-led proposals without manual scouting", () => {

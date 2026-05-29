@@ -44,3 +44,25 @@ select {
     overscroll-behavior-y: none;
   }
 }
+
+.fdp-large-text .text-\[10px\] {
+  font-size: 11.5px;
+}
+
+.fdp-large-text .text-xs {
+  font-size: 0.82rem;
+  line-height: 1.15rem;
+}
+
+.fdp-large-text .text-sm {
+  font-size: 0.98rem;
+  line-height: 1.45rem;
+}
+
+.fdp-large-text .text-lg {
+  font-size: 1.23rem;
+}
+
+.fdp-large-text .text-xl {
+  font-size: 1.42rem;
+}

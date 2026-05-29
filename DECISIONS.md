@@ -25,6 +25,7 @@
 - A manager action lock prevents repeated manager churn in the same short period, while still allowing a club without a manager to negotiate a replacement.
 - V1 uses fictional clubs, players, competitions, badges, and copy only.
 - V1 is local/offline only.
+- Settings covers the local-only V1 save lifecycle directly in the app: manual save, export, import, reset, sound toggle, and text size. Import replaces Slot 1 only after schema validation/migration succeeds.
 
 ## Technology
 
@@ -55,6 +56,7 @@
 - Downgrading a facility gives no cash refund, but lowers weekly upkeep.
 - Facility popups allow preselecting `+1` through `+5` levels before applying an upgrade or downgrade.
 - Action-heavy modals should keep primary confirmation controls sticky at the bottom where possible so required decisions are not hidden below long content.
+- Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.

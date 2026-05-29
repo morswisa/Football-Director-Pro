@@ -9,6 +9,13 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await createButton.click({ force: true });
   await page.waitForURL(/\/game\/?$/);
   await expect(page.getByText("Testford FC")).toBeVisible();
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByText("Export Save")).toBeVisible();
+  await expect(page.getByText("Import Save")).toBeVisible();
+  await expect(page.getByText("Reset Career")).toBeVisible();
+  await page.getByRole("button", { name: "Large Text" }).click();
+  await expect(page.getByRole("button", { name: "Sound On" })).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Crowd outlook")).toBeVisible();

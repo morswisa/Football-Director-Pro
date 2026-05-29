@@ -97,3 +97,7 @@
 - Redeployed the current workspace to Vercel before committing, producing preview `https://football-director-9kud16nb0-mor-swisas-projects.vercel.app`.
 - Reviewed remaining V1 scope against the current implementation and documented the main outstanding areas: cup depth, loans, import/export UI, event-frequency tuning, balance coverage, long-run tests, legacy `activeProposal` retirement, and later Capacitor native platform generation.
 - Redeployed the current workspace to Vercel after documenting the remaining V1 scope. Preview: `https://football-director-d9o4cvir1-mor-swisas-projects.vercel.app`.
+- Continued the persistent MVP goal by closing the V1 Settings gap: added header access to Settings, manual save, export copy/download, validated import into Slot 1, reset local career confirmation, sound toggle, and normal/large text controls.
+- Updated save migration coverage so `managerActionLockUntilWeek` and `liveMatch` persist through import/load validation.
+- Verified the Settings pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and a 430x932 Playwright browser screenshot of the Settings screen.
+- Deployed the Settings pass to Vercel preview: `https://football-director-ok2wbkg2y-mor-swisas-projects.vercel.app`.

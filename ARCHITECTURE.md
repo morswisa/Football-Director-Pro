@@ -23,9 +23,10 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 4. Autosave writes the active save to IndexedDB.
 5. Load game validates and migrates the saved payload before hydrating Zustand.
 6. Store hydration normalizes display names so duplicate generated club names and same-club player names are disambiguated before rendering.
-7. Production build emits static files to `out/` for future Capacitor sync.
-8. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
-9. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
+7. Settings exposes local-only save control through Zustand: manual save, JSON export, JSON import after Zod migration/validation, reset by deleting Slot 1 from IndexedDB, and persistent accessibility/audio preferences.
+8. Production build emits static files to `out/` for future Capacitor sync.
+9. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
+10. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
 
 ## Navigation
 
@@ -41,6 +42,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
 - Training and Youth facility management is launched from their dashboard metric cards only.
+- Settings is reachable from the header gear button and returns to the Dashboard through the same secondary-page back pattern.
 
 ## Portraits
 
@@ -94,6 +96,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Blocking decision UI must not introduce new game systems outside the original V1 plan.
 - Core engine position model is G/D/M/F.
 - All save data must include a schema version.
+- Import must reject invalid JSON or non-V1 save payloads before overwriting Slot 1.
 - Public UI text and fictional content must be original.
 
 ## Verification

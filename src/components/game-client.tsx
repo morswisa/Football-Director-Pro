@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, CalendarDays, ListOrdered, Play, Trophy } from "lucide-react";
+import { Award, CalendarDays, ListOrdered, Play, Settings, Trophy } from "lucide-react";
 import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
@@ -43,6 +43,9 @@ function Header({ save, tab, setTab }: { save: GameSave; tab: Tab; setTab: (tab:
         </div>
         <button aria-label="History" onClick={() => setTab(tab === "history" ? "home" : "history")} className="rounded-full p-2 hover:bg-surface-muted">
           <Trophy size={20} />
+        </button>
+        <button aria-label="Settings" onClick={() => setTab(tab === "settings" ? "home" : "settings")} className="rounded-full p-2 hover:bg-surface-muted">
+          <Settings size={20} />
         </button>
       </div>
     </header>
@@ -614,19 +617,80 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   );
 }
 
-function SettingsTab({ save }: { save: GameSave }) {
+function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void }) {
   const persist = useGameStore((state) => state.persist);
+  const importFromJson = useGameStore((state) => state.importFromJson);
+  const resetCareer = useGameStore((state) => state.resetCareer);
+  const updateSettings = useGameStore((state) => state.updateSettings);
+  const [importText, setImportText] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
+  const exportedSave = useMemo(() => JSON.stringify(save, null, 2), [save]);
+  const copyExport = async () => {
+    await navigator.clipboard?.writeText(exportedSave);
+    setImportStatus("Save JSON copied.");
+  };
+  const downloadExport = () => {
+    const blob = new Blob([exportedSave], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${save.clubs[save.userClubId].name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${save.season}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setImportStatus("Save file downloaded.");
+  };
+  const submitImport = async () => {
+    const ok = await importFromJson(importText);
+    setImportStatus(ok ? "Imported into Slot 1." : "Import failed. Paste a valid Football Director Pro save.");
+    if (ok) setImportText("");
+  };
   return (
     <div className="space-y-4">
+      <PageBack setTab={setTab} />
       <Card>
         <h2 className="text-lg font-bold">Settings</h2>
         <p className="mt-1 text-sm text-neutral-500">Local/offline career save.</p>
         <Button className="mt-4 w-full" onClick={persist}>Manual Save</Button>
       </Card>
       <Card>
-        <h3 className="text-sm font-bold">Export Save</h3>
-        <textarea readOnly value={JSON.stringify(save, null, 2)} className="mt-3 h-48 w-full resize-none rounded-lg border border-line bg-surface-muted p-3 font-mono text-[10px]" />
+        <h3 className="text-sm font-bold">Accessibility</h3>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button variant={save.settings.textSize === "normal" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "normal" })}>Normal Text</Button>
+          <Button variant={save.settings.textSize === "large" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "large" })}>Large Text</Button>
+        </div>
+        <Button variant={save.settings.sound ? "primary" : "secondary"} className="mt-3 w-full" onClick={() => updateSettings({ sound: !save.settings.sound })}>
+          Sound {save.settings.sound ? "On" : "Off"}
+        </Button>
       </Card>
+      <Card>
+        <h3 className="text-sm font-bold">Export Save</h3>
+        <p className="mt-1 text-xs text-neutral-500">Use this to back up or share the current local career.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button onClick={copyExport}>Copy JSON</Button>
+          <Button variant="secondary" onClick={downloadExport}>Download</Button>
+        </div>
+        <textarea readOnly value={exportedSave} className="mt-3 h-40 w-full resize-none rounded-lg border border-line bg-surface-muted p-3 font-mono text-[10px]" />
+      </Card>
+      <Card>
+        <h3 className="text-sm font-bold">Import Save</h3>
+        <p className="mt-1 text-xs text-neutral-500">Pastes over Slot 1 after validation. Invalid saves are rejected.</p>
+        <textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="Paste exported save JSON here" className="mt-3 h-32 w-full resize-none rounded-lg border border-line bg-white p-3 font-mono text-[10px] outline-none focus:border-primary" />
+        <Button className="mt-3 w-full" onClick={submitImport} disabled={!importText.trim()}>Import Into Slot 1</Button>
+      </Card>
+      <Card>
+        <h3 className="text-sm font-bold text-danger">Reset Career</h3>
+        <p className="mt-1 text-xs text-neutral-500">Deletes the local Slot 1 save from this browser.</p>
+        {confirmReset ? (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button variant="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
+            <Button onClick={resetCareer}>Confirm Reset</Button>
+          </div>
+        ) : (
+          <Button variant="secondary" className="mt-3 w-full" onClick={() => setConfirmReset(true)}>Reset Local Career</Button>
+        )}
+      </Card>
+      {importStatus ? <p className="rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{importStatus}</p> : null}
     </div>
   );
 }
@@ -1255,7 +1319,7 @@ export function GameClient() {
 
   return (
     <AppFrame>
-      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
       <Header save={save} tab={tab} setTab={setTab} />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
         {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setTab} />}
@@ -1265,7 +1329,7 @@ export function GameClient() {
         {tab === "finances" && <FinancesTab save={save} setTab={setTab} />}
         {tab === "stadium" && <StadiumTab save={save} setTab={setTab} />}
         {tab === "history" && <HistoryTab save={save} setTab={setTab} />}
-        {tab === "settings" && <SettingsTab save={save} />}
+        {tab === "settings" && <SettingsTab save={save} setTab={setTab} />}
       </div>
       {message ? <div className="mx-4 mb-2 rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{message}</div> : null}
       <FacilityModal save={save} facility={facilityModal} close={() => setFacilityModal(undefined)} />
