@@ -7,7 +7,7 @@ import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
 import { Card, StatCard } from "./ui/card";
-import { evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
+import { calculateSaleImpact, evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
 import { cupRoundName, monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
 import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
@@ -1419,7 +1419,19 @@ function EventModal({ save }: { save: GameSave }) {
               <p className="rounded-lg bg-surface-muted px-3 py-2">Contract left <b className="block">{player.contractYears}y</b></p>
             </div>
           ) : null}
-          <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept bid +1, reject bid -2.</p>
+          {player && proposal ? (() => {
+            const saleImpact = calculateSaleImpact(save, player, proposal.fee);
+            return (
+              <ImpactBox className="mt-3">
+                <b className="block">Sale decision impact</b>
+                Accept bid: manager trust +1. Confirming later would move board confidence {formatSignedPoints(saleImpact.boardDelta)} and squad morale {formatSignedPoints(saleImpact.moraleDelta)}.
+                <span className="block">{saleImpact.summary}</span>
+                <span className="block">Reject bid: manager trust -2.</span>
+              </ImpactBox>
+            );
+          })() : (
+            <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept bid +1, reject bid -2.</p>
+          )}
           <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
             <Button onClick={() => resolve({ action: "accept" })}>Accept Bid</Button>
             <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject Bid</Button>
@@ -1430,10 +1442,18 @@ function EventModal({ save }: { save: GameSave }) {
         {event.type === "sale_ready" ? (
           <>
             {event.pendingDeal && player ? (
-              <ImpactBox className="mt-4">
-                <b className="block">Confirm sale impact</b>
-                Balance {formatSignedMoney(event.pendingDeal.fee)}; weekly wage bill drops by {formatMoney(player.wage)}/w. Manager trust already changed when the bid was accepted; cancelling makes no immediate finance change.
-              </ImpactBox>
+              (() => {
+                const saleImpact = calculateSaleImpact(save, player, event.pendingDeal.fee);
+                return (
+                  <ImpactBox className="mt-4">
+                    <b className="block">Confirm sale impact</b>
+                    Balance {formatSignedMoney(event.pendingDeal.fee)}; weekly wage bill drops by {formatMoney(player.wage)}/w.
+                    <span className="block">Board confidence {formatSignedPoints(saleImpact.boardDelta)}; squad morale {formatSignedPoints(saleImpact.moraleDelta)}.</span>
+                    <span className="block">{saleImpact.summary}</span>
+                    <span className="block">Manager trust already changed when the bid was accepted; cancelling makes no immediate finance change.</span>
+                  </ImpactBox>
+                );
+              })()
             ) : null}
             <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
               <Button onClick={() => resolve({ action: "confirm" })}>Confirm Sale</Button>

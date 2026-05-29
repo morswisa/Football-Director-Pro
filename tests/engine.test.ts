@@ -5,6 +5,7 @@ import {
   calculateManagerCompensation,
   calculateRecommendedManagerWage,
   calculateRecommendedPlayerWage,
+  calculateSaleImpact,
   checkDebtAndBankruptcy,
   confirmFireManager,
   createNewGame,
@@ -705,6 +706,12 @@ describe("game engine", () => {
     const club = save.clubs[save.userClubId];
     const bidder = save.divisions.find((item) => item.id === club.divisionId)!.clubIds.map((id) => save.clubs[id]).find((item) => item.id !== club.id)!;
     const player = save.players[club.playerIds[0]];
+    player.rating = 99;
+    player.value = 500_000;
+    const teammate = save.players[club.playerIds[1]];
+    const expectedImpact = calculateSaleImpact(save, player, 25_000);
+    const beforeBoard = club.boardConfidence;
+    const beforeMorale = teammate.morale;
     save.currentEvent = {
       id: "incoming_bid_test",
       type: "incoming_bid",
@@ -733,11 +740,15 @@ describe("game engine", () => {
     expect(save.currentEvent?.type).toBe("sale_ready");
     expect(save.currentEvent?.pendingDeal?.buyerClubId).toBe(bidder.id);
     expect(save.currentEvent?.body).toContain(bidder.name);
+    expect(save.currentEvent?.body).toContain(`board confidence ${expectedImpact.boardDelta}`);
     save = resolveEvent(save, save.currentEvent.id, { action: "confirm" });
     expect(save.players[player.id].clubId).toBe(bidder.id);
     expect(save.clubs[club.id].playerIds).not.toContain(player.id);
     expect(save.clubs[bidder.id].playerIds).toContain(player.id);
     expect(save.currentEvent?.body).toContain(bidder.name);
+    expect(save.clubs[club.id].boardConfidence).toBe(beforeBoard + expectedImpact.boardDelta);
+    expect(save.players[teammate.id].morale).toBe(beforeMorale + expectedImpact.moraleDelta);
+    expect(save.currentEvent?.body).toContain("Board confidence");
   });
 
   it("adds an updated financial report when a transfer happens after the original report", () => {

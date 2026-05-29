@@ -37,6 +37,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Ran final-balance diagnostics across several four-season careers and tightened lower-league cashflow: ticket prices now scale by division, and lower-league season awards are smaller unless the club earns a top finish/promotion.
 - Verified the balance pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright screenshot pass.
 - Ran transfer-balance diagnostics and fixed sale-world consistency: confirmed sold players now join the buying club instead of becoming unattached. Added regression coverage and verified with the full local test/build/e2e/browser pass.
+- Added first-team sale tradeoffs: selling an important player can reduce board confidence and squad morale, with UI previews before the chairman confirms. Verified with the full local test/build/e2e/browser pass.
 
 ## Next TODO
 
@@ -45,7 +46,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
 - Continue final mobile acceptance checks across all V1 surfaces and longer balance runs.
 - Continue longer balance tuning after the ticket/prize pass, especially transfer-sale windfalls, wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
-- Continue transfer-balance tuning after the sale-consistency fix, especially whether sale proceeds need stronger fan/board tradeoffs for first-team players.
+- Continue transfer-balance tuning after the sale-tradeoff fix, especially replacement quality after repeated player sales.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after sale-consistency pass: `https://football-director-m1hjouemf-mor-swisas-projects.vercel.app`.
+- Latest preview after sale-tradeoff pass: `https://football-director-qyabmhr3y-mor-swisas-projects.vercel.app`.

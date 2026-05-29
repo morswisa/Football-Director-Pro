@@ -198,6 +198,29 @@ function relationshipSnapshot(save: GameSave) {
   };
 }
 
+export function calculateSaleImpact(save: GameSave, player: Player, fee: number) {
+  const club = userClub(save);
+  const squad = playersForClub(save, club).sort((a, b) => b.rating - a.rating);
+  const rank = squad.findIndex((item) => item.id === player.id) + 1;
+  const topThree = rank > 0 && rank <= 3;
+  const starter = rank > 0 && rank <= 11;
+  const longServing = player.careerStats.apps >= 80;
+  const expiringOrAging = player.contractYears <= 1 || player.age >= 31;
+  const premiumFee = fee >= player.value * 1.15;
+  let boardDelta = topThree ? -6 : starter ? -3 : 0;
+  if (longServing) boardDelta -= 2;
+  if (expiringOrAging) boardDelta += 2;
+  if (premiumFee) boardDelta += 2;
+  boardDelta = Math.min(1, Math.max(-8, boardDelta));
+  const moraleDelta = boardDelta < -4 ? -4 : boardDelta < 0 ? -2 : 0;
+  const summary = boardDelta < 0
+    ? `Supporters are concerned about losing ${topThree ? "a key player" : "a first-team player"}${longServing ? " with long service" : ""}.`
+    : premiumFee || expiringOrAging
+      ? "The sale is seen as sensible business because of the fee, age, or contract situation."
+      : "The sale has limited dressing-room impact.";
+  return { boardDelta, moraleDelta, rank, topThree, starter, longServing, expiringOrAging, premiumFee, summary };
+}
+
 function signedDelta(value: number) {
   if (value > 0) return `+${value}`;
   if (value < 0) return `${value}`;
@@ -1384,6 +1407,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     }
   } else if (event.type === "incoming_bid" && event.proposal && player) {
     if (action === "accept") {
+      const saleImpact = calculateSaleImpact(save, player, event.proposal.fee);
       const pendingDeal: PendingDeal = { id: `sale_${event.proposal.id}`, type: "sale", playerId: player.id, fee: event.proposal.fee, buyerClubId: event.proposal.toClubId, stage: "ready" };
       save.pendingDeals.push(pendingDeal);
       club.managerTrust = Math.min(99, club.managerTrust + 1);
@@ -1392,13 +1416,14 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `sale_ready_${pendingDeal.id}`,
         type: "sale_ready",
         title: `${player.position} sale ready`,
-        body: `${bidder?.name ?? "The bidding club"} is ready to buy ${player.name}, your ${player.position} rated ${player.rating}, for ${event.proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Manager trust +1 for accepting the bid.`,
+        body: `${bidder?.name ?? "The bidding club"} is ready to buy ${player.name}, your ${player.position} rated ${player.rating}, for ${event.proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Manager trust +1 for accepting the bid. Confirming the sale would move board confidence ${signedDelta(saleImpact.boardDelta)} and squad morale ${signedDelta(saleImpact.moraleDelta)}.`,
         requiresDecision: true,
         createdSeason: save.season,
         createdWeek: save.week,
         playerId: player.id,
         managerId: manager?.id,
         pendingDeal,
+        note: saleImpact.summary,
       });
     } else {
       club.managerTrust = Math.max(0, club.managerTrust - 2);
@@ -1421,10 +1446,17 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     const soldPlayer = save.players[deal.playerId];
     if (soldPlayer && action !== "reject") {
       const buyingClub = deal.buyerClubId ? save.clubs[deal.buyerClubId] : undefined;
+      const saleImpact = calculateSaleImpact(save, soldPlayer, deal.fee);
       club.playerIds = club.playerIds.filter((id) => id !== soldPlayer.id);
       if (buyingClub && !buyingClub.playerIds.includes(soldPlayer.id)) buyingClub.playerIds.push(soldPlayer.id);
       soldPlayer.clubId = buyingClub?.id;
       soldPlayer.loan = undefined;
+      club.boardConfidence = Math.max(5, Math.min(99, club.boardConfidence + saleImpact.boardDelta));
+      if (saleImpact.moraleDelta !== 0) {
+        playersForClub(save, club).forEach((teammate) => {
+          teammate.morale = Math.max(20, Math.min(99, teammate.morale + saleImpact.moraleDelta));
+        });
+      }
       refreshUserWageBill(save);
       club.finances.balance += deal.fee;
       club.finances.transactions.unshift({ id: `tx_transfer_received_${deal.id}`, week: save.week, label: `Transfer fee received: ${soldPlayer.name}`, amount: deal.fee });
@@ -1432,12 +1464,13 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `sale_confirmed_${deal.id}`,
         type: "sale_confirmed",
         title: "Player sale confirmed",
-        body: `${soldPlayer.name} has been sold to ${buyingClub?.name ?? "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
+        body: `${soldPlayer.name} has been sold to ${buyingClub?.name ?? "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Board confidence ${signedDelta(saleImpact.boardDelta)}; squad morale ${signedDelta(saleImpact.moraleDelta)}.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
         playerId: soldPlayer.id,
         managerId: manager?.id,
+        note: saleImpact.summary,
         variant: "positive",
       });
       ensureFinancialReportAfterTransfer(save);

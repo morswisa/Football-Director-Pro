@@ -208,3 +208,8 @@
 - Added regression coverage proving an accepted and confirmed incoming bid removes the player from the user club and adds him to the bidder.
 - Verified the sale-consistency pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
 - Deployed the sale-consistency pass to Vercel preview: `https://football-director-m1hjouemf-mor-swisas-projects.vercel.app`.
+- Continued sale-balance tuning by adding first-team sale consequences. Important, top-three, and long-serving player sales now reduce board confidence and squad morale unless mitigated by age, short contract, or a premium fee.
+- Added sale-impact preview copy to incoming-bid and sale-confirmation UI so the chairman sees the relationship/morale cost before confirming.
+- Added regression coverage proving a confirmed key-player sale applies the expected board-confidence and squad-morale deltas.
+- Verified the sale-tradeoff pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
+- Deployed the sale-tradeoff pass to Vercel preview: `https://football-director-qyabmhr3y-mor-swisas-projects.vercel.app`.
