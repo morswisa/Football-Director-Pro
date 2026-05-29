@@ -1,5 +1,6 @@
-import { starterAchievements } from "./data";
+import { clubPrefixes, starterAchievements } from "./data";
 import { isTransferWindow, monthForWeek, nextUpgradeCost, seasonPrize } from "./calendar";
+import { calculateManagerCompensation, calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating } from "./economy";
 import { chance, pickOne, randomFloat, randomInt } from "./random";
 import { createNewGame as createWorldGame, generateManagerCandidates, generateSeasonFixtures, resetClubRecords } from "./world";
 import type {
@@ -20,6 +21,7 @@ import type {
 } from "./types";
 
 export const createNewGame = createWorldGame;
+export { calculateManagerCompensation, calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating };
 
 function clone(save: GameSave): GameSave {
   return structuredClone(save);
@@ -48,7 +50,76 @@ function ensureEventState(save: GameSave) {
   save.eventQueue ??= [];
   save.seenEventKeys ??= [];
   save.pendingDeals ??= [];
+  save.managerCandidates ??= [];
+  save.managerActionLockUntilWeek ??= 0;
   return save;
+}
+
+function currentDivisionLevel(save: GameSave) {
+  return save.divisions.find((division) => division.id === userClub(save).divisionId)?.level ?? 7;
+}
+
+function normalizeManager(manager: Manager, status: Manager["status"], clubId?: string) {
+  manager.status ??= status;
+  manager.clubId ??= clubId;
+  manager.youthPreference = Math.max(20, Math.min(99, manager.youthPreference ?? manager.reputation ?? 50));
+  manager.transferTaste = Math.max(20, Math.min(99, manager.transferTaste ?? manager.reputation ?? 50));
+  manager.reputation = managerRating(manager);
+  manager.wage = Math.max(100, manager.wage ?? 1_000);
+  manager.contractYears = Math.max(1, manager.contractYears ?? 2);
+  if (manager.status === "contracted") manager.compensationFee = calculateManagerCompensation(manager);
+  return manager;
+}
+
+function ensureManagerState(save: GameSave) {
+  const club = userClub(save);
+  if (club.managerId && save.managers[club.managerId]) normalizeManager(save.managers[club.managerId], "contracted", club.id);
+  save.managerCandidates = (save.managerCandidates ?? []).map((manager, index) => normalizeManager(manager, manager.status ?? (index % 2 === 0 ? "free_agent" : "contracted"), manager.status === "contracted" ? manager.clubId ?? `external_club_${index}` : undefined));
+  return save;
+}
+
+function ensureUniqueDisplayNames(save: GameSave) {
+  save.divisions.forEach((division) => {
+    const usedPrefixes = new Set<string>();
+    division.clubIds.forEach((clubId) => {
+      const club = save.clubs[clubId];
+      if (!club) return;
+      const parts = club.name.split(" ");
+      const suffix = parts.slice(1).join(" ") || "FC";
+      let prefix = parts[0];
+      if (usedPrefixes.has(prefix)) {
+        prefix = clubPrefixes.find((candidate) => !usedPrefixes.has(candidate)) ?? `${prefix} ${usedPrefixes.size + 1}`;
+        club.name = `${prefix} ${suffix}`;
+      }
+      usedPrefixes.add(prefix);
+    });
+  });
+  const clubCounts = new Map<string, number>();
+  Object.values(save.clubs).forEach((club) => {
+    const count = clubCounts.get(club.name) ?? 0;
+    clubCounts.set(club.name, count + 1);
+    if (count > 0) club.name = `${club.name} ${count + 1}`;
+  });
+  Object.values(save.clubs).forEach((club) => {
+    const playerCounts = new Map<string, number>();
+    club.playerIds.forEach((playerId) => {
+      const player = save.players[playerId];
+      if (!player) return;
+      const baseName = player.name.replace(/ \d+$/u, "");
+      const count = playerCounts.get(baseName) ?? 0;
+      playerCounts.set(baseName, count + 1);
+      if (count > 0) player.name = `${baseName} ${count + 1}`;
+    });
+  });
+  return save;
+}
+
+export function normalizeGameState(input: GameSave) {
+  const save = clone(input);
+  ensureEventState(save);
+  ensureManagerState(save);
+  ensureUniqueDisplayNames(save);
+  return withUpdate(save);
 }
 
 function eventSeen(save: GameSave, key: string) {
@@ -86,6 +157,8 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   const weekTransactions = club.finances.transactions.filter((tx) => tx.week === save.week);
   const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const managerCosts = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("manager")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
+  const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const ticketSales = Math.max(0, club.finances.lastWeekProfit > 0 ? Math.round(club.finances.ticketIncome / Math.max(1, club.record.played)) : 0);
   const sponsorship = Math.round(club.finances.sponsorship / 38);
   const merchandise = Math.round(club.reputation * 85 + club.record.won * 120);
@@ -93,7 +166,7 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   const stadiumRunning = Math.round(club.finances.upkeep * 0.34);
   const youthAcademy = Math.round(club.youthLevel * 72);
   const trainingFacilities = Math.round(club.trainingLevel * 78);
-  const infrastructure = Math.max(0, club.finances.upkeep - stadiumRunning - youthAcademy - trainingFacilities);
+  const infrastructure = Math.max(0, club.finances.upkeep - stadiumRunning - youthAcademy - trainingFacilities + managerCosts);
   const expenses = { wages, stadiumRunning, youthAcademy, trainingFacilities, infrastructure, feesOut };
   const income = {
     feesIn,
@@ -101,7 +174,7 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
     foodDrink: Math.round(ticketSales * 0.13),
     merchandise,
     vip: Math.round(club.stadium.facilityLevel * 850),
-    prizeMoney: 0,
+    prizeMoney,
     sponsorship,
     tv: Math.round(club.reputation * 130),
   };
@@ -118,6 +191,12 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   };
 }
 
+export function latestFinancialSnapshot(input: GameSave) {
+  const save = clone(input);
+  ensureEventState(save);
+  return save.financialSnapshot ?? buildFinancialSnapshot(save);
+}
+
 function refreshQueuedFinancialReports(save: GameSave) {
   const snapshot = buildFinancialSnapshot(save);
   save.financialSnapshot = snapshot;
@@ -125,10 +204,29 @@ function refreshQueuedFinancialReports(save: GameSave) {
   save.eventQueue = save.eventQueue.map((event) => event.type === "financial_report" && event.createdSeason === save.season && event.createdWeek === save.week ? { ...event, financialSnapshot: snapshot, body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`, variant: snapshot.profit >= 0 ? "positive" : "negative" } : event);
 }
 
+function ensureFinancialReportAfterTransfer(save: GameSave) {
+  refreshQueuedFinancialReports(save);
+  const hasCurrentWeekReport = save.currentEvent?.type === "financial_report" && save.currentEvent.createdSeason === save.season && save.currentEvent.createdWeek === save.week
+    || save.eventQueue.some((event) => event.type === "financial_report" && event.createdSeason === save.season && event.createdWeek === save.week);
+  if (hasCurrentWeekReport) return;
+  const snapshot = save.financialSnapshot ?? buildFinancialSnapshot(save);
+  enqueue(save, {
+    id: `financial_report_transfer_update_${save.season}_${save.week}_${save.seenEventKeys.length}`,
+    type: "financial_report",
+    title: "Financial report",
+    body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`,
+    requiresDecision: false,
+    createdSeason: save.season,
+    createdWeek: save.week,
+    financialSnapshot: snapshot,
+    variant: snapshot.profit >= 0 ? "positive" : "negative",
+  });
+}
+
 export function calculateTeamStrength(club: Club, squad: Player[], manager?: Manager) {
   const best = [...squad].sort((a, b) => b.rating - a.rating).slice(0, 11);
   const playerStrength = best.reduce((sum, player) => sum + player.rating * (player.fitness / 100) * (0.85 + player.form / 500), 0) / 11;
-  const managerBoost = manager ? (manager.tactics + manager.manManagement) / 18 : 7;
+  const managerBoost = manager ? (manager.tactics + manager.training + manager.reputation) / 30 : 7;
   const morale = best.reduce((sum, player) => sum + player.morale, 0) / Math.max(1, best.length) / 10;
   return playerStrength + managerBoost + morale + club.trainingLevel * 0.8;
 }
@@ -302,35 +400,37 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
   const manager = getManager(save, club);
   if (!player || !manager) return undefined;
   if (proposal.type === "sell") {
+    const bidder = proposal.toClubId ? save.clubs[proposal.toClubId] : undefined;
     return {
       id: `incoming_bid_${proposal.id}`,
       type: "incoming_bid",
-      title: `${player.position} in demand`,
-      body: `${player.name} has attracted a bid worth ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
+      title: `${player.position} bid received`,
+      body: `${bidder?.name ?? "Another club"} has bid ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} for ${player.name}, your ${player.position} rated ${player.rating}, age ${player.age}.`,
       requiresDecision: true,
       createdSeason: save.season,
       createdWeek: save.week,
       playerId: player.id,
       managerId: manager.id,
       proposal,
-      note: `${manager.name} ${player.age > 30 || player.contractYears <= 1 ? "would be prepared to let him leave." : "wants you to decide whether the fee is enough."}`,
+      note: `${manager.name} ${player.age > 30 || player.contractYears <= 1 ? "would be prepared to let him leave" : "wants you to decide whether the fee is enough"}. Accepting improves manager trust by 1; rejecting reduces it by 2.`,
     };
   }
   if (proposal.type === "buy") {
     const requestedWage = Math.round(player.wage * 1.2);
     const requestedYears = Math.min(5, Math.max(2, 34 - player.age));
+    const sellingClub = proposal.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
     return {
       id: `contract_offer_${proposal.id}`,
       type: "contract_offer",
       title: `Manager target identified`,
-      body: `${manager.name} wants to negotiate for ${player.name}, a ${player.position} rated ${player.rating}. The selling club expects around ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}, and the player is looking for about ${requestedWage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.`,
+      body: `${manager.name} wants to negotiate for transfer target ${player.name} from ${sellingClub?.name ?? "another club"}. He is a ${player.position}, rating ${player.rating}, age ${player.age}. The selling club expects around ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}, and the player is looking for about ${requestedWage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.`,
       requiresDecision: true,
       createdSeason: save.season,
       createdWeek: save.week,
       playerId: player.id,
       managerId: manager.id,
       proposal: { ...proposal, requestedWage, requestedYears },
-      note: "The manager has identified the target. You still need the club to accept a fee and the player to accept personal terms.",
+      note: "This is an external transfer target, not a current squad contract. Walking away reduces manager trust by 4; completing the signing improves it by 4.",
     };
   }
   return {
@@ -430,6 +530,7 @@ function pushStandardEvents(save: GameSave) {
       note: "A tight budget protects the club but may frustrate the manager if the squad needs work.",
     });
   }
+  queueProposalIfAvailable(save);
   const snapshot = buildFinancialSnapshot(save);
   save.financialSnapshot = snapshot;
   enqueue(save, {
@@ -455,7 +556,6 @@ function pushStandardEvents(save: GameSave) {
       variant: "negative",
     });
   }
-  queueProposalIfAvailable(save);
   if (manager && (club.finances.balance < 0 || save.transferBudget?.mode === "strict" || save.transferBudget?.mode === "zero")) {
     enqueue(save, {
       id: `manager_frustrated_${weekKey}`,
@@ -516,6 +616,8 @@ function pushStandardEvents(save: GameSave) {
 export function generateNextEvents(input: GameSave) {
   const save = clone(input);
   ensureEventState(save);
+  ensureManagerState(save);
+  ensureUniqueDisplayNames(save);
   if (save.gameOver || save.currentEvent) return withUpdate(save);
   if (save.eventQueue.length === 0) pushStandardEvents(save);
   popNextEvent(save);
@@ -532,6 +634,8 @@ export function advanceAfterQueueEmpty(input: GameSave) {
 export function resolveEvent(input: GameSave, eventId: string, decision?: { action?: string; terms?: ContractTerms; mode?: TransferBudgetMode }) {
   let save = clone(input);
   ensureEventState(save);
+  ensureManagerState(save);
+  ensureUniqueDisplayNames(save);
   const event = save.currentEvent;
   if (!event || event.id !== eventId) return withUpdate(save);
   const club = userClub(save);
@@ -543,16 +647,43 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     const mode = decision?.mode ?? "normal";
     save.transferBudget = { mode, amount: transferBudgetAmount(save, mode) };
     club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + (mode === "max" || mode === "generous" ? 4 : mode === "zero" ? -8 : mode === "strict" ? -5 : 0)));
+    save.currentEvent = {
+      id: `transfer_budget_confirmed_${save.season}_${save.week}_${mode}`,
+      type: "club_update",
+      title: "Transfer budget confirmed",
+      body: `${manager?.name ?? "The manager"} now has a ${mode} transfer budget of ${save.transferBudget.amount.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} for ${monthForWeek(save.week)}.`,
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      managerId: manager?.id,
+      variant: mode === "strict" || mode === "zero" ? "negative" : "positive",
+    };
+    markEventSeen(save, event.id);
+    return withUpdate(updateAchievements(save));
   } else if (event.type === "contract_offer" && event.proposal && player) {
     const proposal = event.proposal;
-    if (action === "reject") {
+    if (action === "reject" && proposal.type === "buy") {
+      club.managerTrust = Math.max(0, club.managerTrust - 4);
+      enqueue(save, {
+        id: `contract_response_target_dropped_${proposal.id}`,
+        type: "contract_response",
+        title: "Transfer target dropped",
+        body: `You walked away from ${player.name}, the ${player.position} rated ${player.rating} from ${proposal.fromClubId ? save.clubs[proposal.fromClubId]?.name ?? "another club" : "another club"}. Manager trust -4.`,
+        requiresDecision: false,
+        createdSeason: save.season,
+        createdWeek: save.week,
+        playerId: player.id,
+        managerId: manager?.id,
+        variant: "negative",
+      });
+    } else if (action === "reject") {
       club.managerTrust = Math.max(0, club.managerTrust - 4);
       player.morale = Math.max(10, player.morale - 5);
       enqueue(save, {
         id: `contract_response_rejected_${proposal.id}`,
         type: "contract_response",
-        title: "Request rejected",
-        body: `${player.name} was told the club will not offer new terms right now.`,
+        title: "Squad contract request rejected",
+        body: `${player.name}, your ${player.position} rated ${player.rating}, was told the club will not offer new terms right now. Manager trust -4; player morale -5.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -576,14 +707,14 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
             ...event,
             id: `contract_offer_retry_${proposal.id}_${save.seenEventKeys.length}`,
             body: `${save.clubs[proposal.fromClubId ?? ""]?.name ?? "The selling club"} rejected the opening offer for ${player.name}, but they are willing to hear one improved bid.`,
-            note: "The manager thinks the target is still possible if the fee improves.",
+            note: "The manager thinks the target is still possible if the fee improves. Manager trust -2 for the rejected opening offer.",
           });
         } else {
           enqueue(save, {
             id: `contract_response_club_refused_${proposal.id}`,
             type: "contract_response",
             title: "Club refuses to negotiate",
-            body: `${save.clubs[proposal.fromClubId ?? ""]?.name ?? "The selling club"} rejected the bid and ended talks for ${player.name}.`,
+            body: `${save.clubs[proposal.fromClubId ?? ""]?.name ?? "The selling club"} rejected the bid and ended talks for ${player.name}. Manager trust -2.`,
             requiresDecision: false,
             createdSeason: save.season,
             createdWeek: save.week,
@@ -599,7 +730,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           id: `contract_response_player_refused_${proposal.id}`,
           type: "contract_response",
           title: "Player rejects terms",
-          body: `${player.name}'s club accepted the fee, but the player rejected the contract offer.`,
+          body: `${player.name}'s club accepted the fee, but the player rejected the contract offer. Manager trust -2; player morale -3.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -616,12 +747,11 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         club.finances.balance -= offeredFee;
         club.finances.transactions.unshift({ id: `tx_transfer_paid_${proposal.id}`, week: save.week, label: `Transfer fee paid: ${player.name}`, amount: -offeredFee });
         club.managerTrust = Math.min(99, club.managerTrust + 4);
-        refreshQueuedFinancialReports(save);
         enqueue(save, {
           id: `contract_response_signed_${proposal.id}`,
           type: "contract_response",
           title: "Signing completed",
-          body: `${player.name} has joined ${club.name} for ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and signed a ${years}-year contract worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.`,
+          body: `${player.name} has joined ${club.name} for ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and signed a ${years}-year contract worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Manager trust +4.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -629,13 +759,14 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           managerId: manager?.id,
           variant: "positive",
         });
+        ensureFinancialReportAfterTransfer(save);
       } else {
         club.managerTrust = Math.max(0, club.managerTrust - 5);
         enqueue(save, {
           id: `contract_response_failed_${proposal.id}`,
           type: "contract_response",
           title: "Deal blocked",
-          body: `${player.name}'s transfer could not be completed within the available budget.`,
+          body: `${player.name}'s transfer could not be completed within the available budget. Manager trust -5.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -663,7 +794,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `contract_response_${accepted ? "accepted" : "turned_down"}_${proposal.id}`,
         type: "contract_response",
         title: accepted ? "Contract accepted" : "Contract turned down",
-        body: accepted ? `${player.name} has signed a ${years}-year deal worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.` : `${player.name} turned down the offer and wants terms closer to his expectations.`,
+        body: accepted ? `${player.name} has signed a ${years}-year deal worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Manager trust +3; player morale improved.` : `${player.name} turned down the offer and wants terms closer to his expectations. Manager trust -3; player morale -8.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -674,14 +805,15 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     }
   } else if (event.type === "incoming_bid" && event.proposal && player) {
     if (action === "accept") {
-      const pendingDeal: PendingDeal = { id: `sale_${event.proposal.id}`, type: "sale", playerId: player.id, fee: event.proposal.fee, stage: "ready" };
+      const pendingDeal: PendingDeal = { id: `sale_${event.proposal.id}`, type: "sale", playerId: player.id, fee: event.proposal.fee, buyerClubId: event.proposal.toClubId, stage: "ready" };
       save.pendingDeals.push(pendingDeal);
       club.managerTrust = Math.min(99, club.managerTrust + 1);
+      const bidder = event.proposal.toClubId ? save.clubs[event.proposal.toClubId] : undefined;
       enqueue(save, {
         id: `sale_ready_${pendingDeal.id}`,
         type: "sale_ready",
         title: `${player.position} sale ready`,
-        body: `The ${event.proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} sale of ${player.name} is ready to be confirmed.`,
+        body: `${bidder?.name ?? "The bidding club"} is ready to buy ${player.name}, your ${player.position} rated ${player.rating}, for ${event.proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Manager trust +1 for accepting the bid.`,
         requiresDecision: true,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -691,6 +823,19 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       });
     } else {
       club.managerTrust = Math.max(0, club.managerTrust - 2);
+      const bidder = event.proposal.toClubId ? save.clubs[event.proposal.toClubId] : undefined;
+      enqueue(save, {
+        id: `sale_rejected_${event.proposal.id}`,
+        type: "contract_response",
+        title: "Bid rejected",
+        body: `You rejected ${bidder?.name ?? "the bidding club"}'s offer for ${player.name}, your ${player.position} rated ${player.rating}. Manager trust -2.`,
+        requiresDecision: false,
+        createdSeason: save.season,
+        createdWeek: save.week,
+        playerId: player.id,
+        managerId: manager?.id,
+        variant: "negative",
+      });
     }
   } else if (event.type === "sale_ready" && event.pendingDeal) {
     const deal = event.pendingDeal;
@@ -700,12 +845,11 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       soldPlayer.clubId = undefined;
       club.finances.balance += deal.fee;
       club.finances.transactions.unshift({ id: `tx_transfer_received_${deal.id}`, week: save.week, label: `Transfer fee received: ${soldPlayer.name}`, amount: deal.fee });
-      refreshQueuedFinancialReports(save);
       enqueue(save, {
         id: `sale_confirmed_${deal.id}`,
         type: "sale_confirmed",
         title: "Player sale confirmed",
-        body: `${soldPlayer.name} has been sold for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
+        body: `${soldPlayer.name} has been sold to ${deal.buyerClubId ? save.clubs[deal.buyerClubId]?.name ?? "the buying club" : "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -713,6 +857,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         managerId: manager?.id,
         variant: "positive",
       });
+      ensureFinancialReportAfterTransfer(save);
       if (soldPlayer.careerStats.apps >= 80 || soldPlayer.rating >= 76) {
         save.hallOfFame.push(soldPlayer.name);
         enqueue(save, {
@@ -751,10 +896,12 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       delete save.players[player.id];
     }
   } else if (event.type === "match_preview") {
+    const playLive = action === "play";
     save.currentEvent = undefined;
     markEventSeen(save, event.id);
     save = advanceToNextMatch(save);
     ensureEventState(save);
+    ensureManagerState(save);
     if (save.lastMatch?.result) {
       save.currentEvent = {
         id: `match_result_${save.lastMatch.id}`,
@@ -767,11 +914,13 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         fixtureId: save.lastMatch.id,
         variant: "neutral",
       };
+      save.liveMatch = playLive ? { fixtureId: save.lastMatch.id, currentMinute: 0, revealedEventCount: 0, finished: false } : undefined;
     }
     return withUpdate(save);
   }
 
   save.currentEvent = undefined;
+  if (event.type === "match_result") save.liveMatch = undefined;
   markEventSeen(save, event.id);
   popNextEvent(save);
   return withUpdate(updateAchievements(save));
@@ -909,6 +1058,10 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
     const saleCandidates = playersForClub(save, club).filter((player) => player.age > 29 || player.contractYears <= 1).sort((a, b) => b.value - a.value);
     const player = saleCandidates[0];
     if (!player) return undefined;
+    const division = save.divisions.find((item) => item.id === club.divisionId);
+    const possibleBidders = (division?.clubIds ?? []).map((id) => save.clubs[id]).filter((item) => item && item.id !== club.id);
+    const [bidder, s2] = pickOne(state, possibleBidders.length > 0 ? possibleBidders : Object.values(save.clubs).filter((item) => item.id !== club.id));
+    save.rngState = s2;
     return {
       id: `proposal_${save.week}_${player.id}`,
       type: "sell",
@@ -917,6 +1070,7 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
       rationale: `${manager.name} believes this is the right time to cash in and refresh the squad.`,
       playerId: player.id,
       fromClubId: club.id,
+      toClubId: bidder.id,
       fee: Math.round(player.value * 0.92),
       wageDelta: -player.wage,
       expiresWeek: save.week + 2,
@@ -925,7 +1079,7 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
   const renewals = playersForClub(save, club).filter((player) => player.contractYears <= 1 || player.morale < 55).sort((a, b) => b.rating - a.rating);
   const player = renewals[0];
   if (!player) return undefined;
-  const requestedWage = Math.round(player.wage * 1.18);
+  const requestedWage = Math.round(calculateRecommendedPlayerWage(player, currentDivisionLevel(save), player.rating >= 70 ? "first_team" : "squad") * (player.morale < 55 ? 1.18 : 1.08));
   const requestedYears = Math.min(5, Math.max(2, 35 - player.age));
   return {
     id: `proposal_${save.week}_${player.id}`,
@@ -989,30 +1143,90 @@ export const generateContractProposal = generateManagerTransferProposal;
 export const approveSaleProposal = approveTransferProposal;
 export const rejectSaleProposal = rejectTransferProposal;
 
-export function hireManager(input: GameSave, managerId: string) {
+export function generateManagerHireOffer(input: GameSave, managerId: string) {
   const save = clone(input);
+  ensureEventState(save);
+  ensureManagerState(save);
+  const candidate = save.managerCandidates.find((manager) => manager.id === managerId);
+  if (!candidate) return undefined;
+  const club = userClub(save);
+  const expectedWage = calculateRecommendedManagerWage(candidate, currentDivisionLevel(save));
+  const outgoing = club.managerId ? save.managers[club.managerId] : undefined;
+  const outgoingCompensation = outgoing ? calculateManagerCompensation(outgoing) : 0;
+  const candidateCompensation = candidate.status === "contracted" ? candidate.compensationFee ?? calculateManagerCompensation(candidate) : 0;
+  return { candidate, expectedWage, outgoingCompensation, candidateCompensation, totalImmediateCost: outgoingCompensation + candidateCompensation };
+}
+
+export function managerActionLocked(save: GameSave) {
+  return Boolean(save.managerActionLockUntilWeek && save.week < save.managerActionLockUntilWeek);
+}
+
+export function submitManagerHireOffer(input: GameSave, managerId: string, terms: ContractTerms) {
+  const save = clone(input);
+  ensureEventState(save);
+  ensureManagerState(save);
   const candidate = save.managerCandidates.find((manager) => manager.id === managerId);
   if (!candidate) return save;
   const club = userClub(save);
-  if (club.managerId) delete save.managers[club.managerId];
-  save.managers[candidate.id] = candidate;
+  if (managerActionLocked(save) && club.managerId) return save;
+  const offer = generateManagerHireOffer(save, managerId);
+  if (!offer) return save;
+  const acceptsWage = candidate.status === "contracted" ? terms.wage >= offer.expectedWage : terms.wage >= offer.expectedWage * 0.9;
+  const compensationPaid = candidate.status !== "contracted" || (terms.compensationFee ?? 0) >= offer.candidateCompensation;
+  if (!acceptsWage || !compensationPaid) {
+    club.boardConfidence = Math.max(20, club.boardConfidence - 1);
+    return withUpdate(save);
+  }
+  if (club.managerId) {
+    const outgoing = save.managers[club.managerId];
+    if (outgoing) {
+      const compensation = calculateManagerCompensation(outgoing);
+      club.finances.balance -= compensation;
+      club.finances.transactions.unshift({ id: `tx_manager_fire_${save.week}_${outgoing.id}`, week: save.week, label: `Manager compensation: ${outgoing.name}`, amount: -compensation });
+      delete save.managers[outgoing.id];
+    }
+  }
+  if (offer.candidateCompensation > 0) {
+    club.finances.balance -= offer.candidateCompensation;
+    club.finances.transactions.unshift({ id: `tx_manager_hire_${save.week}_${candidate.id}`, week: save.week, label: `Manager club compensation: ${candidate.name}`, amount: -offer.candidateCompensation });
+  }
+  const hired: Manager = { ...candidate, wage: terms.wage, contractYears: terms.years, status: "contracted", clubId: club.id, compensationFee: undefined };
+  save.managers[candidate.id] = hired;
   club.managerId = candidate.id;
+  club.managerTrust = 66;
+  club.boardConfidence = Math.max(25, club.boardConfidence - (offer.outgoingCompensation > 0 ? 2 : 0));
   save.managerCandidates = save.managerCandidates.filter((manager) => manager.id !== managerId);
-  return withUpdate(save);
+  save.managerActionLockUntilWeek = save.week + 4;
+  return checkDebtAndBankruptcy(withUpdate(save));
 }
 
-export function fireManager(input: GameSave) {
+export function confirmFireManager(input: GameSave) {
   const save = clone(input);
+  ensureEventState(save);
+  ensureManagerState(save);
+  if (managerActionLocked(save)) return save;
   const club = userClub(save);
-  if (club.managerId) delete save.managers[club.managerId];
+  if (club.managerId) {
+    const manager = save.managers[club.managerId];
+    if (manager) {
+      const compensation = calculateManagerCompensation(manager);
+      club.finances.balance -= compensation;
+      club.finances.transactions.unshift({ id: `tx_manager_fire_${save.week}_${manager.id}`, week: save.week, label: `Manager compensation: ${manager.name}`, amount: -compensation });
+      delete save.managers[club.managerId];
+    }
+  }
   club.managerId = undefined;
   club.boardConfidence = Math.max(25, club.boardConfidence - 8);
   club.managerTrust = 50;
-  const [candidates, next] = generateManagerCandidates(save.rngState, save.divisions.find((d) => d.id === club.divisionId)?.level ?? 7);
+  save.managerActionLockUntilWeek = save.week + 4;
+  const [candidates, next] = generateManagerCandidates(save.rngState, currentDivisionLevel(save));
   save.rngState = next;
   save.managerCandidates = candidates;
-  return withUpdate(save);
+  return checkDebtAndBankruptcy(withUpdate(save));
 }
+
+export const hireManager = submitManagerHireOffer;
+export const fireManager = confirmFireManager;
 
 export function evaluateManager(save: GameSave) {
   const club = userClub(save);

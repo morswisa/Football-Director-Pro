@@ -22,9 +22,10 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 3. Engine actions return a new `GameSave`; UI never mutates game data directly.
 4. Autosave writes the active save to IndexedDB.
 5. Load game validates and migrates the saved payload before hydrating Zustand.
-6. Production build emits static files to `out/` for future Capacitor sync.
-7. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
-8. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
+6. Store hydration normalizes display names so duplicate generated club names and same-club player names are disambiguated before rendering.
+7. Production build emits static files to `out/` for future Capacitor sync.
+8. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
+9. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
 
 ## Navigation
 
@@ -32,7 +33,10 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Primary sections are selected by local tab state from dashboard metric buttons: Dashboard, Standings, Roster, Manager, Finances, Stadium, History, and Settings.
 - There is no separate top section grid or bottom navigation; non-dashboard sections provide a Back to Dashboard action.
 - Standings are derived from `leagueTable(save)` and rendered from the current division records.
+- Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
+- Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
+- Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
@@ -53,9 +57,15 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `GameSave.transferBudget` stores the active chairman budget stance for the current transfer window.
 - `GameSave.pendingDeals` stores staged sale flows between incoming bid, sale ready, and sale confirmed.
 - `GameSave.financialSnapshot` stores the latest generated financial breakdown for display and persistence.
+- `latestFinancialSnapshot(save)` is the shared read model for Dashboard, Finance, and financial event cards.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
+- Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
+- Engine function `normalizeGameState` is used by the store to normalize older or generated saves before UI hydration.
 - Paid buy proposals are resolved inside `resolveEvent` with fee, wage, and years terms. Selling clubs may reject low fees, and players may reject weak contracts.
+- Buy-proposal rejection resolves to a target-specific response event, while squad contract rejection uses squad-specific language.
+- Sale proposals carry `toClubId` and staged `PendingDeal.buyerClubId` so bid, sale-ready, and sale-confirmed events can attribute the bidding club.
+- `GameSave.liveMatch` stores transient live-playback metadata so the fixture is not simulated twice when the user chooses `Play Match`.
 - Legacy `activeProposal` still exists for compatibility with older code/tests, but the UI now wraps manager proposals into event cards.
 
 ## Calendar And Economy
@@ -63,6 +73,18 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Internal progress still uses `week` and `currentRound`, but UI presents `monthForWeek`.
 - Transfer-window gating currently allows buy/sell proposals in August and January.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
+- `src/game/economy.ts` owns formula-based wage helpers for players and managers plus manager compensation.
+- Player wages scale by division level, rating, age band, squad role, and potential gap.
+- Manager wages scale by division level, rating, reputation, and personality premium.
+- Manager compensation is weekly wage times 4.33 times remaining contract months.
+
+## Managers
+
+- Manager data no longer includes `manManagement` or `wageDiscipline`.
+- Manager rating is calculated from Training, Tactics, Transfers, and Youth.
+- Team strength uses manager Tactics, Training, and Reputation.
+- Manager candidates can be `free_agent` or `contracted`; contracted candidates carry a compensation fee.
+- Hiring and firing are engine actions with financial consequences and a short action lock, coordinated through Zustand and rendered as Manager tab modals.
 
 ## Core Constraints
 

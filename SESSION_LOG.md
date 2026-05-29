@@ -48,3 +48,50 @@
 - Restarted the local development server on port 3000 after verification.
 - Prepared the full current workspace for publishing to GitHub so the project can be shared externally.
 - Created the public GitHub repository `morswisa/Football-Director-Pro` and pushed `main` with commit `958ca93` (`Build Football Director Pro V1`).
+
+## 2026-05-29
+
+- Restarted the local development server on port 3000 for playtesting.
+- Implemented the Live Match + Manager Contracts + Wage Economy plan.
+- Changed match preview so it no longer shows player grids before a choice; `See Match` resolves instantly, while `Play Match` uses the already-simulated result as fast live playback with minute progression, score, stat bars, event feed, and final whistle before continuing.
+- Removed `Man Management` and `Wage Discipline` from the manager model, manager UI, rating calculation, and team-strength calculation. Manager rating now averages Training, Tactics, Transfers, and Youth.
+- Added manager contract economics: manager wage, contract years, free-agent/contracted status, contracted-club compensation, firing compensation, hire negotiation modals, dismissal confirmation modals, and a manager-action lock.
+- Added formula-driven wage helpers for players and managers in `src/game/economy.ts`, including player division/rating/age/role/potential scaling and manager division/rating/reputation/personality scaling.
+- Updated tests for wage formulas, manager compensation hiring/firing, instant match result flow, and live playback state.
+- Verified with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and an in-app browser smoke check of `/game`.
+- Restarted the local development server on port 3000 after verification.
+- Deployed the current local workspace to Vercel under project `football-director-pro`. Vercel returned the public alias `https://football-director-pro.vercel.app` and preview URL `https://football-director-7aaejizyc-mor-swisas-projects.vercel.app`.
+- Vercel CLI warned that connecting the GitHub repository to the Vercel project failed, but the deployment itself completed successfully.
+- Fixed transfer-fee visibility in financial reports by queueing manager transfer decisions before the weekly financial report and adding an updated same-week financial report when a transfer happens after the original report was already shown.
+- Slowed `Play Match` live playback from 3-minute jumps every 90ms to 2-minute jumps every 120ms.
+- Added unit coverage for transfers that happen after an already-seen financial report.
+- Verified with `npm test`, `npm run lint`, `npm run build`, and `npm run e2e`.
+- Deployed the fix to Vercel preview: `https://football-director-nbnjeo3jf-mor-swisas-projects.vercel.app`.
+- Responded to usability review: added save normalization for duplicate generated club names and same-club player names, rebuilt Squad rows into fixed Pos/Player/Rate columns with sticky sort controls, changed the Dashboard locked state label from `Continue Decision` to clearer action labels, and renamed the duplicated-looking `Fans` metric to `Board`.
+- Improved manager negotiation display by using exact weekly wage formatting, deduplicated wage options, and clearer labels for new-club compensation versus current-manager payoff.
+- Sorted contract-year options consistently and deduplicated wage options in player contract and buy-negotiation controls.
+- Improved facility, finance, stadium, and history screens with selected level deltas, current/target/reduced level context, period labels, upgrade/repair costs, capacity effects, and achievement locked/unlocked progress indicators.
+- Made key modal action rows sticky at the bottom where practical so confirm/continue controls are harder to miss after scrolling.
+- Added unit coverage for duplicate-name normalization and re-verified with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, plus local browser screenshots of Squad and Standings.
+- Deployed the usability pass to Vercel preview: `https://football-director-f94b3jvsl-mor-swisas-projects.vercel.app`.
+- Fixed financial-summary inconsistency by making Dashboard, Finance, and financial event cards read from the same latest financial snapshot.
+- Updated the Finance screen to show report period, report income, report expenses, and report result instead of mixing season totals with period totals.
+- Added current-season record context to History and changed the dashboard History metric to a Record metric so match progress is visible before trophies/promotions exist.
+- Reduced same-league club-name confusion by generating one unique prefix per club per division and normalizing existing saves with duplicate/similar prefixes.
+- Added a transfer-budget confirmation event before the next queued proposal so the decision flow no longer jumps straight from budget selection into a transfer target.
+- Added period numbers next to month labels in the header and financial report breakdowns.
+- Added unit coverage for the shared latest financial snapshot and re-verified with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, plus local browser checks of Dashboard, Finance, and History.
+- Deployed the consistency pass to Vercel preview: `https://football-director-efuwj870b-mor-swisas-projects.vercel.app`.
+- Fixed transfer attribution issues: walking away from a transfer target now creates `Transfer target dropped` rather than squad-contract `Request rejected`, and the copy identifies source club, position, rating, age, and manager-trust impact.
+- Incoming bid flows now include the bidding club via proposal `toClubId` and staged deal `buyerClubId`, and sale-ready/sale-confirmed copy preserves that attribution.
+- Player event headers now label `Pos`, `Rating`, and `Age` explicitly and state whether the player is an external transfer target, current squad player, or bid subject.
+- Buy and bid decision panels now show source/bidding club context, target/squad identity, and trust-impact guidance before the action buttons.
+- Added unit coverage for transfer-target walkaway responses and bidder attribution in staged sale flows.
+- Re-verified with `npm test`, `npm run lint`, `npm run build`, and `npm run e2e`.
+- Deployed the attribution pass to Vercel preview: `https://football-director-jgnw14qmx-mor-swisas-projects.vercel.app`.
+- Fixed post-match dashboard feedback by rendering a `No major match events recorded` fallback when the last result has a score but no event list.
+- Hardened wage/fee option generation so negotiation dialogs always show selectable ascending options, even when the base wage/fee is tiny or missing.
+- Slowed live match playback to one-minute increments every 90ms, which is 50% slower than the prior effective pace, and changed live playback to a fixed full-screen overlay so dashboard controls cannot be mistaken for match controls.
+- Re-verified with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, plus a local browser dashboard smoke check.
+- Deployed the post-match/live-playback fix to Vercel preview: `https://football-director-9bp3imzpz-mor-swisas-projects.vercel.app`.
+- Redeployed the current workspace to Vercel before committing, producing preview `https://football-director-9kud16nb0-mor-swisas-projects.vercel.app`.

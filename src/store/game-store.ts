@@ -4,15 +4,16 @@ import { create } from "zustand";
 import {
   advanceToNextMatch,
   approveTransferProposal,
+  confirmFireManager,
   createNewGame,
-  fireManager,
   downgradeTraining,
   downgradeYouthAcademy,
   generateNextEvents,
-  hireManager,
+  normalizeGameState,
   rejectTransferProposal,
   repairStadium,
   resolveEvent,
+  submitManagerHireOffer,
   upgradeStand,
   upgradeTraining,
   upgradeYouthAcademy,
@@ -31,7 +32,7 @@ interface GameStore {
   advance: () => Promise<void>;
   continueGame: () => Promise<void>;
   resolveCurrentEvent: (decision?: { action?: string; terms?: ContractTerms; mode?: TransferBudgetMode }) => Promise<void>;
-  hire: (managerId: string) => Promise<void>;
+  hire: (managerId: string, terms: ContractTerms) => Promise<void>;
   fire: () => Promise<void>;
   approveProposal: (terms?: ContractTerms) => Promise<void>;
   rejectProposal: () => Promise<void>;
@@ -51,12 +52,14 @@ async function persistSave(save?: GameSave) {
 export const useGameStore = create<GameStore>((set, get) => ({
   hydrated: false,
   async create(input) {
-    const save = createNewGame(input);
+    const save = normalizeGameState(createNewGame(input));
     await persistSave(save);
     set({ save, hydrated: true, message: "Club created and saved." });
   },
   async load(slotId = "slot-1") {
-    const save = await loadGame(slotId);
+    const loaded = await loadGame(slotId);
+    const save = loaded ? normalizeGameState(loaded) : undefined;
+    if (save) await persistSave(save);
     set({ save, hydrated: true, message: save ? "Save loaded." : "No local save found." });
   },
   async persist() {
@@ -83,17 +86,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     await persistSave(save);
     set({ save });
   },
-  async hire(managerId) {
+  async hire(managerId, terms) {
     const current = get().save;
     if (!current) return;
-    const save = hireManager(current, managerId);
+    const beforeManager = current.clubs[current.userClubId].managerId;
+    const save = submitManagerHireOffer(current, managerId, terms);
     await persistSave(save);
-    set({ save, message: "Manager hired." });
+    set({ save, message: save.clubs[save.userClubId].managerId !== beforeManager ? "Manager hired." : "Manager offer was not accepted." });
   },
   async fire() {
     const current = get().save;
     if (!current) return;
-    const save = fireManager(current);
+    const save = confirmFireManager(current);
     await persistSave(save);
     set({ save, message: "Manager dismissed. New candidates are available." });
   },

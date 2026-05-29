@@ -2,12 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   advanceToNextMatch,
   approveTransferProposal,
+  calculateManagerCompensation,
+  calculateRecommendedManagerWage,
+  calculateRecommendedPlayerWage,
+  confirmFireManager,
   createNewGame,
-  fireManager,
   generateNextEvents,
-  hireManager,
   leagueTable,
+  latestFinancialSnapshot,
+  normalizeGameState,
   resolveEvent,
+  submitManagerHireOffer,
   upgradeStand,
 } from "../src/game/engine";
 
@@ -41,12 +46,38 @@ describe("game engine", () => {
 
   it("supports manager hiring and firing", () => {
     let save = createNewGame(setup);
-    const candidate = save.managerCandidates[0];
-    save = fireManager(save);
+    const manager = save.managers[save.clubs[save.userClubId].managerId!];
+    const compensation = calculateManagerCompensation(manager);
+    const beforeBalance = save.clubs[save.userClubId].finances.balance;
+    save = confirmFireManager(save);
     expect(save.clubs[save.userClubId].managerId).toBeUndefined();
-    save = hireManager(save, save.managerCandidates[0].id);
+    expect(save.clubs[save.userClubId].finances.balance).toBe(beforeBalance - compensation);
+    const candidate = save.managerCandidates[0];
+    const expectedWage = calculateRecommendedManagerWage(candidate, 7);
+    save = submitManagerHireOffer(save, candidate.id, { wage: expectedWage, years: 2, compensationFee: candidate.compensationFee ?? 0 });
     expect(save.clubs[save.userClubId].managerId).toBeDefined();
     expect(candidate.name).toBeTruthy();
+  });
+
+  it("calculates wages from rating, division and reputation", () => {
+    const save = createNewGame(setup);
+    const player = Object.values(save.players)[0];
+    const manager = Object.values(save.managers)[0];
+    expect(calculateRecommendedPlayerWage({ ...player, rating: 80 }, 1)).toBeGreaterThan(calculateRecommendedPlayerWage({ ...player, rating: 60 }, 7));
+    expect(calculateRecommendedManagerWage({ ...manager, reputation: 90, training: 90, tactics: 90, transferTaste: 90, youthPreference: 90 }, 1)).toBeGreaterThan(calculateRecommendedManagerWage({ ...manager, reputation: 45, training: 45, tactics: 45, transferTaste: 45, youthPreference: 45 }, 7));
+  });
+
+  it("normalizes duplicate club and squad display names", () => {
+    const save = createNewGame(setup);
+    const division = save.divisions.find((item) => item.id === save.clubs[save.userClubId].divisionId)!;
+    save.clubs[division.clubIds[1]].name = save.clubs[division.clubIds[0]].name;
+    const club = save.clubs[save.userClubId];
+    save.players[club.playerIds[1]].name = save.players[club.playerIds[0]].name;
+    const normalized = normalizeGameState(save);
+    const clubNames = division.clubIds.map((id) => normalized.clubs[id].name);
+    const squadNames = normalized.clubs[normalized.userClubId].playerIds.map((id) => normalized.players[id].name);
+    expect(new Set(clubNames).size).toBe(clubNames.length);
+    expect(new Set(squadNames).size).toBe(squadNames.length);
   });
 
   it("generates manager-led proposals without manual scouting", () => {
@@ -80,6 +111,7 @@ describe("game engine", () => {
     save = resolveEvent(save, save.currentEvent!.id, { mode: "strict" });
     expect(save.transferBudget?.mode).toBe("strict");
     expect(save.transferBudget?.amount).toBeGreaterThanOrEqual(0);
+    expect(save.currentEvent?.title).toBe("Transfer budget confirmed");
   });
 
   it("simulates matches through preview and result events", () => {
@@ -91,9 +123,25 @@ describe("game engine", () => {
       guard += 1;
     }
     expect(save.currentEvent?.type).toBe("match_preview");
-    save = resolveEvent(save, save.currentEvent!.id, { action: "sim" });
+    save = resolveEvent(save, save.currentEvent!.id, { action: "see" });
     expect(save.currentEvent?.type).toBe("match_result");
     expect(save.lastMatch?.result).toBeDefined();
+    expect(save.liveMatch).toBeUndefined();
+  });
+
+  it("creates live playback state for play match without double simulation", () => {
+    let save = createNewGame(setup);
+    save = generateNextEvents(save);
+    let guard = 0;
+    while (save.currentEvent && save.currentEvent.type !== "match_preview" && guard < 12) {
+      save = resolveEvent(save, save.currentEvent.id, save.currentEvent.type === "transfer_budget" ? { mode: "normal" } : undefined);
+      guard += 1;
+    }
+    const roundBefore = save.currentRound;
+    save = resolveEvent(save, save.currentEvent!.id, { action: "play" });
+    expect(save.currentEvent?.type).toBe("match_result");
+    expect(save.liveMatch?.fixtureId).toBe(save.lastMatch?.id);
+    expect(save.currentRound).toBe(roundBefore + 1);
   });
 
   it("negotiates paid transfers and includes fees in financial snapshots", () => {
@@ -141,6 +189,128 @@ describe("game engine", () => {
     expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
     const report = save.eventQueue.find((event) => event.type === "financial_report") ?? save.currentEvent;
     expect(report?.financialSnapshot?.expenses.feesOut).toBeGreaterThan(0);
+  });
+
+  it("walking away from a transfer target creates a clear target-dropped response", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const player = Object.values(save.players).find((item) => item.clubId !== club.id && item.value < club.finances.balance)!;
+    save.week = 2;
+    save.currentEvent = {
+      id: "contract_offer_walkaway",
+      type: "contract_offer",
+      title: "Manager target identified",
+      body: "External target",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_walkaway",
+        type: "buy",
+        week: save.week,
+        title: "Buy player",
+        rationale: "Manager target",
+        playerId: player.id,
+        fromClubId: player.clubId,
+        toClubId: club.id,
+        fee: Math.min(50_000, player.value),
+        wageDelta: player.wage,
+        expiresWeek: save.week + 2,
+        requestedWage: player.wage,
+        requestedYears: 3,
+      },
+    };
+    save = resolveEvent(save, save.currentEvent.id, { action: "reject" });
+    expect(save.currentEvent?.title).toBe("Transfer target dropped");
+    expect(save.currentEvent?.body).toContain("Manager trust -4");
+  });
+
+  it("incoming bids include the bidding club in the staged sale", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const bidder = save.divisions.find((item) => item.id === club.divisionId)!.clubIds.map((id) => save.clubs[id]).find((item) => item.id !== club.id)!;
+    const player = save.players[club.playerIds[0]];
+    save.currentEvent = {
+      id: "incoming_bid_test",
+      type: "incoming_bid",
+      title: "Bid received",
+      body: "Bid",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_bidder",
+        type: "sell",
+        week: save.week,
+        title: "Sell player",
+        rationale: "Bid",
+        playerId: player.id,
+        fromClubId: club.id,
+        toClubId: bidder.id,
+        fee: 25_000,
+        wageDelta: -player.wage,
+        expiresWeek: save.week + 2,
+      },
+    };
+    save = resolveEvent(save, save.currentEvent.id, { action: "accept" });
+    expect(save.currentEvent?.type).toBe("sale_ready");
+    expect(save.currentEvent?.pendingDeal?.buyerClubId).toBe(bidder.id);
+    expect(save.currentEvent?.body).toContain(bidder.name);
+  });
+
+  it("adds an updated financial report when a transfer happens after the original report", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    save.week = 2;
+    save.seenEventKeys.push(`financial_report_s${save.season}_w${save.week}`);
+    const player = Object.values(save.players).find((item) => item.clubId !== club.id && item.value < club.finances.balance)!;
+    save.currentEvent = {
+      id: "contract_offer_after_report",
+      type: "contract_offer",
+      title: "Manager target identified",
+      body: "Test target",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_after_report",
+        type: "buy",
+        week: save.week,
+        title: "Buy player",
+        rationale: "Manager target",
+        playerId: player.id,
+        fromClubId: player.clubId,
+        toClubId: club.id,
+        fee: Math.min(50_000, player.value),
+        wageDelta: player.wage,
+        expiresWeek: save.week + 2,
+        requestedWage: player.wage,
+        requestedYears: 3,
+      },
+    };
+    save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: save.currentEvent.proposal!.fee, wage: player.wage, years: 3 } });
+    const updatedReport = save.eventQueue.find((event) => event.type === "financial_report");
+    expect(save.currentEvent?.type).toBe("contract_response");
+    expect(updatedReport?.financialSnapshot?.expenses.feesOut).toBeGreaterThan(0);
+  });
+
+  it("uses one latest financial snapshot for summary surfaces", () => {
+    let save = createNewGame(setup);
+    save = advanceToNextMatch(save);
+    save = generateNextEvents(save);
+    while (save.currentEvent && save.currentEvent.type !== "financial_report") {
+      save = resolveEvent(save, save.currentEvent.id, save.currentEvent.type === "transfer_budget" ? { mode: "normal" } : undefined);
+    }
+    expect(save.currentEvent?.type).toBe("financial_report");
+    const latest = latestFinancialSnapshot(save);
+    expect(latest.profit).toBe(save.currentEvent!.financialSnapshot!.profit);
+    expect(latest.totalIncome - latest.totalExpenses).toBe(latest.profit);
   });
 
   it("runs many seasons without crashing", () => {

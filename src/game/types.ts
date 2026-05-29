@@ -3,7 +3,9 @@ export type ManagerStyle = "Attacking" | "Balanced" | "Defensive";
 export type Personality = "Winner" | "Builder" | "Pragmatist" | "Maverick" | "Mentor";
 export type ProposalType = "buy" | "sell" | "contract" | "loan";
 export type FixtureStatus = "scheduled" | "played";
+export type ManagerStatus = "free_agent" | "contracted";
 export type GameEventType =
+  | "club_update"
   | "contract_offer"
   | "contract_response"
   | "transfer_budget"
@@ -105,13 +107,14 @@ export interface Manager {
   personality: Personality;
   training: number;
   tactics: number;
-  manManagement: number;
   transferTaste: number;
   youthPreference: number;
-  wageDiscipline: number;
   contractYears: number;
   wage: number;
   reputation: number;
+  status: ManagerStatus;
+  clubId?: string;
+  compensationFee?: number;
 }
 
 export interface FinanceState {
@@ -196,6 +199,7 @@ export interface ContractTerms {
   wage: number;
   years: number;
   fee?: number;
+  compensationFee?: number;
 }
 
 export interface TransferBudget {
@@ -208,6 +212,7 @@ export interface PendingDeal {
   type: "sale";
   playerId: string;
   fee: number;
+  buyerClubId?: string;
   stage: "ready" | "confirmed";
 }
 
@@ -235,6 +240,13 @@ export interface FinancialSnapshot {
   totalIncome: number;
   totalExpenses: number;
   profit: number;
+}
+
+export interface LiveMatchState {
+  fixtureId: string;
+  currentMinute: number;
+  revealedEventCount: number;
+  finished: boolean;
 }
 
 export interface GameEvent {
@@ -304,8 +316,10 @@ export interface GameSave {
   seenEventKeys: string[];
   transferBudget?: TransferBudget;
   pendingDeals: PendingDeal[];
+  managerActionLockUntilWeek?: number;
   managerRetirementIntent?: boolean;
   financialSnapshot?: FinancialSnapshot;
+  liveMatch?: LiveMatchState;
   history: SeasonHistory[];
   achievements: Achievement[];
   hallOfFame: string[];

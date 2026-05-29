@@ -7,9 +7,10 @@ import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
 import { Card, StatCard } from "./ui/card";
-import { evaluateManager, leagueTable } from "@/game/engine";
+import { evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
+import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
 import { monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
-import type { ContractTerms, FinancialSnapshot, GameSave, Player, Position, TransferBudgetMode } from "@/game/types";
+import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, TransferBudgetMode } from "@/game/types";
 import { cn, formatMoney, ordinal, pct } from "@/lib/utils";
 import { useGameStore } from "@/store/game-store";
 
@@ -38,7 +39,7 @@ function Header({ save, tab, setTab }: { save: GameSave; tab: Tab; setTab: (tab:
         <BrandMark className="h-12 w-12 rounded-2xl" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold">{current.club.name}</p>
-          <p className="text-xs text-neutral-500">{seasonLabel(save.season)} Season · {monthForWeek(save.week)}</p>
+          <p className="text-xs text-neutral-500">{seasonLabel(save.season)} Season · {monthForWeek(save.week)} · Period {save.week}</p>
         </div>
         <button aria-label="History" onClick={() => setTab(tab === "history" ? "home" : "history")} className="rounded-full p-2 hover:bg-surface-muted">
           <Trophy size={20} />
@@ -69,6 +70,22 @@ function positionOrder(position: Position | string) {
   if (normalized === "D") return 1;
   if (normalized === "M") return 2;
   return 3;
+}
+
+function formatWeeklyWage(value: number) {
+  return `${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(Math.round(value))}/w`;
+}
+
+function uniqueMoneyOptions(base: number, multipliers: number[], nearest = 50) {
+  const safeBase = Number.isFinite(base) && base > 0 ? base : nearest * 5;
+  const options = Array.from(new Set(multipliers.map((multiplier) => Math.max(nearest, Math.round((safeBase * multiplier) / nearest) * nearest)))).sort((a, b) => a - b);
+  if (options.length >= 3) return options;
+  const center = Math.max(nearest, Math.round(safeBase / nearest) * nearest);
+  return [center, center + nearest, center + nearest * 2, center + nearest * 3, center + nearest * 4];
+}
+
+function contractYearOptions(requestedYears: number) {
+  return Array.from(new Set([1, 2, 3, 4, 5, requestedYears].filter((years) => years >= 1 && years <= 5))).sort((a, b) => a - b);
 }
 
 function avatarSeed(value: string) {
@@ -152,11 +169,9 @@ function PageBack({ setTab }: { setTab: (tab: Tab) => void }) {
 function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave; continueGame: () => void; openFacility: (facility: FacilityKind) => void; setTab: (tab: Tab) => void }) {
   const current = useCurrent(save)!;
   const nextOpponent = current.nextFixture ? save.clubs[current.nextFixture.homeClubId === current.club.id ? current.nextFixture.awayClubId : current.nextFixture.homeClubId] : undefined;
-  const blocked = Boolean(save.currentEvent || !current.manager || save.gameOver);
   const squadRating = Math.round(current.players.slice(0, 11).reduce((sum, player) => sum + player.rating, 0) / Math.max(1, current.players.slice(0, 11).length));
-  const managerRating = current.manager ? Math.round((current.manager.training + current.manager.tactics + current.manager.manManagement + current.manager.transferTaste) / 4) : 0;
-  const trophies = save.history.flatMap((item) => item.trophies).length;
-  const achievements = save.achievements.filter((achievement) => achievement.unlockedAt).length;
+  const currentManagerRating = current.manager ? managerRating(current.manager) : 0;
+  const latestFinance = latestFinancialSnapshot(save);
   const lastTen = save.fixtures
     .filter((fixture) => fixture.result && (fixture.homeClubId === current.club.id || fixture.awayClubId === current.club.id))
     .slice(-10)
@@ -171,18 +186,18 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="League position" value={current.position ? ordinal(current.position) : "-"} detail={save.divisions.find((division) => division.id === current.club.divisionId)?.name} />
-        <StatCard label="Balance" value={formatMoney(current.club.finances.balance)} detail={`Last period ${formatMoney(current.club.finances.lastWeekProfit)}`} />
+        <StatCard label="Balance" value={formatMoney(current.club.finances.balance)} detail={`Latest report ${formatMoney(latestFinance.profit)}`} />
       </div>
       <div className="grid grid-cols-3 gap-2">
         <MiniMetric label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} />
         <MiniMetric label="Squad" value={squadRating || "-"} onClick={() => setTab("squad")} />
-        <MiniMetric label="Manager" value={managerRating || "-"} onClick={() => setTab("manager")} />
+        <MiniMetric label="Manager" value={currentManagerRating || "-"} onClick={() => setTab("manager")} />
         <MiniMetric label="Training" value={current.club.trainingLevel} onClick={() => openFacility("training")} />
         <MiniMetric label="Youth" value={current.club.youthLevel} onClick={() => openFacility("youth")} />
         <MiniMetric label="Finances" value={formatMoney(current.club.finances.balance)} onClick={() => setTab("finances")} />
-        <MiniMetric label="Fans" value={`${current.club.boardConfidence}%`} />
+        <MiniMetric label="Board" value={`${current.club.boardConfidence}%`} />
         <MiniMetric label="Stadium" value={current.club.stadium.condition} onClick={() => setTab("stadium")} />
-        <MiniMetric label="History" value={`${trophies}/${achievements}`} onClick={() => setTab("history")} />
+        <MiniMetric label="Record" value={`${current.club.record.won}-${current.club.record.drawn}-${current.club.record.lost}`} onClick={() => setTab("history")} />
       </div>
       <Card className="flex items-center justify-between gap-2 p-3">
         <span className="text-xs font-bold uppercase text-neutral-500">Last 10</span>
@@ -202,7 +217,7 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
           <CalendarDays className="text-primary" />
         </div>
         <Button className="w-full" onClick={continueGame} disabled={Boolean(save.gameOver)}>
-          {blocked ? "Continue Decision" : "Continue"}
+          {save.currentEvent ? "Open Decision" : !current.manager ? "Hire Manager" : "Continue"}
         </Button>
       </Card>
       {save.lastMatch?.result ? (
@@ -212,7 +227,9 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
             {save.clubs[save.lastMatch.homeClubId].name} {save.lastMatch.result.homeGoals} - {save.lastMatch.result.awayGoals} {save.clubs[save.lastMatch.awayClubId].name}
           </p>
           <div className="mt-3 space-y-2">
-            {save.lastMatch.result.events.slice(0, 5).map((event, index) => (
+            {save.lastMatch.result.events.length === 0 ? (
+              <div className="rounded-md bg-surface-muted px-3 py-2 text-sm text-neutral-600">No major match events recorded.</div>
+            ) : save.lastMatch.result.events.slice(0, 5).map((event, index) => (
               <div key={`${event.minute}_${index}`} className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2 text-sm">
                 <PersonAvatar name={event.playerName} className="h-8 w-8 rounded-md text-[10px]" />
                 <p>{event.minute}&apos; {event.description}</p>
@@ -296,20 +313,20 @@ function SquadTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void
   return (
     <div className="space-y-3">
       <PageBack setTab={setTab} />
-      <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold text-neutral-500">
+      <div className="sticky top-0 z-10 grid grid-cols-[48px_1fr_56px] gap-2 bg-background pb-2 text-center text-xs font-semibold text-neutral-500">
         <button onClick={() => setSort("position")} className={cn("rounded-md px-2 py-1 text-xs font-bold", sort === "position" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Pos</button>
-        <button onClick={() => setSort("name")} className={cn("col-span-2 rounded-md px-2 py-1 text-left text-xs font-bold", sort === "name" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Player</button>
+        <button onClick={() => setSort("name")} className={cn("rounded-md px-2 py-1 text-left text-xs font-bold", sort === "name" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Player</button>
         <button onClick={() => setSort("rating")} className={cn("rounded-md px-2 py-1 text-xs font-bold", sort === "rating" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Rate</button>
       </div>
       {players.map((player) => (
-        <Card key={player.id} className="grid grid-cols-4 items-center gap-2 p-3">
-          <span className={cn("rounded-md px-2 py-1 text-center text-xs font-bold text-white", positionClass(player.position))}>{displayPosition(player.position)}</span>
-          <div className="col-span-2 min-w-0">
+        <Card key={player.id} className="grid grid-cols-[48px_1fr_48px] items-center gap-3 p-3">
+          <span className={cn("grid h-9 w-9 place-items-center rounded-md text-center text-xs font-black text-white", positionClass(player.position))}>{displayPosition(player.position)}</span>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <PersonAvatar name={player.name} seedKey={player.id} className="h-8 w-8 rounded-md text-[10px]" />
+              <PersonAvatar name={player.name} seedKey={player.id} className="h-9 w-9 shrink-0 rounded-md text-[10px]" />
               <p className="truncate text-sm font-bold">{player.name}</p>
             </div>
-            <p className="text-xs text-neutral-500">Age {player.age} · {player.contractYears}y · {formatMoney(player.wage)}/w</p>
+            <p className="truncate text-xs text-neutral-500">Age {player.age} · {player.contractYears}y · {formatWeeklyWage(player.wage)}</p>
           </div>
           <span className={cn("justify-self-end rounded-md px-2 py-1 text-xs font-bold text-white", player.rating >= 70 ? "bg-primary" : player.rating >= 55 ? "bg-warning" : "bg-neutral-500")}>{player.rating}</span>
         </Card>
@@ -322,6 +339,13 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const current = useCurrent(save)!;
   const hire = useGameStore((state) => state.hire);
   const fire = useGameStore((state) => state.fire);
+  const [fireOpen, setFireOpen] = useState(false);
+  const [hireId, setHireId] = useState<string>();
+  const locked = managerActionLocked(save);
+  const lockMessage = locked ? `Manager changes are locked until week ${save.managerActionLockUntilWeek}.` : undefined;
+  const divisionLevel = save.divisions.find((division) => division.id === current.club.divisionId)?.level ?? 7;
+  const fireCost = current.manager ? calculateManagerCompensation(current.manager) : 0;
+  const hireOffer = hireId ? generateManagerHireOffer(save, hireId) : undefined;
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
@@ -332,15 +356,15 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
             <div>
               <h2 className="text-lg font-bold">{current.manager.name}</h2>
               <p className="text-sm text-neutral-500">{current.manager.style} · {current.manager.personality}</p>
-              <p className="text-sm text-neutral-500">{current.manager.contractYears} years left</p>
+              <p className="text-sm text-neutral-500">{formatWeeklyWage(current.manager.wage)} · {current.manager.contractYears} years left</p>
             </div>
           </div>
           {[
             ["Training", current.manager.training],
-            ["Man Management", current.manager.manManagement],
             ["Tactics", current.manager.tactics],
-            ["Transfer Taste", current.manager.transferTaste],
-            ["Wage Discipline", current.manager.wageDiscipline],
+            ["Transfers", current.manager.transferTaste],
+            ["Youth", current.manager.youthPreference],
+            ["Reputation", current.manager.reputation],
           ].map(([label, value]) => (
             <div key={label} className="flex items-center gap-3">
               <span className="w-32 text-sm text-neutral-600">{label}</span>
@@ -350,8 +374,13 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
               <span className="w-8 text-right text-sm font-bold">{value}</span>
             </div>
           ))}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <p className="rounded-lg bg-surface-muted px-3 py-2">Rating <b className="block">{managerRating(current.manager)}</b></p>
+            <p className="rounded-lg bg-surface-muted px-3 py-2">Fire cost <b className="block">{formatMoney(fireCost)}</b></p>
+          </div>
           <p className="rounded-md bg-surface-muted px-3 py-2 text-sm">{evaluateManager(save)}</p>
-          <Button variant="danger" className="w-full" onClick={fire}>Fire Manager</Button>
+          {lockMessage ? <p className="rounded-md bg-surface-muted px-3 py-2 text-xs text-neutral-500">{lockMessage}</p> : null}
+          <Button variant="danger" className="w-full" disabled={locked} onClick={() => setFireOpen(true)}>Fire Manager</Button>
         </Card>
       ) : (
         <Card>
@@ -364,15 +393,92 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
         {save.managerCandidates.map((manager) => (
           <Card key={manager.id} className="space-y-3 p-3">
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="flex min-w-0 items-center gap-3">
+                <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-12 w-12 shrink-0 text-sm" />
+                <div className="min-w-0">
                 <p className="font-bold">{manager.name}</p>
                 <p className="text-xs text-neutral-500">{manager.style} · {manager.personality}</p>
+                <p className="text-xs text-neutral-500">{manager.status === "contracted" ? "Under Contract" : "Free Agent"} · Expected {formatWeeklyWage(calculateRecommendedManagerWage(manager, divisionLevel))}</p>
+                </div>
               </div>
-              <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{manager.reputation}</p>
+              <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{managerRating(manager)}</p>
             </div>
-            <Button className="w-full" onClick={() => hire(manager.id)}>Hire</Button>
+            {manager.status === "contracted" ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Club compensation: <b>{formatMoney(manager.compensationFee ?? calculateManagerCompensation(manager))}</b></p> : null}
+            <Button className="w-full" disabled={locked} onClick={() => setHireId(manager.id)}>Negotiate</Button>
           </Card>
         ))}
+      </div>
+      {fireOpen && current.manager ? (
+        <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
+          <div className="w-full rounded-xl bg-white p-5 shadow-2xl">
+            <p className="text-xs font-semibold uppercase text-danger">Confirm dismissal</p>
+            <h2 className="mt-1 text-xl font-bold">{current.manager.name}</h2>
+            <div className="mt-4 space-y-2 text-sm">
+              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Weekly wage</span><b>{formatMoney(current.manager.wage)}</b></p>
+              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Contract left</span><b>{current.manager.contractYears * 12} months</b></p>
+              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Compensation</span><b className="text-danger">{formatMoney(fireCost)}</b></p>
+              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Balance after</span><b>{formatMoney(current.club.finances.balance - fireCost)}</b></p>
+            </div>
+            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+              <Button variant="danger" onClick={async () => { await fire(); setFireOpen(false); }}>Confirm</Button>
+              <Button variant="secondary" onClick={() => setFireOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {hireOffer ? (
+        <ManagerHireModal save={save} managerId={hireOffer.candidate.id} close={() => setHireId(undefined)} submit={async (terms) => { await hire(hireOffer.candidate.id, terms); setHireId(undefined); }} />
+      ) : null}
+    </div>
+  );
+}
+
+function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; managerId: string; close: () => void; submit: (terms: ContractTerms) => Promise<void> }) {
+  const offer = generateManagerHireOffer(save, managerId);
+  const [wage, setWage] = useState(offer?.expectedWage ?? 1_000);
+  const [years, setYears] = useState(2);
+  if (!offer) return null;
+  const candidate = offer.candidate;
+  const wageOptions = uniqueMoneyOptions(offer.expectedWage, [0.8, 0.9, 1, 1.1, 1.2], 50);
+  const yearOptions = [1, 2, 3, 4, 5];
+  const immediateCost = offer.outgoingCompensation + offer.candidateCompensation;
+  return (
+    <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
+      <div className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+        <p className="text-xs font-semibold uppercase text-primary">Manager negotiation</p>
+        <div className="mt-2 flex items-center gap-3">
+          <PersonAvatar name={candidate.name} seedKey={candidate.id} kind="manager" className="h-16 w-16 text-base" />
+          <div>
+            <h2 className="text-xl font-black">{candidate.name}</h2>
+            <p className="text-xs text-neutral-500">{candidate.status === "contracted" ? "Under Contract" : "Free Agent"} · Rating {managerRating(candidate)}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Expected wage <b className="block">{formatWeeklyWage(offer.expectedWage)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Immediate cost <b className="block">{formatMoney(immediateCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">New club fee <b className="block">{formatMoney(offer.candidateCompensation)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Current manager payoff <b className="block">{formatMoney(offer.outgoingCompensation)}</b></p>
+        </div>
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
+          <div className="grid grid-cols-5 gap-2">
+            {wageOptions.map((option) => (
+              <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
+          <div className="grid grid-cols-5 gap-2">
+            {yearOptions.map((option) => (
+              <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{option}y</button>
+            ))}
+          </div>
+        </div>
+        <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+          <Button onClick={() => submit({ wage, years, compensationFee: offer.candidateCompensation })}>Submit Offer</Button>
+          <Button variant="secondary" onClick={close}>Cancel</Button>
+        </div>
       </div>
     </div>
   );
@@ -381,20 +487,25 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
 function FinancesTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void }) {
   const current = useCurrent(save)!;
   const finance = current.club.finances;
-  const income = finance.sponsorship + finance.ticketIncome + finance.merchIncome;
-  const expenses = finance.weeklyWages * Math.max(1, save.week) + finance.upkeep * Math.max(1, save.week);
+  const latestFinance = latestFinancialSnapshot(save);
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
       <StatCard label="Balance" value={formatMoney(finance.balance)} detail={`Debt limit ${formatMoney(finance.debtLimit)}`} />
       <Card>
         <div className="grid grid-cols-[110px_1fr] gap-y-3 text-sm">
-          <span className="text-neutral-500">Income</span><b className="text-primary">{formatMoney(income)}</b>
-          <span className="text-neutral-500">Expenses</span><b className="text-danger">{formatMoney(expenses)}</b>
+          <span className="text-neutral-500">Report period</span><b>{latestFinance.month} · Period {latestFinance.week}</b>
+          <span className="text-neutral-500">Report income</span><b className="text-primary">{formatMoney(latestFinance.totalIncome)}</b>
+          <span className="text-neutral-500">Report expenses</span><b className="text-danger">{formatMoney(latestFinance.totalExpenses)}</b>
+          <span className="text-neutral-500">Report result</span><b className={latestFinance.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(latestFinance.profit)}</b>
           <span className="text-neutral-500">Weekly wages</span><b>{formatMoney(finance.weeklyWages)}</b>
-          <span className="text-neutral-500">Sponsorship</span><b>{formatMoney(finance.sponsorship)}</b>
+          <span className="text-neutral-500">Annual sponsorship</span><b>{formatMoney(finance.sponsorship)}</b>
           <span className="text-neutral-500">Board confidence</span><b>{pct(current.club.boardConfidence)}</b>
         </div>
+      </Card>
+      <Card>
+        <h3 className="mb-3 text-sm font-bold">Latest report breakdown</h3>
+        <FinancialRows snapshot={latestFinance} />
       </Card>
       <Card>
         <h3 className="mb-3 text-sm font-bold">Recent transactions</h3>
@@ -413,6 +524,7 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const current = useCurrent(save)!;
   const upgrade = useGameStore((state) => state.upgradeStand);
   const repair = useGameStore((state) => state.repair);
+  const repairCost = Math.round((100 - current.club.stadium.condition) * 4_500);
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
@@ -431,19 +543,37 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
           <div>
             <p className="font-bold">{stand.name}</p>
             <p className="text-xs text-neutral-500">Level {stand.level} · {stand.capacity.toLocaleString()} seats</p>
+            <p className="text-xs text-neutral-500">Upgrade: {formatMoney(stand.level * 180_000)} · +850 seats</p>
           </div>
           <Button onClick={() => upgrade(stand.id)}>Upgrade</Button>
         </Card>
       ))}
-      <Button variant="secondary" className="w-full" onClick={repair}>Repair Stadium</Button>
+      <Card className="space-y-3 p-3">
+        <div className="flex justify-between gap-3 text-sm">
+          <span className="text-neutral-500">Repair to 100%</span>
+          <b>{formatMoney(repairCost)}</b>
+        </div>
+        <Button variant="secondary" className="w-full" onClick={repair} disabled={repairCost <= 0}>Repair Stadium</Button>
+      </Card>
     </div>
   );
 }
 
 function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void }) {
+  const current = useCurrent(save)!;
+  const goalDifference = current.club.record.gf - current.club.record.ga;
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
+      <Card>
+        <h2 className="text-lg font-bold">Current Season</h2>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Position <b className="block">{current.position ? ordinal(current.position) : "-"}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Played <b className="block">{current.club.record.played}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Record <b className="block">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">GD / Pts <b className="block">{goalDifference > 0 ? `+${goalDifference}` : goalDifference} / {current.club.record.points}</b></p>
+        </div>
+      </Card>
       <Card>
         <h2 className="text-lg font-bold">Trophy Cabinet</h2>
         <p className="mt-2 text-sm text-neutral-500">{save.history.flatMap((item) => item.trophies).length || "No"} trophies or promotions recorded.</p>
@@ -466,9 +596,15 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
           {save.achievements.map((achievement) => (
             <div key={achievement.id} className="flex items-center gap-3 rounded-md bg-surface-muted px-3 py-2 text-sm">
               <Award size={16} className={achievement.unlockedAt ? "text-primary" : "text-neutral-400"} />
-              <div>
-                <p className="font-bold">{achievement.title}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold">{achievement.title}</p>
+                  <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-black", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-500")}>{achievement.unlockedAt ? "Unlocked" : "Locked"}</span>
+                </div>
                 <p className="text-xs text-neutral-500">{achievement.description}</p>
+                <div className="mt-2 h-1.5 rounded-full bg-white">
+                  <div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
+                </div>
               </div>
             </div>
           ))}
@@ -496,8 +632,8 @@ function SettingsTab({ save }: { save: GameSave }) {
 }
 
 function ContractOfferControls({ player, requestedWage, requestedYears, approve }: { player: Player; requestedWage: number; requestedYears: number; approve: (terms: ContractTerms) => void }) {
-  const wageOptions = [0.9, 1, 1.08, 1.16, 1.25].map((multiplier) => Math.round(requestedWage * multiplier));
-  const yearOptions = Array.from(new Set([1, 2, requestedYears, 4, 5].filter((years) => years >= 1 && years <= 5)));
+  const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 0.95, 1, 1.1, 1.2], 50);
+  const yearOptions = contractYearOptions(requestedYears);
   const [wage, setWage] = useState(requestedWage);
   const [years, setYears] = useState(requestedYears);
 
@@ -508,7 +644,7 @@ function ContractOfferControls({ player, requestedWage, requestedYears, approve 
         <div className="grid grid-cols-5 gap-2">
           {wageOptions.map((option) => (
             <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
-              {formatMoney(option)}
+              {formatWeeklyWage(option)}
             </button>
           ))}
         </div>
@@ -524,9 +660,9 @@ function ContractOfferControls({ player, requestedWage, requestedYears, approve 
         </div>
       </div>
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
-        {player.name} wants {formatMoney(requestedWage)}/w for {requestedYears} years.
+        {player.name} wants {formatWeeklyWage(requestedWage)} for {requestedYears} years.
       </p>
-      <Button className="w-full" onClick={() => approve({ wage, years })}>Submit Offer</Button>
+      <Button className="sticky bottom-0 w-full shadow-card" onClick={() => approve({ wage, years })}>Submit Offer</Button>
     </div>
   );
 }
@@ -535,7 +671,6 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
   const current = useCurrent(save)!;
   const approve = useGameStore((state) => state.approveProposal);
   const reject = useGameStore((state) => state.rejectProposal);
-  const hire = useGameStore((state) => state.hire);
 
   if (suppressed) return null;
 
@@ -574,7 +709,7 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
                 <p className="rounded-lg bg-surface-muted px-3 py-3">Fee <b className="block">{formatMoney(save.activeProposal.fee)}</b></p>
                 <p className="rounded-lg bg-surface-muted px-3 py-3">Wages <b className="block">{formatMoney(save.activeProposal.wageDelta)}</b></p>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
                 <Button onClick={() => approve()}>Approve</Button>
                 <Button variant="secondary" onClick={reject}>Reject</Button>
               </div>
@@ -602,9 +737,9 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
                     <p className="font-bold">{manager.name}</p>
                     <p className="text-xs text-neutral-500">{manager.style} · {manager.personality}</p>
                   </div>
-                  <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{manager.reputation}</p>
+                  <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{managerRating(manager)}</p>
                 </div>
-                <Button className="mt-3 w-full" onClick={() => hire(manager.id)}>Hire</Button>
+                <Button className="mt-3 w-full" onClick={() => setTab("manager")}>Negotiate</Button>
               </div>
             ))}
           </div>
@@ -622,16 +757,26 @@ function EventEntityHeader({ save }: { save: GameSave }) {
   const current = useCurrent(save)!;
   const player = event?.playerId ? save.players[event.playerId] : undefined;
   const manager = event?.managerId ? save.managers[event.managerId] : current.manager;
+  const sourceClub = event?.proposal?.fromClubId ? save.clubs[event.proposal.fromClubId] : undefined;
+  const targetClub = event?.proposal?.toClubId ? save.clubs[event.proposal.toClubId] : undefined;
   if (player) {
+    const context = event?.proposal?.type === "buy"
+      ? `Transfer target from ${sourceClub?.name ?? "another club"}`
+      : event?.proposal?.type === "sell"
+        ? `Current squad player · Bidder: ${targetClub?.name ?? "unknown club"}`
+        : player.clubId === current.club.id
+          ? "Current squad player"
+          : `External player from ${sourceClub?.name ?? "another club"}`;
     return (
       <div className="flex items-center gap-3 rounded-lg bg-surface-muted p-3">
         <PersonAvatar name={player.name} seedKey={player.id} className="h-16 w-16 text-base" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-black">{player.name}</p>
+          <p className="truncate text-[11px] font-semibold uppercase text-neutral-500">{context}</p>
           <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
-            <span className={cn("rounded-md px-2 py-1 font-black text-white", positionClass(player.position))}>{displayPosition(player.position)}</span>
-            <span className="rounded-md bg-white px-2 py-1 font-black">{player.rating}/100</span>
-            <span className="rounded-md bg-white px-2 py-1 font-black">Age {player.age}</span>
+            <span className={cn("rounded-md px-2 py-1 font-black text-white", positionClass(player.position))}><small className="block text-[9px] opacity-80">Pos</small>{displayPosition(player.position)}</span>
+            <span className="rounded-md bg-white px-2 py-1 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{player.rating}/100</span>
+            <span className="rounded-md bg-white px-2 py-1 font-black"><small className="block text-[9px] text-neutral-500">Age</small>{player.age}</span>
           </div>
         </div>
       </div>
@@ -643,7 +788,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
         <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-16 w-16 text-base" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-black">{manager.name}</p>
-          <p className="text-xs text-neutral-500">Age {manager.age} · Rating {Math.round((manager.training + manager.tactics + manager.manManagement + manager.transferTaste) / 4)} · Trust {current.club.managerTrust ?? 66}%</p>
+          <p className="text-xs text-neutral-500">Age {manager.age} · Rating {managerRating(manager)} · Trust {current.club.managerTrust ?? 66}%</p>
         </div>
       </div>
     );
@@ -681,6 +826,10 @@ function FinancialRows({ snapshot }: { snapshot?: FinancialSnapshot }) {
   ];
   return (
     <div className="mt-4 space-y-3 text-sm">
+      <div className="flex justify-between rounded-lg bg-surface-muted px-3 py-2 text-xs">
+        <span className="font-bold uppercase text-neutral-500">Report period</span>
+        <b>{snapshot.month} · Period {snapshot.week}</b>
+      </div>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Expenses</p>
         {expenses.map(([label, amount]) => (
@@ -741,7 +890,7 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
         <p className="rounded-lg bg-surface-muted px-3 py-2">Money <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Wage bill <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
       </div>
-      <Button className="w-full" onClick={() => resolve({ mode })}>Set Transfer Budget</Button>
+      <Button className="sticky bottom-0 w-full shadow-card" onClick={() => resolve({ mode })}>Set Transfer Budget</Button>
     </div>
   );
 }
@@ -752,21 +901,27 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
   const expectedFee = proposal?.fee ?? player.value;
   const requestedWage = proposal?.requestedWage ?? Math.round(player.wage * 1.2);
   const requestedYears = proposal?.requestedYears ?? 3;
-  const feeOptions = [0.8, 0.9, 0.95, 1, 1.1].map((multiplier) => Math.round(expectedFee * multiplier));
-  const wageOptions = [0.85, 0.95, 1, 1.1, 1.2].map((multiplier) => Math.round(requestedWage * multiplier));
-  const yearOptions = Array.from(new Set([1, 2, requestedYears, 4, 5].filter((years) => years >= 1 && years <= 5)));
+  const feeOptions = uniqueMoneyOptions(expectedFee, [0.8, 0.9, 0.95, 1, 1.1], 100);
+  const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 0.95, 1, 1.1, 1.2], 50);
+  const yearOptions = contractYearOptions(requestedYears);
   const [fee, setFee] = useState(expectedFee);
   const [wage, setWage] = useState(requestedWage);
   const [years, setYears] = useState(requestedYears);
+  const sellingClub = proposal?.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
 
   return (
     <div className="mt-4 space-y-4">
       <div className="grid grid-cols-2 gap-2 text-xs">
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Selling club <b className="block truncate">{sellingClub?.name ?? "Unknown"}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Target identity <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Expected fee <b className="block">{formatMoney(expectedFee)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Player wants <b className="block">{formatMoney(requestedWage)}/w</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Player wants <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
       </div>
+      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
+        Trust impact: walk away -4, low fee rejected -2, player rejects -2, deal blocked -5, completed signing +4.
+      </p>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Fee to club</p>
         <div className="grid grid-cols-5 gap-2">
@@ -779,7 +934,7 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
         <div className="grid grid-cols-5 gap-2">
           {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatMoney(option)}</button>
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
           ))}
         </div>
       </div>
@@ -791,9 +946,56 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
         <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years } })}>Submit Offer</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
+      </div>
+    </div>
+  );
+}
+
+function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult }) {
+  const resolve = useGameStore((state) => state.resolveCurrentEvent);
+  const fixture = save.lastMatch!;
+  const home = save.clubs[fixture.homeClubId];
+  const away = save.clubs[fixture.awayClubId];
+  const [minute, setMinute] = useState(0);
+  useEffect(() => {
+    if (minute >= 90) return;
+    const timer = window.setTimeout(() => setMinute((value) => Math.min(90, value + 1)), 90);
+    return () => window.clearTimeout(timer);
+  }, [minute]);
+  const visibleEvents = result.events.filter((event) => event.minute <= minute);
+  const homeGoals = visibleEvents.filter((event) => event.type === "goal" && event.clubId === home.id).length;
+  const awayGoals = visibleEvents.filter((event) => event.type === "goal" && event.clubId === away.id).length;
+  const progress = minute / 90;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-emerald-950/65 p-5">
+      <div role="dialog" aria-modal="true" aria-labelledby="live-match-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+        <p className="text-xs font-semibold uppercase text-primary">Live match</p>
+        <h2 id="live-match-title" className="mt-1 text-xl font-black">{home.name} {homeGoals} - {awayGoals} {away.name}</h2>
+        <p className="mt-1 text-xs text-neutral-500">Match is in progress. Finish the match to return to club controls.</p>
+        <div className="mt-4 rounded-xl bg-surface-muted p-4 text-center">
+          <p className="text-4xl font-black">{minute}&apos;</p>
+          <div className="mt-3 h-2 rounded-full bg-white">
+            <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+          <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{result.possessionHome}%</b><span className="block text-xs text-neutral-500">Possession</span></p>
+          <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{Math.round(result.homeShots * progress)}-{Math.round(result.awayShots * progress)}</b><span className="block text-xs text-neutral-500">Shots</span></p>
+          <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{Math.round(result.homeOnTarget * progress)}-{Math.round(result.awayOnTarget * progress)}</b><span className="block text-xs text-neutral-500">On target</span></p>
+        </div>
+        <div className="mt-4 space-y-2">
+          {visibleEvents.length === 0 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-500">The match is settling into rhythm.</p> : visibleEvents.map((matchEvent, index) => (
+            <div key={`${matchEvent.minute}-${index}`} className="flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm">
+              <PersonAvatar name={matchEvent.playerName} className="h-8 w-8 rounded-md text-[10px]" />
+              <p>{matchEvent.minute}&apos; {matchEvent.description}</p>
+            </div>
+          ))}
+          {minute >= 90 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm font-bold">90&apos; Final whistle.</p> : null}
+        </div>
+        {minute >= 90 ? <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button> : null}
       </div>
     </div>
   );
@@ -810,11 +1012,12 @@ function EventModal({ save }: { save: GameSave }) {
   const requestedYears = proposal?.requestedYears ?? 3;
   const result = event.type === "match_result" && save.lastMatch?.result ? save.lastMatch.result : undefined;
   const nextFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
-  const firstTeam = [...current.players].sort((a, b) => positionOrder(a.position) - positionOrder(b.position) || b.rating - a.rating).slice(0, 11);
+
+  if (result && save.liveMatch && !save.liveMatch.finished) return <LiveMatchModal save={save} result={result} />;
 
   return (
     <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-5">
-      <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="max-h-[calc(100svh-2rem)] w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
         <p className={cn("text-xs font-semibold uppercase", event.variant === "negative" ? "text-danger" : "text-primary")}>{event.requiresDecision ? "Decision required" : "Club update"}</p>
         <h2 id="event-title" className="mt-1 text-xl font-black">{event.title}</h2>
         <div className="mt-4">
@@ -854,21 +1057,32 @@ function EventModal({ save }: { save: GameSave }) {
         ) : null}
 
         {event.type === "incoming_bid" ? (
-          <div className="mt-5 grid grid-cols-2 gap-3">
+          <>
+          {player && proposal ? (
+            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Bidding club <b className="block truncate">{proposal.toClubId ? save.clubs[proposal.toClubId]?.name ?? "Unknown" : "Unknown"}</b></p>
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Squad identity <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage <b className="block">{formatWeeklyWage(player.wage)}</b></p>
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Contract left <b className="block">{player.contractYears}y</b></p>
+            </div>
+          ) : null}
+          <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept bid +1, reject bid -2.</p>
+          <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
             <Button onClick={() => resolve({ action: "accept" })}>Accept Bid</Button>
             <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject Bid</Button>
           </div>
+          </>
         ) : null}
 
         {event.type === "sale_ready" ? (
-          <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
             <Button onClick={() => resolve({ action: "confirm" })}>Confirm Sale</Button>
             <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Cancel</Button>
           </div>
         ) : null}
 
         {event.type === "youth_contract" ? (
-          <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
             <Button onClick={() => resolve({ action: "offer" })}>Offer Contract</Button>
             <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Release</Button>
           </div>
@@ -876,19 +1090,19 @@ function EventModal({ save }: { save: GameSave }) {
 
         {event.type === "match_preview" ? (
           <>
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {firstTeam.slice(0, 8).map((item) => (
-                <div key={item.id} className="rounded-lg bg-surface-muted p-2 text-center">
-                  <PersonAvatar name={item.name} seedKey={item.id} className="mx-auto mb-1 h-9 w-9 rounded-md text-[10px]" />
-                  <span className={cn("mx-auto block w-7 rounded-md py-1 text-xs font-bold text-white", positionClass(item.position))}>{displayPosition(item.position)}</span>
-                  <p className="mt-1 truncate text-[10px] font-bold">{item.name.split(" ").at(-1)}</p>
-                  <p className="text-[10px] text-neutral-500">{item.rating}</p>
-                </div>
-              ))}
+            <div className="mt-4 grid grid-cols-2 gap-3 text-center">
+              <div className="rounded-xl bg-surface-muted px-3 py-4">
+                <p className="text-xs font-bold uppercase text-neutral-500">Home</p>
+                <p className="mt-1 text-base font-black">{nextFixture ? save.clubs[nextFixture.homeClubId].name : current.club.name}</p>
+              </div>
+              <div className="rounded-xl bg-surface-muted px-3 py-4">
+                <p className="text-xs font-bold uppercase text-neutral-500">Away</p>
+                <p className="mt-1 text-base font-black">{nextFixture ? save.clubs[nextFixture.awayClubId].name : "Opponent"}</p>
+              </div>
             </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <Button variant="secondary" onClick={() => resolve({ action: "sim" })}>Sim Match</Button>
-              <Button onClick={() => resolve({ action: "sim" })}><Play size={16} /> Play Match</Button>
+            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+              <Button variant="secondary" onClick={() => resolve({ action: "see" })}>See Match</Button>
+              <Button onClick={() => resolve({ action: "play" })}><Play size={16} /> Play Match</Button>
             </div>
           </>
         ) : null}
@@ -912,7 +1126,7 @@ function EventModal({ save }: { save: GameSave }) {
         ) : null}
 
         {!["transfer_budget", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type) ? (
-          <Button className="mt-5 w-full" onClick={() => resolve({ action: "continue" })}>Continue</Button>
+          <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
         ) : null}
         {nextFixture && event.type === "match_preview" ? <p className="mt-3 text-center text-xs text-neutral-500">{save.clubs[nextFixture.homeClubId].name} vs {save.clubs[nextFixture.awayClubId].name}</p> : null}
       </div>
@@ -936,6 +1150,9 @@ function FacilityModal({ save, facility, close }: { save: GameSave; facility?: F
   const divisor = isTraining ? 850 : 900;
   const targetLevels = Math.min(levels, 99 - level);
   const lowerLevels = Math.min(levels, level - 1);
+  const targetLevel = level + targetLevels;
+  const reducedLevel = level - lowerLevels;
+  const currentFacilityWeeklyCost = Math.round(level * (isTraining ? 78 : 72));
   const upgradeCost = Array.from({ length: targetLevels }).reduce<number>((sum, _, index) => sum + nextUpgradeCost(level + index, base), 0);
   const upkeepIncrease = Math.round(upgradeCost / divisor);
   const downgradeCostBase = Array.from({ length: lowerLevels }).reduce<number>((sum, _, index) => sum + nextUpgradeCost(level - 1 - index, base), 0);
@@ -960,21 +1177,24 @@ function FacilityModal({ save, facility, close }: { save: GameSave; facility?: F
         <h2 id="facility-title" className="mt-1 text-xl font-bold">{title}</h2>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <p className="rounded-lg bg-surface-muted px-3 py-3">Current level <b className="block text-2xl">{level}/99</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Current upkeep <b className="block">{formatMoney(current.club.finances.upkeep)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-3">Selected change <b className="block">+{targetLevels} / -{lowerLevels}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-3">Facility weekly cost <b className="block">{formatMoney(currentFacilityWeeklyCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-3">Target level <b className="block">{targetLevel}/99</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-3">Cost to upgrade <b className="block">{formatMoney(upgradeCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">New weekly cost <b className="block">{formatMoney(newWeeklyCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Reduced weekly cost <b className="block">{formatMoney(reducedWeeklyCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-3">New club upkeep <b className="block">{formatMoney(newWeeklyCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-3">Reduced level <b className="block">{reducedLevel}/99</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-3">Reduced club upkeep <b className="block">{formatMoney(reducedWeeklyCost)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-3">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
         </div>
         <div className="mt-4 grid grid-cols-5 gap-2">
           {[1, 2, 3, 4, 5].map((option) => (
-            <button key={option} onClick={() => setLevels(option)} className={cn("rounded-lg border py-2 text-xs font-black", levels === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>+{option}</button>
+            <button key={option} onClick={() => setLevels(option)} className={cn("rounded-lg border py-2 text-xs font-black", levels === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{option} level{option > 1 ? "s" : ""}</button>
           ))}
         </div>
         <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-5 text-neutral-600">
           Lowering a level does not refund money, but it reduces weekly upkeep by {formatMoney(upkeepDecrease)}.
         </p>
-        <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
           <Button onClick={upgrade} disabled={level >= 99 || current.club.finances.balance < upgradeCost}>Upgrade +{levels}</Button>
           <Button variant="secondary" onClick={downgrade} disabled={level <= 1}>Lower -{levels}</Button>
         </div>

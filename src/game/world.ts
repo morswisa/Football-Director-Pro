@@ -1,4 +1,5 @@
 import { clubPrefixes, clubSuffixes, divisionNames, firstNames, lastNames, managerStyles, personalities, positions, starterAchievements } from "./data";
+import { calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating } from "./economy";
 import { normalizeSeed, pickOne, randomInt } from "./random";
 import type { Club, ClubSetupInput, Division, GameSave, LeagueRecord, Manager, Player, Stadium } from "./types";
 
@@ -25,7 +26,7 @@ function generatePlayer(seed: number, clubId: string | undefined, position: Play
   const [potentialRoll, s4] = randomInt(s3, 0, 12);
   const [personality, s5] = pickOne(s4, personalities);
   const value = Math.max(30_000, rating * rating * (36 - age) * 18);
-  const wage = Math.max(400, Math.round((rating * rating * (9 - level)) / 5));
+  const wage = calculateRecommendedPlayerWage({ rating, age, potential: Math.min(99, rating + potentialRoll) } as Player, level);
   return [
     {
       id: id("player", s5 + index),
@@ -56,28 +57,31 @@ function generateManager(seed: number, level: number, index: number): [Manager, 
   const base = 82 - level * 6;
   const [training, s4] = randomInt(s3, base - 10, base + 12);
   const [tactics, s5] = randomInt(s4, base - 10, base + 12);
-  const [manManagement, s6] = randomInt(s5, base - 10, base + 12);
-  const [transferTaste, s7] = randomInt(s6, base - 10, base + 12);
+  const [transferTaste, s7] = randomInt(s5, base - 10, base + 12);
   const [youthPreference, s8] = randomInt(s7, 35, 95);
-  const [wageDiscipline, s9] = randomInt(s8, 35, 95);
-  const [age, s10] = randomInt(s9, 36, 64);
-  const reputation = Math.round((training + tactics + manManagement) / 3);
+  const [age, s10] = randomInt(s8, 36, 64);
+  const managerCore = {
+    training: Math.max(20, Math.min(99, training)),
+    tactics: Math.max(20, Math.min(99, tactics)),
+    transferTaste: Math.max(20, Math.min(99, transferTaste)),
+    youthPreference: Math.max(20, Math.min(99, youthPreference)),
+  };
+  const reputation = managerRating({ ...managerCore, reputation: 0, personality } as Manager);
+  const manager = {
+    id: id("manager", s10 + index),
+    name,
+    age,
+    style,
+    personality,
+    ...managerCore,
+    contractYears: 2,
+    reputation,
+    status: "contracted" as const,
+  };
   return [
     {
-      id: id("manager", s10 + index),
-      name,
-      age,
-      style,
-      personality,
-      training: Math.max(20, Math.min(99, training)),
-      tactics: Math.max(20, Math.min(99, tactics)),
-      manManagement: Math.max(20, Math.min(99, manManagement)),
-      transferTaste: Math.max(20, Math.min(99, transferTaste)),
-      youthPreference,
-      wageDiscipline,
-      contractYears: 2,
-      wage: Math.max(1_000, reputation * (10 - level) * 40),
-      reputation,
+      ...manager,
+      wage: calculateRecommendedManagerWage({ ...manager, wage: 0 } as Manager, level),
     },
     s10,
   ];
@@ -139,7 +143,7 @@ function createClub(seed: number, name: string, divisionId: string, level: numbe
     record: emptyRecord(),
   };
   const fixedPlayers = players.map((player) => ({ ...player, clubId }));
-  return [club, fixedPlayers, { ...manager }, state];
+  return [club, fixedPlayers, { ...manager, status: "contracted", clubId }, state];
 }
 
 export function generateSeasonFixtures(division: Division): import("./types").Fixture[] {
@@ -173,7 +177,9 @@ export function generateManagerCandidates(seed: number, level = 7): [Manager[], 
   let state = seed;
   for (let i = 0; i < 6; i += 1) {
     const [manager, next] = generateManager(state + i * 311, level, 5_000 + i);
-    candidates.push({ ...manager, contractYears: 2 + (i % 2) });
+    const status = i % 2 === 0 ? "free_agent" : "contracted";
+    const candidate = { ...manager, status, clubId: status === "contracted" ? `external_club_${i}` : undefined, contractYears: 2 + (i % 2) } as Manager;
+    candidates.push({ ...candidate, compensationFee: status === "contracted" ? Math.round(candidate.wage * 4.33 * candidate.contractYears * 12) : 0 });
     state = next;
   }
   return [candidates.sort((a, b) => b.reputation - a.reputation), state];
@@ -190,9 +196,10 @@ export function createNewGame(input: ClubSetupInput): GameSave {
   for (let level = 1; level <= 7; level += 1) {
     const divisionId = `division_${level}`;
     const division: Division = { id: divisionId, name: divisionNames[level - 1], level, clubIds: [] };
+    const prefixOrder = clubPrefixes.map((_, index) => clubPrefixes[(index + level * 3) % clubPrefixes.length]);
     for (let i = 0; i < 20; i += 1) {
-      const [prefix, s1] = pickOne(state, clubPrefixes);
-      const [suffix, s2] = pickOne(s1, clubSuffixes);
+      const prefix = prefixOrder[i % prefixOrder.length];
+      const [suffix, s2] = pickOne(state, clubSuffixes);
       state = s2;
       const name = level === 7 && i === 0 ? input.clubName : `${prefix} ${suffix}`;
       const colors: [string, string] = level === 7 && i === 0 ? [input.primaryColor, input.secondaryColor] : ["#159947", "#f2f7f1"];
