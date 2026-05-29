@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-cg01t2rja-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-r1j0vlon8-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -49,7 +49,7 @@ Playable V1 includes:
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.
 - Mandatory decision modals for event-queue decisions and missing-manager states; the season cannot continue until the user answers.
-- Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero.
+- Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero. The selected budget applies only to the active transfer window and expires outside transfer-window weeks.
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
 - Match simulation.
 - Domestic cup flow: seasonal Chairman's Cup state, scheduled knockout ties, draw events in the Continue loop, cup match previews/results, non-league cup results, prize money in financial reports, cup status on Dashboard, cup history, and a cup achievement.

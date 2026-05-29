@@ -65,6 +65,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
 - Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
+- Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
 - Engine function `normalizeGameState` is used by the store to normalize older or generated saves before UI hydration.
 - Paid buy proposals are resolved inside `resolveEvent` with fee, wage, and years terms. Selling clubs may reject low fees, and players may reject weak contracts.

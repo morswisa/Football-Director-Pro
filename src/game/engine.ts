@@ -781,6 +781,8 @@ function pushStandardEvents(save: GameSave) {
   const fixture = nextUserFixture(save);
   const seasonKey = `s${save.season}`;
   const weekKey = `s${save.season}_w${save.week}`;
+  const transferWindowOpen = isTransferWindow(save.week);
+  if (!transferWindowOpen) save.transferBudget = undefined;
   const lastHistory = save.history[0];
   if (lastHistory && !eventSeen(save, `season_summary_${lastHistory.season}`)) {
     const outcomeCopy =
@@ -837,7 +839,7 @@ function pushStandardEvents(save: GameSave) {
     });
   }
   const windowLabel = monthForWeek(save.week);
-  if (isTransferWindow(save.week) && !eventSeen(save, `transfer_window_open_${seasonKey}_${windowLabel}`)) {
+  if (transferWindowOpen && !eventSeen(save, `transfer_window_open_${seasonKey}_${windowLabel}`)) {
     enqueue(save, {
       id: `transfer_window_open_${seasonKey}_${windowLabel}`,
       type: "transfer_window_open",
@@ -913,7 +915,7 @@ function pushStandardEvents(save: GameSave) {
       variant: "negative",
     });
   }
-  if (manager && (club.finances.balance < 0 || save.transferBudget?.mode === "strict" || save.transferBudget?.mode === "zero")) {
+  if (manager && (club.finances.balance < 0 || (transferWindowOpen && (save.transferBudget?.mode === "strict" || save.transferBudget?.mode === "zero")))) {
     enqueue(save, {
       id: `manager_frustrated_${weekKey}`,
       type: "manager_frustrated",

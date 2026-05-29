@@ -305,6 +305,23 @@ describe("game engine", () => {
     expect(save.currentEvent?.title).toBe("Transfer budget confirmed");
   });
 
+  it("expires transfer budgets outside transfer windows", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    club.finances.balance = 500_000;
+    save.week = 5;
+    save.currentRound = 4;
+    save.currentEvent = undefined;
+    save.eventQueue = [];
+    save.transferBudget = { mode: "strict", amount: 125_000 };
+
+    save = generateNextEvents(save);
+
+    expect(save.transferBudget).toBeUndefined();
+    expect(save.currentEvent?.type).not.toBe("manager_frustrated");
+    expect(save.eventQueue.some((event) => event.type === "manager_frustrated")).toBe(false);
+  });
+
   it("queues a detailed season summary before the next season intro", () => {
     let save = createNewGame(setup);
     const club = save.clubs[save.userClubId];

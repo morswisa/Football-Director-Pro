@@ -16,9 +16,10 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Added the missing expired-manager-contract decision: week 1 now blocks on extending the manager or letting him leave when his contract reaches zero.
 - Tightened the no-manager gate so releasing an expired manager parks queued season events until a replacement is hired.
 - Added acceptance coverage that hiring a replacement manager resumes the parked season queue.
+- Scoped transfer budgets to active transfer windows so stale strict/zero budgets do not keep affecting manager frustration after the window closes.
 
 ## Next TODO
 
-- Finish the replacement-manager queue resume coverage with commit and push.
+- Finish the transfer-budget expiry pass with commit and push.
 - Continue remaining V1 scope: final playtest acceptance, any resulting balance fixes, and Capacitor native platform generation after web V1 acceptance.
-- Latest preview after replacement-manager queue resume coverage: `https://football-director-cg01t2rja-mor-swisas-projects.vercel.app`.
+- Latest preview after transfer-budget expiry pass: `https://football-director-r1j0vlon8-mor-swisas-projects.vercel.app`.

@@ -18,6 +18,7 @@
 - Non-window manager proposals are limited to periodic review weeks, not every other week, so the main loop preserves the "one more Continue" rhythm without overwhelming every match period.
 - Loan proposals are gated to transfer-window months and expire into the same decision queue as other manager-led transfer actions.
 - Transfer-window starts require a budget choice before the manager can operate with a clear budget.
+- Transfer budgets are scoped to the active August/January window and expire outside transfer-window weeks so stale strict/zero budgets do not keep affecting manager frustration or later proposals.
 - Manager trust is a club-level relationship metric affected by chairman decisions.
 - Player positions are simplified to G, D, M, and F.
 - Roster display defaults to position order G -> D -> M -> F, with manual sorting by position, player name, or rating.

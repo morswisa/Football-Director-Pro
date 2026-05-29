@@ -151,3 +151,7 @@
 - Added regression coverage for the other side of the same flow: after hiring a replacement manager, the parked season queue resumes from the first queued event instead of being discarded or staying permanently blocked.
 - Verified the replacement-manager queue resume coverage with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
 - Deployed the replacement-manager queue resume coverage pass to Vercel preview: `https://football-director-cg01t2rja-mor-swisas-projects.vercel.app`.
+- Tightened transfer-budget lifetime: selected budgets now expire outside transfer-window weeks, and strict/zero budget frustration only applies while the window is active.
+- Added regression coverage proving a stale strict transfer budget is cleared in September and does not queue an unrelated manager frustration event while finances are positive.
+- Verified the transfer-budget expiry pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the transfer-budget expiry pass to Vercel preview: `https://football-director-r1j0vlon8-mor-swisas-projects.vercel.app`.
