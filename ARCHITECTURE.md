@@ -96,6 +96,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Manager contracts are aged during `startNextSeason`, and contracted-manager compensation is recalculated after the remaining years decrease.
 - Expired current-manager contracts are queued as `manager_contract_decision` events during week 1. Resolving the event either writes a new wage/term to the manager or removes the manager and forces the existing hire-manager gate.
 - `generateNextEvents` returns without popping queued season events when the user club has no manager, so the missing-manager gate cannot be bypassed by repeated Continue calls.
+- After `submitManagerHireOffer` appoints a replacement, the parked queue remains intact and the next `generateNextEvents` call resumes the first queued season event.
 
 ## Managers
 

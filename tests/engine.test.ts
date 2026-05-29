@@ -200,6 +200,34 @@ describe("game engine", () => {
     expect(afterContinue.eventQueue.length).toBe(save.eventQueue.length);
   });
 
+  it("resumes the parked season queue after hiring a replacement manager", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const manager = save.managers[club.managerId!];
+    manager.contractYears = 1;
+    save = finishSeason(save);
+    save = generateNextEvents(save);
+    while (save.currentEvent && save.currentEvent.type !== "manager_contract_decision") {
+      save = resolveEvent(save, save.currentEvent.id);
+    }
+    save = resolveEvent(save, save.currentEvent!.id, { action: "release" });
+    save = resolveEvent(save, save.currentEvent!.id, { action: "continue" });
+    const queuedTitle = save.eventQueue[0]?.title;
+    const candidate = save.managerCandidates[0];
+    const divisionLevel = save.divisions.find((division) => division.id === save.clubs[save.userClubId].divisionId)?.level ?? 7;
+
+    save = submitManagerHireOffer(save, candidate.id, {
+      wage: calculateRecommendedManagerWage(candidate, divisionLevel),
+      years: 2,
+      compensationFee: candidate.compensationFee ?? 0,
+    });
+
+    expect(save.clubs[save.userClubId].managerId).toBe(candidate.id);
+    save = generateNextEvents(save);
+    expect(save.currentEvent?.title).toBe(queuedTitle);
+    expect(save.currentEvent?.type).not.toBe("manager_contract_decision");
+  });
+
   it("calculates wages from rating, division and reputation", () => {
     const save = createNewGame(setup);
     const player = Object.values(save.players)[0];
