@@ -109,3 +109,8 @@
 - Added unit coverage for loan-in and loan-out flows, including financial report fee visibility and return to parent club.
 - Verified the loans pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and a browser automation pass that reached a loan decision in the Continue loop.
 - Deployed the loans pass to Vercel preview: `https://football-director-7h06b6gcm-mor-swisas-projects.vercel.app`.
+- Continued the persistent MVP goal by adding long-run balance systems: division/reputation-based sponsorship and debt limits, season upkeep recalibration, promotion/relegation confidence effects, match-driven board confidence and manager trust changes, stadium condition decay, and squad-depth safety for long careers.
+- The long-run test initially found that AI squads could become empty after many seasons; added generated depth players for clubs that fall below playable squad composition.
+- Added long-run coverage for a full event-queue season and a multi-season direct engine simulation with checks for finances, squad size, relationships, financial snapshots, and game-over stability.
+- Verified the balance pass with `npm test`, `npm run lint`, `npm run build`, and `npm run e2e`.
+- Deployed the long-run balance pass to Vercel preview: `https://football-director-krp2meu9l-mor-swisas-projects.vercel.app`.

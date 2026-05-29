@@ -29,6 +29,7 @@
 - V1 is local/offline only.
 - Settings covers the local-only V1 save lifecycle directly in the app: manual save, export, import, reset, sound toggle, and text size. Import replaces Slot 1 only after schema validation/migration succeeds.
 - The V1 domestic cup is modeled as the fictional Chairman's Cup. It is a single-player seasonal knockout run for the user's club, integrated into Continue events, and cup ties do not affect league points.
+- Long-run balance should prefer self-correcting season systems over manual cleanup: sponsorship/debt scale by level, relationships react to results and finances, stadium condition decays, and clubs receive generated depth players if squads become unplayable.
 
 ## Technology
 
@@ -53,6 +54,7 @@
 - The main play experience should run from Dashboard `Continue`, with secondary pages used for inspection and upgrades.
 - Match preview is decision-only: `See Match` jumps to the result, and `Play Match` shows a fast no-control live playback before the same result summary.
 - Cup match previews use the same `See Match` / `Play Match` controls as league fixtures to preserve one consistent match flow.
+- Relationship metrics must be explainable through repeated outcomes: wins and stable finances help board confidence/trust, losses and negative balances hurt them.
 - Dashboard should not show duplicate controls for the same feature; Training and Youth are opened from their metric cards only.
 - Generated portrait avatars are part of V1 identity. They use one shared procedural SVG template, seeded by player/manager IDs where possible, so faces stay consistent across the career without storing image assets.
 - Facilities use 1-99 ratings; upgrades increase by one rating point and display both one-time cost and weekly upkeep impact.

@@ -10,7 +10,8 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Browser-verified Settings at 430x932 and saved `settings-verification.png`; controls fit and the large-text state is visible.
 - Implemented the fictional Chairman's Cup as the V1 domestic cup: scheduled cup weeks, draw event, cup match preview/result, prize money, dashboard/history display, and unit/browser coverage.
 - Implemented manager-led loans: loan-in, loan-out, wage-share costs, loan fee transactions, parent-club return at season end, UI controls, and unit/browser coverage.
+- Added long-run balancing: sponsorship/debt/upkeep scaling, promotion/relegation relationship effects, match-driven board/trust changes, stadium condition decay, generated squad-depth safety, and long-run tests. The audit found and fixed empty AI squads after many seasons.
 
 ## Next TODO
 
-- Continue remaining V1 scope: richer long-run balancing, activeProposal retirement, season-end clarity, and Capacitor native platform generation after web V1 acceptance.
+- Continue remaining V1 scope: activeProposal retirement, season-end clarity, and Capacitor native platform generation after web V1 acceptance.

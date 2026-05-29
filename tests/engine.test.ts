@@ -11,6 +11,7 @@ import {
   leagueTable,
   latestFinancialSnapshot,
   normalizeGameState,
+  rejectTransferProposal,
   resolveEvent,
   returnSeasonLoans,
   submitManagerHireOffer,
@@ -27,6 +28,23 @@ const setup = {
   secondaryColor: "#f2f7f1",
   seed: 42,
 };
+
+function resolveBalancedEvent(save: ReturnType<typeof createNewGame>) {
+  const event = save.currentEvent;
+  if (!event) return save;
+  if (event.type === "transfer_budget") return resolveEvent(save, event.id, { mode: "normal" });
+  if (event.type === "match_preview") return resolveEvent(save, event.id, { action: "see" });
+  if (event.type === "contract_offer") {
+    const proposal = event.proposal;
+    if (proposal?.type === "buy") return resolveEvent(save, event.id, { action: "reject" });
+    if (proposal?.type === "loan") return resolveEvent(save, event.id, { action: "offer", terms: { fee: proposal.fee, wage: proposal.requestedWage ?? Math.abs(proposal.wageDelta), years: 1 } });
+    return resolveEvent(save, event.id, { action: "offer", terms: { wage: proposal?.requestedWage ?? 1_000, years: proposal?.requestedYears ?? 2 } });
+  }
+  if (event.type === "incoming_bid") return resolveEvent(save, event.id, { action: "reject" });
+  if (event.type === "sale_ready") return resolveEvent(save, event.id, { action: "confirm" });
+  if (event.type === "youth_contract") return resolveEvent(save, event.id, { action: "offer" });
+  return resolveEvent(save, event.id, { action: "continue" });
+}
 
 describe("game engine", () => {
   it("creates a deterministic world", () => {
@@ -449,4 +467,56 @@ describe("game engine", () => {
     }
     expect(save.week).toBeGreaterThan(0);
   }, 20_000);
+
+  it("runs a full event-queue season with stable finances, squad and relationships", () => {
+    let save = createNewGame({ ...setup, seed: 20260529 });
+    for (let step = 0; step < 560 && save.history.length < 1; step += 1) {
+      save = generateNextEvents(save);
+      let guard = 0;
+      while (save.currentEvent && guard < 90) {
+        save = resolveBalancedEvent(save);
+        guard += 1;
+      }
+      expect(guard).toBeLessThan(90);
+      if (step % 30 === 0) save = upgradeStand(save, "north");
+      const club = save.clubs[save.userClubId];
+      const squad = club.playerIds.map((id) => save.players[id]).filter(Boolean);
+      const latest = latestFinancialSnapshot(save);
+      expect(club.finances.balance).not.toBeNaN();
+      expect(club.finances.weeklyWages).not.toBeNaN();
+      expect(latest.totalIncome - latest.totalExpenses).toBe(latest.profit);
+      expect(club.boardConfidence).toBeGreaterThanOrEqual(5);
+      expect(club.boardConfidence).toBeLessThanOrEqual(99);
+      expect(club.managerTrust).toBeGreaterThanOrEqual(0);
+      expect(club.managerTrust).toBeLessThanOrEqual(99);
+      expect(squad.length).toBeGreaterThanOrEqual(11);
+      expect(squad.length).toBeLessThanOrEqual(32);
+      expect(save.clubs[save.userClubId].finances.balance).toBeGreaterThan(save.clubs[save.userClubId].finances.debtLimit);
+      if (save.gameOver) break;
+    }
+    expect(save.gameOver).toBeUndefined();
+    expect(save.history.length).toBeGreaterThanOrEqual(1);
+  }, 30_000);
+
+  it("runs many direct engine seasons with stable balances and squads", () => {
+    let save = createNewGame({ ...setup, seed: 20260601 });
+    for (let i = 0; i < 260; i += 1) {
+      save = advanceToNextMatch(save);
+      if (save.activeProposal) {
+        save = save.activeProposal.type === "buy" ? rejectTransferProposal(save) : approveTransferProposal(save);
+      }
+      if (i % 30 === 0) save = upgradeStand(save, "north");
+      const club = save.clubs[save.userClubId];
+      const squad = club.playerIds.map((id) => save.players[id]).filter(Boolean);
+      expect(club.finances.balance).not.toBeNaN();
+      expect(club.finances.weeklyWages).not.toBeNaN();
+      expect(squad.length).toBeGreaterThanOrEqual(11);
+      expect(squad.length).toBeLessThanOrEqual(36);
+      expect(club.boardConfidence).toBeGreaterThanOrEqual(5);
+      expect(club.managerTrust).toBeGreaterThanOrEqual(0);
+      if (save.gameOver) break;
+    }
+    expect(save.gameOver).toBeUndefined();
+    expect(save.history.length).toBeGreaterThanOrEqual(5);
+  }, 30_000);
 });

@@ -79,6 +79,9 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Loan lifecycle is season-scoped. Loan-in players count toward the temporary squad at their wage-share cost; loan-out players leave the squad until `returnSeasonLoans` restores them to the parent club before the next season starts.
 - Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
+- Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
+- Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
+- `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.
 - `src/game/economy.ts` owns formula-based wage helpers for players and managers plus manager compensation.
 - Player wages scale by division level, rating, age band, squad role, and potential gap.
 - Manager wages scale by division level, rating, reputation, and personality premium.

@@ -1,4 +1,4 @@
-import { clubPrefixes, starterAchievements } from "./data";
+import { clubPrefixes, firstNames, lastNames, personalities, starterAchievements } from "./data";
 import { cupPrize, cupRoundName, cupRoundWeeks, isTransferWindow, monthForWeek, nextUpgradeCost, seasonPrize } from "./calendar";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating } from "./economy";
 import { chance, pickOne, randomFloat, randomInt } from "./random";
@@ -42,6 +42,59 @@ function playersForClub(save: GameSave, club: Club) {
   return club.playerIds.map((id) => save.players[id]).filter(Boolean);
 }
 
+function createDepthPlayer(save: GameSave, club: Club, position: Player["position"]) {
+  const level = save.divisions.find((division) => division.id === club.divisionId)?.level ?? 7;
+  const [first, s1] = pickOne(save.rngState, firstNames);
+  const [last, s2] = pickOne(s1, lastNames);
+  const [ratingRoll, s3] = randomInt(s2, -4, 7);
+  const [age, s4] = randomInt(s3, 18, 31);
+  const [personality, s5] = pickOne(s4, personalities);
+  save.rngState = s5;
+  const rating = Math.max(24, Math.min(88, 82 - level * 7 + ratingRoll));
+  const potential = Math.min(95, rating + (age <= 22 ? 9 : 3));
+  const id = `depth_${save.season}_${club.id}_${position}_${s5}`;
+  const player: Player = {
+    id,
+    clubId: club.id,
+    name: `${first} ${last}`,
+    position,
+    age,
+    rating,
+    potential,
+    wage: calculateRecommendedPlayerWage({ rating, age, potential } as Player, level, "reserve"),
+    value: Math.max(20_000, rating * rating * (36 - age) * 14),
+    contractYears: 2,
+    form: 58,
+    fitness: 94,
+    morale: 62,
+    personality,
+    seasonStats: { apps: 0, goals: 0, assists: 0, cleanSheets: 0, yellowCards: 0, redCards: 0 },
+    careerStats: { apps: 0, goals: 0, assists: 0, cleanSheets: 0, yellowCards: 0, redCards: 0 },
+  };
+  save.players[id] = player;
+  club.playerIds.push(id);
+  return player;
+}
+
+function ensureClubSquadDepth(save: GameSave, club: Club) {
+  const minimumByPosition: Record<Player["position"], number> = { G: 2, D: 5, M: 5, F: 4 };
+  (Object.keys(minimumByPosition) as Player["position"][]).forEach((position) => {
+    let count = playersForClub(save, club).filter((player) => player.position === position).length;
+    while (count < minimumByPosition[position]) {
+      createDepthPlayer(save, club, position);
+      count += 1;
+    }
+  });
+  while (playersForClub(save, club).length < 18) {
+    createDepthPlayer(save, club, ["D", "M", "F"][playersForClub(save, club).length % 3] as Player["position"]);
+  }
+  if (club.id === save.userClubId) refreshUserWageBill(save);
+}
+
+function ensureAllSquadDepth(save: GameSave) {
+  Object.values(save.clubs).forEach((club) => ensureClubSquadDepth(save, club));
+}
+
 function playerWeeklyCostForClub(player: Player, clubId: string) {
   if (player.loan && player.loan.temporaryClubId === clubId) return player.loan.wageShare;
   return player.wage;
@@ -75,6 +128,52 @@ function ensureEventState(save: GameSave) {
 
 function currentDivisionLevel(save: GameSave) {
   return save.divisions.find((division) => division.id === userClub(save).divisionId)?.level ?? 7;
+}
+
+function sponsorshipForLevel(level: number, reputation: number) {
+  const baseByLevel: Record<number, number> = {
+    1: 42_000_000,
+    2: 8_500_000,
+    3: 2_400_000,
+    4: 1_550_000,
+    5: 950_000,
+    6: 620_000,
+    7: 360_000,
+  };
+  return Math.round((baseByLevel[level] ?? baseByLevel[7]) * (0.82 + reputation / 220));
+}
+
+function debtLimitForLevel(level: number) {
+  const limits: Record<number, number> = {
+    1: -32_000_000,
+    2: -12_000_000,
+    3: -5_500_000,
+    4: -3_200_000,
+    5: -2_300_000,
+    6: -1_800_000,
+    7: -1_500_000,
+  };
+  return limits[level] ?? limits[7];
+}
+
+function applyClubSeasonEconomy(save: GameSave) {
+  const club = userClub(save);
+  const level = currentDivisionLevel(save);
+  club.finances.sponsorship = sponsorshipForLevel(level, club.reputation);
+  club.finances.debtLimit = debtLimitForLevel(level);
+  club.finances.upkeep = Math.max(8_000, Math.round(club.finances.upkeep * 0.94 + club.stadium.capacity * 0.18 + (club.trainingLevel + club.youthLevel) * 55));
+  refreshUserWageBill(save);
+}
+
+function adjustRelationshipAfterMatch(save: GameSave, fixture: Fixture, result: MatchResult) {
+  const club = userClub(save);
+  const userHome = fixture.homeClubId === club.id;
+  const goalsFor = userHome ? result.homeGoals : result.awayGoals;
+  const goalsAgainst = userHome ? result.awayGoals : result.homeGoals;
+  const delta = goalsFor > goalsAgainst ? 2 : goalsFor === goalsAgainst ? 0 : -2;
+  club.boardConfidence = Math.max(5, Math.min(99, club.boardConfidence + delta + (club.finances.balance < 0 ? -1 : 0)));
+  club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + (delta > 0 ? 1 : delta < 0 ? -1 : 0)));
+  club.stadium.condition = Math.max(35, club.stadium.condition - (fixture.competition === "cup" ? 2 : 1));
 }
 
 function isCupWeek(save: GameSave) {
@@ -176,6 +275,7 @@ export function normalizeGameState(input: GameSave) {
   ensureEventState(save);
   ensureManagerState(save);
   ensureUniqueDisplayNames(save);
+  ensureAllSquadDepth(save);
   return withUpdate(save);
 }
 
@@ -324,6 +424,7 @@ function addRecord(record: LeagueRecord, gf: number, ga: number) {
 }
 
 function scorer(seed: number, save: GameSave, club: Club): [Player, number] {
+  ensureClubSquadDepth(save, club);
   const attackers = playersForClub(save, club).filter((player) => ["F", "M"].includes(player.position));
   return pickOne(seed, attackers.length > 0 ? attackers : playersForClub(save, club));
 }
@@ -461,6 +562,8 @@ function advanceCupMatch(input: GameSave, fixtureId: string) {
   ensureEventState(save);
   const fixture = save.fixtures.find((item) => item.id === fixtureId && item.status === "scheduled" && item.competition === "cup");
   if (!fixture) return withUpdate(save);
+  ensureClubSquadDepth(save, save.clubs[fixture.homeClubId]);
+  ensureClubSquadDepth(save, save.clubs[fixture.awayClubId]);
   const [rawResult, next] = simulateMatch(fixture, save);
   save.rngState = next;
   const result = forceCupWinner(save, fixture, rawResult);
@@ -475,6 +578,7 @@ function advanceCupMatch(input: GameSave, fixtureId: string) {
   const round = fixture.cupRound ?? save.cup.round;
   const opponentId = userHome ? fixture.awayClubId : fixture.homeClubId;
   const prize = cupPrize(round, won);
+  adjustRelationshipAfterMatch(save, fixture, result);
   const matchdayIncome = userHome ? Math.round(calculateMatchdayIncome(save, fixture) * 0.72) : 0;
   if (matchdayIncome > 0) {
     club.finances.balance += matchdayIncome;
@@ -550,6 +654,8 @@ export function advanceToNextMatch(input: GameSave) {
   const roundFixtures = save.fixtures.filter((fixture) => (fixture.competition ?? "league") === "league" && fixture.round === save.currentRound && fixture.status === "scheduled");
   let userFixture: Fixture | undefined;
   for (const fixture of roundFixtures) {
+    ensureClubSquadDepth(save, save.clubs[fixture.homeClubId]);
+    ensureClubSquadDepth(save, save.clubs[fixture.awayClubId]);
     const [result, next] = simulateMatch(fixture, save);
     save.rngState = next;
     fixture.status = "played";
@@ -558,6 +664,7 @@ export function advanceToNextMatch(input: GameSave) {
     if (fixture.homeClubId === save.userClubId || fixture.awayClubId === save.userClubId) userFixture = structuredClone(fixture);
   }
   const income = userFixture ? calculateMatchdayIncome(save, userFixture) : 0;
+  if (userFixture?.result) adjustRelationshipAfterMatch(save, userFixture, userFixture.result);
   save = processWeeklyFinances(save, income);
   save = updateFormFitnessMorale(save);
   save = updateAchievements(save);
@@ -1276,7 +1383,10 @@ export function finishSeason(input: GameSave) {
   club.finances.balance += prize;
   club.finances.transactions.unshift({ id: `tx_prize_${save.season}`, week: save.week, label: `Season award: ${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}`, amount: prize });
   const promoted = position <= 3 && save.divisions.find((d) => d.id === club.divisionId)?.level !== 1;
+  const relegated = position >= 18 && divisionLevel !== 7;
   const trophies = [...(promoted ? ["Promotion"] : []), ...(save.cup?.won ? [save.cup.name] : [])];
+  club.boardConfidence = Math.max(5, Math.min(99, club.boardConfidence + (promoted ? 12 : relegated ? -14 : position <= 8 ? 4 : position >= 16 ? -6 : 0) + (club.finances.balance > 0 ? 2 : -4)));
+  club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + (position <= 6 ? 3 : position >= 16 ? -4 : 0)));
   save.history.unshift({
     season: save.season,
     divisionName: save.divisions.find((d) => d.id === club.divisionId)?.name ?? "League",
@@ -1295,6 +1405,16 @@ export function finishSeason(input: GameSave) {
       club.reputation += 4;
     }
   }
+  if (relegated) {
+    const currentDivision = save.divisions.find((d) => d.id === club.divisionId);
+    const nextDivision = save.divisions.find((d) => d.level === (currentDivision?.level ?? 1) + 1);
+    if (currentDivision && nextDivision) {
+      currentDivision.clubIds = currentDivision.clubIds.filter((id) => id !== club.id);
+      nextDivision.clubIds.push(club.id);
+      club.divisionId = nextDivision.id;
+      club.reputation = Math.max(15, club.reputation - 4);
+    }
+  }
   return startNextSeason(save);
 }
 
@@ -1311,7 +1431,9 @@ export function startNextSeason(input: GameSave) {
   save = developPlayers(save);
   save = retirePlayers(save);
   save = generateYouthIntake(save);
+  ensureAllSquadDepth(save);
   save.cup = { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] };
+  applyClubSeasonEconomy(save);
   const division = save.divisions.find((item) => item.id === userClub(save).divisionId);
   save.fixtures = division ? generateSeasonFixtures(division) : [];
   return withUpdate(updateAchievements(save));
