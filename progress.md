@@ -14,9 +14,10 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Added a multi-season human-style Continue playtest and fixed the issues it exposed: low lower-league sponsorship, uneven post-season division sizes, and no-user-fixture rounds after season transitions. Verified with the full local test/build/e2e/browser/develop-web-game pass.
 - Fixed manager contract lifecycle tuning: contracts now age at season change, compensation drops with remaining years, and short-term manager-action locks clear for the next campaign.
 - Added the missing expired-manager-contract decision: week 1 now blocks on extending the manager or letting him leave when his contract reaches zero.
+- Tightened the no-manager gate so releasing an expired manager parks queued season events until a replacement is hired.
 
 ## Next TODO
 
-- Finish the expired-manager-contract decision pass with commit and push.
+- Finish the no-manager queue blocking pass with commit and push.
 - Continue remaining V1 scope: final playtest acceptance, any resulting balance fixes, and Capacitor native platform generation after web V1 acceptance.
-- Latest preview after expired-manager-contract decision pass: `https://football-director-b2bhgfpo9-mor-swisas-projects.vercel.app`.
+- Latest preview after no-manager queue blocking pass: `https://football-director-i1t0hgmc0-mor-swisas-projects.vercel.app`.

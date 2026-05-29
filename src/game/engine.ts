@@ -976,6 +976,7 @@ export function generateNextEvents(input: GameSave) {
   ensureManagerState(save);
   ensureUniqueDisplayNames(save);
   if (save.gameOver || save.currentEvent) return withUpdate(save);
+  if (!userClub(save).managerId) return withUpdate(save);
   if (save.eventQueue.length === 0) pushStandardEvents(save);
   popNextEvent(save);
   return withUpdate(save);
@@ -1358,6 +1359,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       refreshUserWageBill(save);
     }
   } else if (event.type === "manager_contract_decision") {
+    let followUp: GameEvent | undefined;
     if (manager && action !== "release") {
       const expectedWage = calculateRecommendedManagerWage(manager, currentDivisionLevel(save));
       const years = Math.max(1, Math.min(3, decision?.terms?.years ?? 2));
@@ -1368,7 +1370,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       club.managerTrust = Math.min(99, club.managerTrust + 4);
       save.managerRetirementIntent = false;
       refreshUserWageBill(save);
-      enqueue(save, {
+      followUp = {
         id: `manager_contract_extended_${manager.id}_${save.season}`,
         type: "club_update",
         title: "Manager contract extended",
@@ -1378,7 +1380,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         createdWeek: save.week,
         managerId: manager.id,
         variant: "positive",
-      });
+      };
     } else if (manager) {
       delete save.managers[manager.id];
       club.managerId = undefined;
@@ -1389,7 +1391,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       save.rngState = next;
       save.managerCandidates = candidates;
       refreshUserWageBill(save);
-      enqueue(save, {
+      followUp = {
         id: `manager_left_${manager.id}_${save.season}`,
         type: "club_update",
         title: "Manager leaves club",
@@ -1398,8 +1400,11 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         createdSeason: save.season,
         createdWeek: save.week,
         variant: "negative",
-      });
+      };
     }
+    save.currentEvent = followUp;
+    markEventSeen(save, event.id);
+    return withUpdate(updateAchievements(save));
   } else if (event.type === "match_preview") {
     const playLive = action === "play";
     const previewFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
@@ -1429,6 +1434,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
   save.currentEvent = undefined;
   if (event.type === "match_result") save.liveMatch = undefined;
   markEventSeen(save, event.id);
+  if (!userClub(save).managerId) return withUpdate(updateAchievements(save));
   popNextEvent(save);
   return withUpdate(updateAchievements(save));
 }

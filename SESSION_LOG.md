@@ -144,3 +144,7 @@
 - Added targeted coverage for the expired-contract queue and extension path, alongside multi-season Continue cadence coverage.
 - Verified the expired-manager-contract decision pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
 - Deployed the expired-manager-contract decision pass to Vercel preview: `https://football-director-b2bhgfpo9-mor-swisas-projects.vercel.app`.
+- Tightened the expired-manager release path so letting a manager leave shows the departure update immediately and then parks queued season events until a replacement is hired.
+- Added regression coverage proving repeated Continue/generate calls cannot advance queued season events while the user club has no manager.
+- Verified the no-manager queue blocking pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the no-manager queue blocking pass to Vercel preview: `https://football-director-i1t0hgmc0-mor-swisas-projects.vercel.app`.

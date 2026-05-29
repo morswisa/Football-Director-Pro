@@ -175,6 +175,31 @@ describe("game engine", () => {
     expect(save.managers[carriedManager.id].compensationFee).toBeGreaterThan(0);
   });
 
+  it("blocks season progression after an expired manager contract is released", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const manager = save.managers[club.managerId!];
+    manager.contractYears = 1;
+    save = finishSeason(save);
+    save = generateNextEvents(save);
+    while (save.currentEvent && save.currentEvent.type !== "manager_contract_decision") {
+      save = resolveEvent(save, save.currentEvent.id);
+    }
+    expect(save.currentEvent?.type).toBe("manager_contract_decision");
+
+    save = resolveEvent(save, save.currentEvent!.id, { action: "release" });
+    expect(save.currentEvent?.title).toBe("Manager leaves club");
+    expect(save.clubs[save.userClubId].managerId).toBeUndefined();
+    expect(save.managerCandidates.length).toBeGreaterThan(0);
+
+    save = resolveEvent(save, save.currentEvent!.id, { action: "continue" });
+    expect(save.currentEvent).toBeUndefined();
+    expect(save.eventQueue.length).toBeGreaterThan(0);
+    const afterContinue = generateNextEvents(save);
+    expect(afterContinue.currentEvent).toBeUndefined();
+    expect(afterContinue.eventQueue.length).toBe(save.eventQueue.length);
+  });
+
   it("calculates wages from rating, division and reputation", () => {
     const save = createNewGame(setup);
     const player = Object.values(save.players)[0];
