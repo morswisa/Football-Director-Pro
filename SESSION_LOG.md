@@ -162,3 +162,10 @@
 - Continued the final acceptance pass by adding match-result impact feedback: result events now compare the pre-match and post-match club state and show board confidence, manager trust, and stadium condition deltas. Added regression coverage that match-result events include this impact note.
 - Verified the match-result impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile flow that reached a match result and confirmed the impact note, and the `develop-web-game` Playwright client workaround run from the project directory.
 - Deployed the match-result impact pass to Vercel preview: `https://football-director-49azxexfi-mor-swisas-projects.vercel.app`.
+
+## 2026-05-30
+
+- Continued the final acceptance pass by making season-end consequences explicit: `SeasonHistory` now stores balance, board-confidence, manager-trust, and reputation before/after values; season-summary events include a season-impact note; and the season-summary and History UI render those deltas.
+- Added regression coverage proving a promoted season records positive board/trust/reputation movement and that the queued season-summary event includes the season-impact explanation.
+- Verified the season-impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the season-impact pass to Vercel preview: `https://football-director-qn57otqul-mor-swisas-projects.vercel.app`.

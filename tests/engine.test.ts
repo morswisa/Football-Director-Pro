@@ -332,12 +332,17 @@ describe("game engine", () => {
     expect(history.prizeMoney).toBeGreaterThan(0);
     expect(history.nextDivisionName).not.toBe(history.divisionName);
     expect(history.won).toBe(30);
+    expect(history.seasonImpact?.boardConfidenceAfter).toBeGreaterThan(history.seasonImpact?.boardConfidenceBefore ?? 0);
+    expect(history.seasonImpact?.managerTrustAfter).toBeGreaterThan(history.seasonImpact?.managerTrustBefore ?? 0);
+    expect(history.seasonImpact?.reputationAfter).toBeGreaterThan(history.seasonImpact?.reputationBefore ?? 0);
     expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
     expect(save.week).toBe(1);
     save = generateNextEvents(save);
     expect(save.currentEvent?.type).toBe("season_summary");
     expect(save.currentEvent?.seasonHistory?.season).toBe(history.season);
     expect(save.currentEvent?.body).toContain("Season award");
+    expect(save.currentEvent?.note).toContain("Season impact");
+    expect(save.currentEvent?.note).toContain("board confidence");
     save = resolveEvent(save, save.currentEvent!.id);
     expect(save.currentEvent?.type).toBe("season_intro");
   });

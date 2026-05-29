@@ -38,6 +38,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, manager contract expiry, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
 - After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
+- `SeasonHistory.seasonImpact` stores the before/after values for balance, board confidence, manager trust, and club reputation, allowing the season-summary event and History screen to explain season-level relationship/economy movement.
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Match-result event creation captures the user club's relationship/facility snapshot before simulation and compares it with the post-simulation state, then writes the actual board confidence, manager trust, and stadium condition deltas into the event note.
 - Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
@@ -87,6 +88,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
 - `SeasonHistory` stores the season's finish, record, goals, prize money, outcome, next division, cup summary, trophies, and closing balance for both the season-summary event and History screen.
+- Season impact deltas are captured inside `finishSeason` from the actual mutated club state, including promotion/relegation reputation changes, so the UI does not duplicate the season-outcome formula.
 - Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
 - Promotion/relegation swaps a club between adjacent divisions so division sizes remain stable for future fixture generation.
 - Balance edge cases are covered in unit tests: debt-limit game over, no-refund facility downgrades with lower upkeep, manager action locks, and relegation division movement.

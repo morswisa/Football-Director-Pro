@@ -661,6 +661,11 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
               <p className="rounded-md bg-surface-muted px-2 py-1">Balance <b className="block">{formatMoney(item.balance)}</b></p>
             </div>
             <p className="mt-2 text-xs text-neutral-500">Next: {item.nextDivisionName ?? item.divisionName} · {item.cupSummary ?? "No cup record"}</p>
+            {item.seasonImpact ? (
+              <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-950">
+                Board {formatSignedPoints(item.seasonImpact.boardConfidenceAfter - item.seasonImpact.boardConfidenceBefore)} · Trust {formatSignedPoints(item.seasonImpact.managerTrustAfter - item.seasonImpact.managerTrustBefore)} · Reputation {formatSignedPoints(item.seasonImpact.reputationAfter - item.seasonImpact.reputationBefore)}
+              </p>
+            ) : null}
           </div>
         ))}
       </Card>
@@ -1262,6 +1267,7 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
 function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
   const goalDifference = (history.goalsFor ?? 0) - (history.goalsAgainst ?? 0);
   const outcomeLabel = history.outcome === "promoted" ? "Promoted" : history.outcome === "relegated" ? "Relegated" : "Stayed";
+  const impact = history.seasonImpact;
   return (
     <div className="mt-4 space-y-3">
       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1278,6 +1284,15 @@ function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
         <b className="block text-neutral-800">Cup</b>
         {history.cupSummary ?? "No cup record."}
       </div>
+      {impact ? (
+        <ImpactBox>
+          <b className="block">Season impact</b>
+          <span>Balance {formatSignedMoney(impact.balanceAfter - impact.balanceBefore)}</span>
+          <span className="block">Board {formatSignedPoints(impact.boardConfidenceAfter - impact.boardConfidenceBefore)} ({impact.boardConfidenceBefore}% to {impact.boardConfidenceAfter}%)</span>
+          <span className="block">Manager trust {formatSignedPoints(impact.managerTrustAfter - impact.managerTrustBefore)} ({impact.managerTrustBefore}% to {impact.managerTrustAfter}%)</span>
+          <span className="block">Club reputation {formatSignedPoints(impact.reputationAfter - impact.reputationBefore)} ({impact.reputationBefore} to {impact.reputationAfter})</span>
+        </ImpactBox>
+      ) : null}
       {history.trophies.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {history.trophies.map((trophy) => (

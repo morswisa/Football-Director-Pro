@@ -20,12 +20,16 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Added visible impact summaries to the main chairman decision cards so trust, morale, balance, wage-bill, board, and replacement consequences are clearer before choices are confirmed.
 - Added post-match impact notes showing actual board confidence, manager trust, and stadium condition changes after match simulation.
 
+## 2026-05-30
+
+- Added season-end impact tracking and display: season summaries now show balance, board confidence, manager trust, and reputation deltas, and History retains those season impact values.
+
 ## Next TODO
 
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
-- Watch for any remaining post-event state changes, especially season-end and finance-heavy events, that still need the same clear impact explanation.
+- Watch for any remaining finance-heavy events that still need clearer balance/profit explanation.
 - Continue balance tuning for wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency across longer human-style careers.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after match-result impact pass: `https://football-director-49azxexfi-mor-swisas-projects.vercel.app`.
+- Latest preview after season-impact pass: `https://football-director-qn57otqul-mor-swisas-projects.vercel.app`.

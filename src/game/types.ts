@@ -321,6 +321,16 @@ export interface SeasonHistory {
   outcome?: "promoted" | "relegated" | "stayed";
   nextDivisionName?: string;
   cupSummary?: string;
+  seasonImpact?: {
+    balanceBefore: number;
+    balanceAfter: number;
+    boardConfidenceBefore: number;
+    boardConfidenceAfter: number;
+    managerTrustBefore: number;
+    managerTrustAfter: number;
+    reputationBefore: number;
+    reputationAfter: number;
+  };
   trophies: string[];
 }
 

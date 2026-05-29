@@ -191,11 +191,28 @@ function signedDelta(value: number) {
   return "0";
 }
 
+function signedMoney(value: number) {
+  const formatted = Math.abs(value).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 });
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return formatted;
+}
+
 function matchImpactNote(before: ReturnType<typeof relationshipSnapshot>, after: ReturnType<typeof relationshipSnapshot>) {
   const boardDelta = after.boardConfidence - before.boardConfidence;
   const trustDelta = after.managerTrust - before.managerTrust;
   const stadiumDelta = after.stadiumCondition - before.stadiumCondition;
   return `Impact: board confidence ${signedDelta(boardDelta)} (${before.boardConfidence}% -> ${after.boardConfidence}%), manager trust ${signedDelta(trustDelta)} (${before.managerTrust}% -> ${after.managerTrust}%), stadium condition ${signedDelta(stadiumDelta)} (${before.stadiumCondition}% -> ${after.stadiumCondition}%).`;
+}
+
+function seasonImpactNote(history: GameSave["history"][number]) {
+  const impact = history.seasonImpact;
+  if (!impact) return undefined;
+  const balanceDelta = impact.balanceAfter - impact.balanceBefore;
+  const boardDelta = impact.boardConfidenceAfter - impact.boardConfidenceBefore;
+  const trustDelta = impact.managerTrustAfter - impact.managerTrustBefore;
+  const reputationDelta = impact.reputationAfter - impact.reputationBefore;
+  return `Season impact: balance ${signedMoney(balanceDelta)}, board confidence ${signedDelta(boardDelta)} (${impact.boardConfidenceBefore}% -> ${impact.boardConfidenceAfter}%), manager trust ${signedDelta(trustDelta)} (${impact.managerTrustBefore}% -> ${impact.managerTrustAfter}%), club reputation ${signedDelta(reputationDelta)} (${impact.reputationBefore} -> ${impact.reputationAfter}).`;
 }
 
 function isCupWeek(save: GameSave) {
@@ -822,6 +839,7 @@ function pushStandardEvents(save: GameSave) {
       createdSeason: save.season,
       createdWeek: save.week,
       seasonHistory: lastHistory,
+      note: seasonImpactNote(lastHistory),
       variant: lastHistory.outcome === "relegated" ? "negative" : lastHistory.outcome === "promoted" || lastHistory.trophies.length ? "positive" : "neutral",
     });
   }
@@ -1477,6 +1495,10 @@ export function leagueTable(save: GameSave, divisionId = userClub(save).division
 export function finishSeason(input: GameSave) {
   const save = clone(input);
   const club = userClub(save);
+  const balanceBefore = club.finances.balance;
+  const boardConfidenceBefore = club.boardConfidence;
+  const managerTrustBefore = club.managerTrust;
+  const reputationBefore = club.reputation;
   const table = leagueTable(save);
   const position = table.findIndex((item) => item.id === club.id) + 1;
   const currentDivision = save.divisions.find((d) => d.id === club.divisionId);
@@ -1497,25 +1519,6 @@ export function finishSeason(input: GameSave) {
   const trophies = [...(promoted ? ["Promotion"] : []), ...(save.cup?.won ? [save.cup.name] : [])];
   club.boardConfidence = Math.max(5, Math.min(99, club.boardConfidence + (promoted ? 12 : relegated ? -14 : position <= 8 ? 4 : position >= 16 ? -6 : 0) + (club.finances.balance > 0 ? 2 : -4)));
   club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + (position <= 6 ? 3 : position >= 16 ? -4 : 0)));
-  save.history.unshift({
-    season: save.season,
-    divisionName: currentDivision?.name ?? "League",
-    divisionLevel,
-    position,
-    played: club.record.played,
-    won: club.record.won,
-    drawn: club.record.drawn,
-    lost: club.record.lost,
-    goalsFor: club.record.gf,
-    goalsAgainst: club.record.ga,
-    points: club.record.points,
-    balance: club.finances.balance,
-    prizeMoney: prize,
-    outcome: promoted ? "promoted" : relegated ? "relegated" : "stayed",
-    nextDivisionName,
-    cupSummary,
-    trophies,
-  });
   if (promoted) {
     const nextDivision = promotionDivision;
     if (currentDivision && nextDivision) {
@@ -1548,6 +1551,35 @@ export function finishSeason(input: GameSave) {
       club.reputation = Math.max(15, club.reputation - 4);
     }
   }
+  save.history.unshift({
+    season: save.season,
+    divisionName: currentDivision?.name ?? "League",
+    divisionLevel,
+    position,
+    played: club.record.played,
+    won: club.record.won,
+    drawn: club.record.drawn,
+    lost: club.record.lost,
+    goalsFor: club.record.gf,
+    goalsAgainst: club.record.ga,
+    points: club.record.points,
+    balance: club.finances.balance,
+    prizeMoney: prize,
+    outcome: promoted ? "promoted" : relegated ? "relegated" : "stayed",
+    nextDivisionName,
+    cupSummary,
+    seasonImpact: {
+      balanceBefore,
+      balanceAfter: club.finances.balance,
+      boardConfidenceBefore,
+      boardConfidenceAfter: club.boardConfidence,
+      managerTrustBefore,
+      managerTrustAfter: club.managerTrust,
+      reputationBefore,
+      reputationAfter: club.reputation,
+    },
+    trophies,
+  });
   return startNextSeason(save);
 }
 
