@@ -96,3 +96,4 @@
 - Deployed the post-match/live-playback fix to Vercel preview: `https://football-director-9bp3imzpz-mor-swisas-projects.vercel.app`.
 - Redeployed the current workspace to Vercel before committing, producing preview `https://football-director-9kud16nb0-mor-swisas-projects.vercel.app`.
 - Reviewed remaining V1 scope against the current implementation and documented the main outstanding areas: cup depth, loans, import/export UI, event-frequency tuning, balance coverage, long-run tests, legacy `activeProposal` retirement, and later Capacitor native platform generation.
+- Redeployed the current workspace to Vercel after documenting the remaining V1 scope. Preview: `https://football-director-d9o4cvir1-mor-swisas-projects.vercel.app`.
