@@ -191,3 +191,6 @@
 - Adjusted informational event footers so non-decision `Continue` buttons no longer stick over long financial-report rows; decision controls remain sticky where needed.
 - Verified the financial-report readability pass with `npm run lint`, `npm test`, `npm run build`, `npm run e2e`, a focused mobile financial-report screenshot, and the `develop-web-game` Playwright client.
 - Deployed the financial-report readability pass to Vercel preview: `https://football-director-mz6c0aa6l-mor-swisas-projects.vercel.app`.
+- Verified the season-scoped fixture ID fix with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client.
+- Deployed the season-scoped fixture ID fix to Vercel preview: `https://football-director-cwgcnup8o-mor-swisas-projects.vercel.app`.
+- Continued the long-balance acceptance pass and found a real season-transition stall: league fixture IDs were reused every season, so `seenEventKeys` could suppress the first match preview of a later season. Updated league fixture IDs to include the season and added regression coverage that next-season match previews queue correctly.

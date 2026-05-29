@@ -42,6 +42,7 @@
 - Season summaries must also explain season-level impact on balance, board confidence, manager trust, and club reputation because those values are core feedback loops for chairman performance.
 - V1 balance must be backed by edge-case tests for systems that can end or derail a career: debt limits, manager churn, facility economics, and promotion/relegation movement.
 - Fixture generation must preserve one user-club league match per round; promotion/relegation must keep division sizes stable so the Continue loop cannot stall after a season transition.
+- Fixture IDs must be season-scoped because event dedupe keys are persisted across weeks and seasons.
 
 ## Technology
 

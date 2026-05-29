@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-mz6c0aa6l-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-cwgcnup8o-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -26,6 +26,7 @@ Playable V1 includes:
 - Dashboard metric buttons are the primary navigation into League, Roster, Manager, Training, Youth, Finances, Stadium, and History; duplicate top/bottom navigation has been removed.
 - Full league standings table for the user's division.
 - League fixtures now use a true round-robin schedule, so every club in the user's division has one match per round and the Continue loop cannot stall on a no-user-fixture round.
+- League fixture IDs include the season, so the event queue can show match previews in later seasons even after the same round/slot was seen in an earlier season.
 - Simplified player positions to G/D/M/F with position badges.
 - Roster defaults to position order and supports manual sorting by `Pos`, `Player`, or `Rate`.
 - Dashboard and player-list surfaces now consistently label the section as `Roster`, with an in-page roster summary before the sortable player list.
@@ -50,6 +51,7 @@ Playable V1 includes:
 - Promotion and relegation are both modeled in season transitions, with club reputation and confidence changes.
 - Edge-case coverage now proves debt-limit game over, facility upgrade/downgrade economics, manager churn lock behavior, and relegation movement between divisions.
 - Multi-season human-style playtest coverage now drives the game through the Continue queue for multiple seasons with realistic budget, contract, transfer, sale, youth, and facility decisions.
+- Regression coverage now proves next-season match previews are not blocked by prior-season `seenEventKeys`.
 - Squad-depth safety fills AI/user clubs with generated depth players when long careers, loans, or retirements leave a club short.
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.

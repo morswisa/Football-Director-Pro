@@ -186,7 +186,7 @@ function createClub(seed: number, name: string, divisionId: string, level: numbe
   return [club, fixedPlayers, { ...manager, status: "contracted", clubId }, state];
 }
 
-export function generateSeasonFixtures(division: Division): import("./types").Fixture[] {
+export function generateSeasonFixtures(division: Division, season = 0): import("./types").Fixture[] {
   const clubIds = division.clubIds.length % 2 === 0 ? [...division.clubIds] : [...division.clubIds, "__bye__"];
   const fixtures: import("./types").Fixture[] = [];
   let rotation = [...clubIds];
@@ -199,14 +199,14 @@ export function generateSeasonFixtures(division: Division): import("./types").Fi
       const firstHome = round % 2 === 0 ? a : b;
       const firstAway = round % 2 === 0 ? b : a;
       fixtures.push({
-        id: `fx_${division.id}_${round}_${i}_h`,
+        id: `fx_${season}_${division.id}_${round}_${i}_h`,
         round,
         homeClubId: firstHome,
         awayClubId: firstAway,
         status: "scheduled",
       });
       fixtures.push({
-        id: `fx_${division.id}_${round}_${i}_a`,
+        id: `fx_${season}_${division.id}_${round}_${i}_a`,
         round: round + rounds,
         homeClubId: firstAway,
         awayClubId: firstHome,
@@ -286,7 +286,7 @@ export function createNewGame(input: ClubSetupInput): GameSave {
     players,
     managers,
     managerCandidates,
-    fixtures: generateSeasonFixtures(divisions[6]),
+    fixtures: generateSeasonFixtures(divisions[6], 2030),
     currentRound: 0,
     eventQueue: [],
     seenEventKeys: [],

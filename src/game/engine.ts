@@ -1665,7 +1665,7 @@ export function startNextSeason(input: GameSave) {
   save.cup = { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] };
   applyClubSeasonEconomy(save);
   const division = save.divisions.find((item) => item.id === userClub(save).divisionId);
-  save.fixtures = division ? generateSeasonFixtures(division) : [];
+  save.fixtures = division ? generateSeasonFixtures(division, save.season) : [];
   return withUpdate(updateAchievements(save));
 }
 

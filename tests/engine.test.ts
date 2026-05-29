@@ -18,6 +18,7 @@ import {
   processWeeklyFinances,
   resolveEvent,
   returnSeasonLoans,
+  startNextSeason,
   submitManagerHireOffer,
   upgradeStand,
   upgradeTraining,
@@ -881,6 +882,18 @@ describe("game engine", () => {
     expect(periods).toBeGreaterThanOrEqual(38);
     expect(periods).toBeLessThanOrEqual(48);
   }, 30_000);
+
+  it("uses season-specific fixture ids so the next season can queue match previews", () => {
+    let save = createNewGame({ ...setup, seed: 20260630 });
+    const oldFixtureId = save.fixtures.find((fixture) => fixture.homeClubId === save.userClubId || fixture.awayClubId === save.userClubId)!.id;
+    save.seenEventKeys.push(`match_preview_${oldFixtureId}`);
+    save = startNextSeason(save);
+
+    save = generateNextEvents(save);
+
+    expect(save.fixtures.find((fixture) => fixture.homeClubId === save.userClubId || fixture.awayClubId === save.userClubId)?.id).not.toBe(oldFixtureId);
+    expect(save.eventQueue.some((event) => event.type === "match_preview")).toBe(true);
+  });
 
   it("plays multiple human-style seasons through the continue loop", () => {
     let save = createNewGame({ ...setup, seed: 20260622 });
