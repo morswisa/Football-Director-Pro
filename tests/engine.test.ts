@@ -354,6 +354,26 @@ describe("game engine", () => {
     club.finances.balance = -100_001;
     save = checkDebtAndBankruptcy(save);
     expect(save.gameOver).toContain("debt limit");
+    expect(save.gameOver).toContain("Balance");
+    expect(save.gameOver).toContain("over limit by");
+  });
+
+  it("explains debt headroom before bankruptcy", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    club.finances.debtLimit = -1_000_000;
+    club.finances.balance = -250_000;
+    save.week = 5;
+    save.currentRound = 4;
+    save.currentEvent = undefined;
+    save.eventQueue = [];
+
+    save = generateNextEvents(save);
+    const bankWarning = [save.currentEvent, ...save.eventQueue].find((event) => event?.type === "bank_warning");
+
+    expect(bankWarning?.body).toContain("Balance is");
+    expect(bankWarning?.body).toContain("debt limit");
+    expect(bankWarning?.note).toContain("Debt headroom remaining");
   });
 
   it("applies facility upgrades and downgrades without refunding cash", () => {

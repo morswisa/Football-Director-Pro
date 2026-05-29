@@ -400,6 +400,21 @@ function financialReportNote(snapshot: FinancialSnapshot) {
   return `Balance movement: ${signedMoney(snapshot.profit)} this period. Income ${snapshot.totalIncome.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; expenses ${snapshot.totalExpenses.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`;
 }
 
+function debtHeadroom(club: Club) {
+  return club.finances.balance - club.finances.debtLimit;
+}
+
+function bankWarningBody(club: Club) {
+  return `${club.name} is currently overdrawn. Balance is ${club.finances.balance.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; debt limit is ${club.finances.debtLimit.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`;
+}
+
+function bankWarningNote(club: Club) {
+  const headroom = debtHeadroom(club);
+  return headroom >= 0
+    ? `Debt headroom remaining: ${headroom.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. If the balance falls below the debt limit, the board ends the career.`
+    : `Debt limit exceeded by ${Math.abs(headroom).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`;
+}
+
 export function latestFinancialSnapshot(input: GameSave) {
   const save = clone(input);
   ensureEventState(save);
@@ -695,7 +710,7 @@ export function checkDebtAndBankruptcy(input: GameSave) {
   const save = clone(input);
   const club = userClub(save);
   if (club.finances.balance < club.finances.debtLimit) {
-    save.gameOver = "The board has removed you after the club exceeded its debt limit.";
+    save.gameOver = `The board has removed you after the club exceeded its debt limit. Balance ${club.finances.balance.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; debt limit ${club.finances.debtLimit.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; over limit by ${Math.abs(debtHeadroom(club)).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`;
   }
   return withUpdate(save);
 }
@@ -963,7 +978,8 @@ function pushStandardEvents(save: GameSave) {
       id: `bank_warning_${weekKey}`,
       type: "bank_warning",
       title: "Bank balance in the red",
-      body: `${club.name} is currently overdrawn. The debt limit is ${club.finances.debtLimit.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; crossing it ends the career.`,
+      body: bankWarningBody(club),
+      note: bankWarningNote(club),
       requiresDecision: false,
       createdSeason: save.season,
       createdWeek: save.week,
