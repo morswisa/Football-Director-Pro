@@ -1,5 +1,58 @@
 import { expect, test } from "@playwright/test";
 
+async function resolveEventsUntilFirstMatchResult(page: import("@playwright/test").Page) {
+  for (let step = 0; step < 40; step += 1) {
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    if (await dialog.getByRole("button", { name: "See Match" }).count()) {
+      await dialog.getByRole("button", { name: "See Match" }).click();
+      await expect(dialog).toContainText("Match result");
+      await expect(dialog).toContainText("Impact: board confidence");
+      await expect(dialog).toContainText("manager trust");
+      await expect(dialog).toContainText("stadium condition");
+      await dialog.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByText("Last result")).toBeVisible();
+      return;
+    }
+
+    if (await dialog.getByRole("heading", { name: "Set transfer budget" }).count()) {
+      await dialog.getByRole("button", { name: /^Normal/ }).click();
+      await page.getByRole("button", { name: "Set Transfer Budget" }).click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Walk Away" }).count()) {
+      await dialog.getByRole("button", { name: "Walk Away" }).first().click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Reject Bid" }).count()) {
+      await dialog.getByRole("button", { name: "Reject Bid" }).click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Reject" }).count()) {
+      await dialog.getByRole("button", { name: "Reject" }).first().click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Release" }).count()) {
+      await dialog.getByRole("button", { name: "Release" }).click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Continue" }).count()) {
+      await dialog.getByRole("button", { name: "Continue" }).click();
+      continue;
+    }
+
+    throw new Error(`Unhandled event dialog at step ${step}: ${await dialog.innerText()}`);
+  }
+
+  throw new Error("Did not reach a match result within 40 event steps.");
+}
+
 test("new career reaches playable dashboard", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Create Club/ }).click();
@@ -73,4 +126,6 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await page.getByRole("dialog").getByRole("button", { name: /^Normal/ }).click();
   await page.getByRole("button", { name: "Set Transfer Budget" }).click();
   await expect(page.getByText("Transfer budget confirmed")).toBeVisible();
+
+  await resolveEventsUntilFirstMatchResult(page);
 });

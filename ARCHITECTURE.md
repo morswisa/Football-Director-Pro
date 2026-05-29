@@ -74,6 +74,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
+- Events created as direct follow-ups during `resolveEvent` are promoted ahead of older queued events before `popNextEvent`, preserving decision-response continuity inside the Continue loop.
 - Engine function `normalizeGameState` is used by the store to normalize older or generated saves before UI hydration.
 - Paid buy proposals are resolved inside `resolveEvent` with fee, wage, and years terms. Selling clubs may reject low fees, and players may reject weak contracts.
 - UI impact summaries for transfer, loan, contract, sale, youth, and manager-contract decisions are previews only; the engine remains authoritative and applies the final deltas through `resolveEvent`.
@@ -154,3 +155,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `npm run e2e`
 - Manual mobile browser smoke test at `430x932`
 - Expanded clean-save Playwright acceptance path covering the main V1 surfaces and early Continue queue.
+- Deep clean-save Playwright acceptance also covers reaching the first match result, checking the match impact note, and returning to Dashboard with Last Result visible.

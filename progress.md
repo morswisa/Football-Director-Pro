@@ -43,6 +43,9 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Expanded the clean-save mobile acceptance path across the main V1 surfaces and early Continue queue. This exposed and fixed a real event-header attribution issue where the opening League Path club update could show manager context; club updates now render the club header unless the event is explicitly manager-subject.
 - Verified the acceptance-header pass with `npm run e2e`, `npm run lint`, `npm test` (41 tests), `npm run build`, the develop-web-game Playwright client, and a focused mobile screenshot of the League Path event.
 - Deployed acceptance-header pass to Vercel preview: `https://football-director-reocha0wa-mor-swisas-projects.vercel.app`.
+- Continued the deep acceptance pass through first match result. Found and fixed queue-order drift where a direct transfer-target response could appear after a match because older events were already queued.
+- Added regression/e2e coverage for immediate decision follow-ups and the first match-result flow, then verified with `npm run e2e`, `npm test` (41 tests), `npm run lint`, `npm run build`, the develop-web-game client, and focused mobile screenshots.
+- Deployed queue-order/deep-acceptance pass to Vercel preview: `https://football-director-g91l7byct-mor-swisas-projects.vercel.app`.
 
 ## Next TODO
 
@@ -54,4 +57,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Continue final acceptance around replacement quality after repeated sales and whether the manager target pool feels varied enough.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after acceptance-header coverage: `https://football-director-reocha0wa-mor-swisas-projects.vercel.app`.
+- Latest preview after queue-order/deep-acceptance coverage: `https://football-director-g91l7byct-mor-swisas-projects.vercel.app`.

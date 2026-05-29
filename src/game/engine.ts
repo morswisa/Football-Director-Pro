@@ -1182,6 +1182,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
   const manager = getManager(save, club);
   const player = event.playerId ? save.players[event.playerId] : undefined;
   const action = decision?.action ?? "continue";
+  const queueLengthBeforeResolution = save.eventQueue.length;
 
   if (event.type === "transfer_budget") {
     const mode = decision?.mode ?? "normal";
@@ -1633,6 +1634,10 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
   save.currentEvent = undefined;
   if (event.type === "match_result") save.liveMatch = undefined;
   markEventSeen(save, event.id);
+  const newlyQueuedEvents = save.eventQueue.slice(queueLengthBeforeResolution);
+  if (newlyQueuedEvents.length > 0) {
+    save.eventQueue = [...newlyQueuedEvents, ...save.eventQueue.slice(0, queueLengthBeforeResolution)];
+  }
   if (!userClub(save).managerId) return withUpdate(updateAchievements(save));
   popNextEvent(save);
   return withUpdate(updateAchievements(save));

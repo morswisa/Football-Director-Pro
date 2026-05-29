@@ -696,9 +696,20 @@ describe("game engine", () => {
         requestedYears: 3,
       },
     };
+    save.eventQueue = [{
+      id: "queued_unrelated_report",
+      type: "financial_report",
+      title: "Financial report",
+      body: "An unrelated queued report should not appear before the direct response.",
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      financialSnapshot: latestFinancialSnapshot(save),
+    }];
     save = resolveEvent(save, save.currentEvent.id, { action: "reject" });
     expect(save.currentEvent?.title).toBe("Transfer target dropped");
     expect(save.currentEvent?.body).toContain("Manager trust -4");
+    expect(save.eventQueue[0]?.id).toBe("queued_unrelated_report");
   });
 
   it("incoming bids include the bidding club in the staged sale", () => {

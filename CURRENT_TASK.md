@@ -6,10 +6,11 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-reocha0wa-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-g91l7byct-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
+- Direct follow-up events created while resolving a chairman decision now take priority over older queued context, so the player sees the consequence of the choice before unrelated reports or matches.
 - Legacy `activeProposal` proposal handling has been removed; manager-led proposals now enter the same save-backed `eventQueue/currentEvent` path as every other chairman decision.
 
 ## Implemented Milestone
@@ -91,4 +92,5 @@ Playable V1 includes:
 - Continue final balance tuning against longer human-style careers, especially after the shared weekly finance breakdown change: wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Verify every planned V1 surface one last time on mobile: Dashboard Continue loop, Roster, League, Manager, Finances, Stadium, Training/Youth popups, History, Settings, match playback, and save/import/export.
 - Keep the expanded clean-save Playwright acceptance path in place as the default browser smoke gate for planned V1 surfaces and the early Continue chain.
+- The expanded clean-save Playwright acceptance path now reaches the first match result, verifies the post-match impact explanation, and confirms the Dashboard shows Last Result after dismissing the result.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.
