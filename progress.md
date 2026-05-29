@@ -47,6 +47,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Added regression/e2e coverage for immediate decision follow-ups and the first match-result flow, then verified with `npm run e2e`, `npm test` (41 tests), `npm run lint`, `npm run build`, the develop-web-game client, and focused mobile screenshots.
 - Deployed queue-order/deep-acceptance pass to Vercel preview: `https://football-director-g91l7byct-mor-swisas-projects.vercel.app`.
 - Extended transfer-window acceptance coverage for successful buy, loan-in, and loan-out decisions: player movement, balance deltas, manager-trust deltas, immediate response copy, and financial snapshot fee lines are now asserted. Verified with `npm test` (41 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game client.
+- Added sale-chain acceptance coverage for a starter sale across the actual Continue order: sale-ready preview, sale-confirmed board/morale impact, replacement-pressure update, and same-position replacement target. Verified with `npm test` (42 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game client.
 
 ## Next TODO
 
@@ -59,3 +60,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
 - Latest preview after transfer-decision coverage: `https://football-director-mdxeef9tf-mor-swisas-projects.vercel.app`.
+- Latest preview after sale-chain coverage: `https://football-director-prnruhqdb-mor-swisas-projects.vercel.app`.

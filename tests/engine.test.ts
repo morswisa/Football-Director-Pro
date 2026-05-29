@@ -834,6 +834,67 @@ describe("game engine", () => {
     expect(replacementTarget?.rating ?? 0).toBeGreaterThanOrEqual(player.rating - 9);
   });
 
+  it("presents a starter sale as sale confirmation, replacement pressure, then replacement target", () => {
+    let save = createNewGame(setup);
+    save.week = 1;
+    const club = save.clubs[save.userClubId];
+    const bidder = save.divisions.find((item) => item.id === club.divisionId)!.clubIds.map((id) => save.clubs[id]).find((item) => item.id !== club.id)!;
+    const player = save.players[club.playerIds[0]];
+    player.position = "F";
+    player.rating = 66;
+    player.value = 230_000;
+    const replacement = Object.values(save.players).find((item) => item.clubId && item.clubId !== club.id && item.position === "F")!;
+    replacement.rating = 63;
+    replacement.value = 140_000;
+    replacement.wage = 1_300;
+    const expectedImpact = calculateSaleImpact(save, player, 340_000);
+    save.currentEvent = {
+      id: "incoming_bid_sale_chain",
+      type: "incoming_bid",
+      title: "Bid received",
+      body: "Bid",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_sale_chain",
+        type: "sell",
+        week: save.week,
+        title: "Sell starter",
+        rationale: "Bid",
+        playerId: player.id,
+        fromClubId: club.id,
+        toClubId: bidder.id,
+        fee: 340_000,
+        wageDelta: -player.wage,
+        expiresWeek: save.week + 2,
+      },
+    };
+
+    save = resolveEvent(save, save.currentEvent.id, { action: "accept" });
+    expect(save.currentEvent?.type).toBe("sale_ready");
+    expect(save.currentEvent?.body).toContain("Confirming the sale would move board confidence");
+    save = resolveEvent(save, save.currentEvent!.id, { action: "confirm" });
+    expect(save.currentEvent?.type).toBe("sale_confirmed");
+    expect(save.currentEvent?.body).toContain(`Board confidence ${expectedImpact.boardDelta >= 0 ? "+" : ""}${expectedImpact.boardDelta}`);
+    expect(save.currentEvent?.body).toContain(`squad morale ${expectedImpact.moraleDelta >= 0 ? "+" : ""}${expectedImpact.moraleDelta}`);
+    expect(save.eventQueue[0]?.title).toBe("Replacement needed");
+    expect(save.eventQueue[1]?.type).toBe("contract_offer");
+    expect(save.eventQueue[1]?.proposal?.type).toBe("buy");
+
+    save = resolveEvent(save, save.currentEvent.id, { action: "continue" });
+    expect(save.currentEvent?.title).toBe("Replacement needed");
+    expect(save.currentEvent?.body).toContain("should replace");
+    save = resolveEvent(save, save.currentEvent.id, { action: "continue" });
+    expect(save.currentEvent?.type).toBe("contract_offer");
+    expect(save.currentEvent?.proposal?.id).toMatch(/^proposal_replacement/);
+    const target = save.currentEvent?.proposal?.playerId ? save.players[save.currentEvent.proposal.playerId] : undefined;
+    expect(target?.position).toBe("F");
+    expect(target?.rating ?? 0).toBeGreaterThanOrEqual(player.rating - 9);
+  });
+
   it("adds an updated financial report when a transfer happens after the original report", () => {
     let save = createNewGame(setup);
     const club = save.clubs[save.userClubId];

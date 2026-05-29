@@ -177,6 +177,9 @@
 - Extended transfer-window acceptance coverage for successful paid buy, loan-in, and loan-out flows. The tests now assert player movement, immediate response copy, manager-trust deltas, balance movement, and fee visibility in financial snapshots.
 - Verified the transfer-decision coverage pass with `npm test` (41 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright client.
 - Deployed the transfer-decision coverage pass to Vercel preview: `https://football-director-mdxeef9tf-mor-swisas-projects.vercel.app`.
+- Added sale-chain acceptance coverage for a starter sale: accepting a bid shows sale-ready impact, confirming the sale shows board/morale impact, the next Continue surfaces replacement pressure, and the following event is a same-position replacement target within the intended rating band.
+- Verified the sale-chain coverage pass with `npm test` (42 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright client.
+- Deployed the sale-chain coverage pass to Vercel preview: `https://football-director-prnruhqdb-mor-swisas-projects.vercel.app`.
 - Continued the final acceptance pass by making season-end consequences explicit: `SeasonHistory` now stores balance, board-confidence, manager-trust, and reputation before/after values; season-summary events include a season-impact note; and the season-summary and History UI render those deltas.
 - Added regression coverage proving a promoted season records positive board/trust/reputation movement and that the queued season-summary event includes the season-impact explanation.
 - Verified the season-impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check, and the `develop-web-game` Playwright client workaround run from the project directory.

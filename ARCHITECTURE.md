@@ -113,6 +113,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Sale-tradeoff coverage proves key-player sales apply the expected board-confidence and squad-morale impact.
 - Replacement-pressure coverage proves confirmed starter sales queue a manager follow-up instead of leaving squad quality loss silent.
 - Replacement-target coverage also proves that, when the market has an affordable candidate, the queued manager buy proposal is same-position and within the intended rating gap from the sold starter.
+- Sale-chain coverage verifies the user-facing order across `sale_ready` -> `sale_confirmed` -> `Replacement needed` -> replacement `contract_offer`, so a starter sale remains understandable across multiple Continue presses.
 - Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
 - The post-match impact note is generated from those actual stored values, not from a duplicated UI-only formula.
 - `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.
