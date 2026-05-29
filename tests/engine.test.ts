@@ -895,6 +895,25 @@ describe("game engine", () => {
     expect(save.eventQueue.some((event) => event.type === "match_preview")).toBe(true);
   });
 
+  it("continues across season boundaries for multiple seeds", () => {
+    for (const seed of [20260630, 20260701, 20260702]) {
+      let save = createNewGame({ ...setup, seed });
+      for (let step = 0; step < 950 && save.history.length < 2; step += 1) {
+        save = generateNextEvents(save);
+        let guard = 0;
+        while (save.currentEvent && guard < 100) {
+          save = resolveHumanStyleEvent(save);
+          guard += 1;
+        }
+        expect(guard).toBeLessThan(100);
+        expect(save.gameOver).toBeUndefined();
+      }
+      expect(save.history.length).toBeGreaterThanOrEqual(2);
+      expect(save.currentEvent?.type).not.toBe("match_preview");
+      expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
+    }
+  }, 60_000);
+
   it("plays multiple human-style seasons through the continue loop", () => {
     let save = createNewGame({ ...setup, seed: 20260622 });
     const counts = new Map<string, number>();

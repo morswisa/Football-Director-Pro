@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-cwgcnup8o-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-4zii6va60-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -52,6 +52,7 @@ Playable V1 includes:
 - Edge-case coverage now proves debt-limit game over, facility upgrade/downgrade economics, manager churn lock behavior, and relegation movement between divisions.
 - Multi-season human-style playtest coverage now drives the game through the Continue queue for multiple seasons with realistic budget, contract, transfer, sale, youth, and facility decisions.
 - Regression coverage now proves next-season match previews are not blocked by prior-season `seenEventKeys`.
+- Multi-seed season-boundary coverage now proves several deterministic careers can cross at least two season transitions without the Continue queue stalling.
 - Squad-depth safety fills AI/user clubs with generated depth players when long careers, loans, or retirements leave a club short.
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.

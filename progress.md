@@ -33,6 +33,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Fixed event-header attribution so financial reports and generic club updates no longer show the current manager by default.
 - Changed informational event Continue buttons to normal footer actions so long financial reports remain readable without rows being covered.
 - Fixed a season-transition stall where reused fixture IDs could make `seenEventKeys` suppress next-season match previews.
+- Added multi-seed season-boundary coverage for several deterministic careers crossing at least two seasons without queue stalls.
 
 ## Next TODO
 
@@ -42,4 +43,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Re-run longer balance tuning after the shared finance breakdown change, especially wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after season-scoped fixture ID fix: `https://football-director-cwgcnup8o-mor-swisas-projects.vercel.app`.
+- Latest preview after multi-seed season-boundary coverage: `https://football-director-4zii6va60-mor-swisas-projects.vercel.app`.
