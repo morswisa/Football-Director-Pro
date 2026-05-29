@@ -34,13 +34,16 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Changed informational event Continue buttons to normal footer actions so long financial reports remain readable without rows being covered.
 - Fixed a season-transition stall where reused fixture IDs could make `seenEventKeys` suppress next-season match previews.
 - Added multi-seed season-boundary coverage for several deterministic careers crossing at least two seasons without queue stalls.
+- Ran final-balance diagnostics across several four-season careers and tightened lower-league cashflow: ticket prices now scale by division, and lower-league season awards are smaller unless the club earns a top finish/promotion.
+- Verified the balance pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright screenshot pass.
 
 ## Next TODO
 
+- Current status response: broad V1 feature implementation is mostly complete; remaining work is final acceptance, balance/mobile polish, and native packaging after web acceptance.
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
 - Continue final mobile acceptance checks across all V1 surfaces and longer balance runs.
-- Re-run longer balance tuning after the shared finance breakdown change, especially wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
+- Continue longer balance tuning after the ticket/prize pass, especially transfer-sale windfalls, wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after multi-seed season-boundary coverage: `https://football-director-4zii6va60-mor-swisas-projects.vercel.app`.
+- Latest preview after lower-league balance tuning: `https://football-director-kdprixtd4-mor-swisas-projects.vercel.app`.

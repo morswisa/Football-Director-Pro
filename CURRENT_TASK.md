@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-4zii6va60-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-kdprixtd4-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -48,11 +48,13 @@ Playable V1 includes:
 - Match-result events now explain the actual post-match relationship/facility movement, including board confidence, manager trust, and stadium condition deltas.
 - Player and manager wage recommendations are formula-driven by division, rating/reputation, age/role/potential, and personality where relevant.
 - Long-run balancing now updates sponsorship, debt limit, stadium upkeep, board confidence, manager trust, and stadium condition across match and season progression.
+- Lower-division cashflow has been tightened: matchday ticket income now scales by division level, and lower-league season awards are modest with clear promotion upside instead of broad windfalls for poor finishes.
 - Promotion and relegation are both modeled in season transitions, with club reputation and confidence changes.
 - Edge-case coverage now proves debt-limit game over, facility upgrade/downgrade economics, manager churn lock behavior, and relegation movement between divisions.
 - Multi-season human-style playtest coverage now drives the game through the Continue queue for multiple seasons with realistic budget, contract, transfer, sale, youth, and facility decisions.
 - Regression coverage now proves next-season match previews are not blocked by prior-season `seenEventKeys`.
 - Multi-seed season-boundary coverage now proves several deterministic careers can cross at least two season transitions without the Continue queue stalling.
+- Balance regression coverage now proves division-scaled matchday income and lower-league season-award progression.
 - Squad-depth safety fills AI/user clubs with generated depth players when long careers, loans, or retirements leave a club short.
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.
@@ -75,6 +77,7 @@ Playable V1 includes:
 
 ## Next Steps
 
+- Current status review: remaining work is finalization, not broad feature discovery. The playable V1 systems are implemented; the next work should focus on final acceptance, balance tuning, mobile QA, and then Capacitor packaging after the web build is accepted.
 - Final web-V1 acceptance pass: play through several careers from a clean save and fix only issues that break the original planned loop or make existing planned systems unclear.
 - Final-check remaining decision feedback during acceptance playtesting and close any specific choice that still changes trust/fan/finance without visible explanation.
 - Continue checking post-event explanations during acceptance playtesting, especially season-end and finance-heavy flows.

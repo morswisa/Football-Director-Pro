@@ -197,3 +197,9 @@
 - Deployed the multi-seed season-boundary coverage pass to Vercel preview: `https://football-director-4zii6va60-mor-swisas-projects.vercel.app`.
 - Verified the season-scoped fixture ID fix with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client.
 - Deployed the season-scoped fixture ID fix to Vercel preview: `https://football-director-cwgcnup8o-mor-swisas-projects.vercel.app`.
+- Reviewed the current remaining scope for the user's status question. The game is now in finalization: clean-save acceptance, balance tuning, mobile QA across all V1 surfaces, and Capacitor native platform generation after the web V1 is accepted.
+- Continued final balance tuning with a temporary multi-seed diagnostic across four seasons. The diagnostic showed that lower-league clubs could become too cash-rich because matchday tickets used one flat price across all divisions and lower-league season awards were too generous for poor finishes.
+- Changed matchday income to use division-level ticket prices and reduced lower-league season awards while keeping stronger rewards for promotion/top finishes.
+- Added regression coverage for division-scaled matchday income and lower-league season-award progression.
+- Verified the balance-tuning pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
+- Deployed the balance-tuning pass to Vercel preview: `https://football-director-kdprixtd4-mor-swisas-projects.vercel.app`.

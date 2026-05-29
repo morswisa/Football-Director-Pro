@@ -24,7 +24,7 @@ import {
   upgradeTraining,
   upgradeYouthAcademy,
 } from "../src/game/engine";
-import { cupRoundWeeks } from "../src/game/calendar";
+import { cupRoundWeeks, seasonPrize } from "../src/game/calendar";
 import { migrateSave } from "../src/game/persistence";
 
 const setup = {
@@ -808,6 +808,24 @@ describe("game engine", () => {
     expect(snapshot.profit).toBe(actualBalanceDelta);
     expect(snapshot.profit).toBeLessThan(0);
     expect(snapshot.balanceAfter - snapshot.balanceBefore).toBe(actualBalanceDelta);
+  });
+
+  it("scales matchday ticket income by division level", () => {
+    const save = createNewGame(setup);
+    const homeFixture = save.fixtures.find((fixture) => fixture.homeClubId === save.userClubId)!;
+    const lowerLeagueIncome = calculateMatchdayIncome(save, homeFixture);
+    const topDivision = save.divisions.find((division) => division.level === 1)!;
+    save.clubs[save.userClubId].divisionId = topDivision.id;
+    const topLeagueIncome = calculateMatchdayIncome(save, homeFixture);
+
+    expect(topLeagueIncome).toBeGreaterThan(lowerLeagueIncome * 2.5);
+  });
+
+  it("keeps lower-league season awards modest with clear promotion upside", () => {
+    expect(seasonPrize(7, 20)).toBeLessThan(200_000);
+    expect(seasonPrize(7, 1)).toBeGreaterThan(seasonPrize(7, 20));
+    expect(seasonPrize(6, 1)).toBeGreaterThan(seasonPrize(7, 1));
+    expect(seasonPrize(5, 1)).toBeGreaterThan(seasonPrize(6, 1));
   });
 
   it("runs many seasons without crashing", () => {

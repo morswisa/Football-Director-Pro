@@ -30,7 +30,9 @@ export function seasonPrize(level: number, position: number) {
   if (level === 2) return 11_000_000 + (position <= 3 ? 3_000_000 : 0);
   if (level === 3) return 2_000_000 + (position <= 3 ? 500_000 : 0);
   if (level === 4) return 1_500_000 + (position <= 3 ? 350_000 : 0);
-  return Math.max(150_000, 1_200_000 - level * 125_000 + Math.max(0, 21 - position) * 12_000);
+  if (level === 5) return 390_000 + Math.max(0, 21 - position) * 9_000 + (position <= 3 ? 120_000 : 0);
+  if (level === 6) return 260_000 + Math.max(0, 21 - position) * 7_000 + (position <= 3 ? 90_000 : 0);
+  return 170_000 + Math.max(0, 21 - position) * 5_000 + (position <= 3 ? 70_000 : 0);
 }
 
 export const cupRoundWeeks = [6, 12, 18, 26, 34];

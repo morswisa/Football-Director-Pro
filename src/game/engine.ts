@@ -156,6 +156,19 @@ function debtLimitForLevel(level: number) {
   return limits[level] ?? limits[7];
 }
 
+function ticketPriceForLevel(level: number) {
+  const prices: Record<number, number> = {
+    1: 32,
+    2: 27,
+    3: 22,
+    4: 18,
+    5: 15,
+    6: 12,
+    7: 9,
+  };
+  return prices[level] ?? prices[7];
+}
+
 function applyClubSeasonEconomy(save: GameSave) {
   const club = userClub(save);
   const level = currentDivisionLevel(save);
@@ -718,8 +731,9 @@ function advanceCupMatch(input: GameSave, fixtureId: string) {
 export function calculateMatchdayIncome(save: GameSave, fixture: Fixture) {
   const club = userClub(save);
   if (fixture.homeClubId !== club.id) return 0;
+  const ticketPrice = ticketPriceForLevel(currentDivisionLevel(save));
   const attendance = Math.round(club.stadium.capacity * Math.min(0.98, 0.45 + club.reputation / 170));
-  return attendance * 24 + club.stadium.facilityLevel * 1_500;
+  return attendance * ticketPrice + club.stadium.facilityLevel * ticketPrice * 65;
 }
 
 export function processWeeklyFinances(input: GameSave, matchdayIncome = 0) {

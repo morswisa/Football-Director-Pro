@@ -91,6 +91,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Loan lifecycle is season-scoped. Loan-in players count toward the temporary squad at their wage-share cost; loan-out players leave the squad until `returnSeasonLoans` restores them to the parent club before the next season starts.
 - Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
+- Lower-league season prizes use smaller per-position values and explicit promotion/top-finish bonuses so weak finishes do not create large cash windfalls.
+- League matchday income uses division-level ticket prices inside `calculateMatchdayIncome`, while attendance still comes from stadium capacity and club reputation.
 - `SeasonHistory` stores the season's finish, record, goals, prize money, outcome, next division, cup summary, trophies, and closing balance for both the season-summary event and History screen.
 - Season impact deltas are captured inside `finishSeason` from the actual mutated club state, including promotion/relegation reputation changes, so the UI does not duplicate the season-outcome formula.
 - Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
@@ -101,6 +103,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Human-style multi-season coverage resolves real Continue events with conservative chairman decisions and periodic facility investments to verify that the playable loop progresses across seasons.
 - Season-transition coverage includes a regression for reused fixture/event IDs so the Continue queue cannot stall at week 1 of a later season.
 - Multi-seed season-boundary coverage runs deterministic Continue-loop careers across multiple completed seasons to catch seed-specific event-queue stalls.
+- Balance coverage includes division-scaled matchday income and lower-league season-award ordering, in addition to the longer multi-season stability tests.
 - Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
 - The post-match impact note is generated from those actual stored values, not from a duplicated UI-only formula.
 - `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.

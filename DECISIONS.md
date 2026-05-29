@@ -38,6 +38,8 @@
 - Settings covers the local-only V1 save lifecycle directly in the app: manual save, export, import, reset, sound toggle, and text size. Import replaces Slot 1 only after schema validation/migration succeeds.
 - The V1 domestic cup is modeled as the fictional Chairman's Cup. It is a single-player seasonal knockout run for the user's club, integrated into Continue events, and cup ties do not affect league points.
 - Long-run balance should prefer self-correcting season systems over manual cleanup: sponsorship/debt scale by level, relationships react to results and finances, stadium condition decays, and clubs receive generated depth players if squads become unplayable.
+- Matchday ticket income must scale by division level. Lower-league clubs should not receive top-flight ticket pricing from the same attendance model.
+- Lower-league season awards should be modest for poor finishes, with the stronger upside reserved for promotion and top finishes.
 - Season transition clarity is part of V1: after a season ends, the player must see the prior season summary before the next season intro, including prize money, promotion/relegation/stay status, next division, record, cup run, and trophies.
 - Season summaries must also explain season-level impact on balance, board confidence, manager trust, and club reputation because those values are core feedback loops for chairman performance.
 - V1 balance must be backed by edge-case tests for systems that can end or derail a career: debt limits, manager churn, facility economics, and promotion/relegation movement.
