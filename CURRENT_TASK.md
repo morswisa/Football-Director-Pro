@@ -49,6 +49,8 @@ Playable V1 includes:
 ## Next Steps
 
 - Continue closing remaining items from the original V1 plan only.
-- Improve depth of planned V1 systems where still shallow: cup competition, loans, import UI, richer event frequency tuning, and wider balance coverage.
+- Improve depth of planned V1 systems where still shallow: cup competition, loans, import/export UI, richer event frequency tuning, wider balance coverage, and season-end progression clarity.
+- Replace or fully retire the legacy `activeProposal` compatibility path after event-queue coverage is complete.
+- Expand tests around long-run simulation, bankruptcy/debt edge cases, facility economics, manager churn, and multi-season promotion/relegation.
 - Continue tuning the newly implemented wage economy and manager compensation values against longer simulated careers.
 - Add native platforms with `npm run mobile:add:ios` and `npm run mobile:add:android` when the web V1 is accepted.
