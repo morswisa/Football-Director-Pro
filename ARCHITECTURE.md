@@ -64,7 +64,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `GameSave.transferBudget` stores the active chairman budget stance for the current transfer window.
 - `GameSave.pendingDeals` stores staged sale flows between incoming bid, sale ready, and sale confirmed.
 - `GameSave.financialSnapshot` stores the latest generated financial breakdown for display and persistence.
-- `latestFinancialSnapshot(save)` is the shared read model for Dashboard, Finance, and financial event cards.
+- `latestFinancialSnapshot(save)` is the shared read model for Dashboard, Finance, and financial event cards, including opening balance, closing balance, income, expenses, and period profit/loss.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
 - Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.

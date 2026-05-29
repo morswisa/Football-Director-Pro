@@ -377,15 +377,27 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   };
   const totalExpenses = Object.values(expenses).reduce((sum, value) => sum + value, 0);
   const totalIncome = Object.values(income).reduce((sum, value) => sum + value, 0);
+  const profit = totalIncome - totalExpenses;
+  const balanceAfter = club.finances.balance;
   return {
     week: save.week,
     month: monthForWeek(save.week),
+    balanceBefore: balanceAfter - profit,
+    balanceAfter,
     expenses,
     income,
     totalExpenses,
     totalIncome,
-    profit: totalIncome - totalExpenses,
+    profit,
   };
+}
+
+function financialReportBody(snapshot: FinancialSnapshot) {
+  return `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}. Balance moved from ${snapshot.balanceBefore.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} to ${snapshot.balanceAfter.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`;
+}
+
+function financialReportNote(snapshot: FinancialSnapshot) {
+  return `Balance movement: ${signedMoney(snapshot.profit)} this period. Income ${snapshot.totalIncome.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; expenses ${snapshot.totalExpenses.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`;
 }
 
 export function latestFinancialSnapshot(input: GameSave) {
@@ -397,8 +409,8 @@ export function latestFinancialSnapshot(input: GameSave) {
 function refreshQueuedFinancialReports(save: GameSave) {
   const snapshot = buildFinancialSnapshot(save);
   save.financialSnapshot = snapshot;
-  if (save.currentEvent?.type === "financial_report") save.currentEvent = { ...save.currentEvent, financialSnapshot: snapshot };
-  save.eventQueue = save.eventQueue.map((event) => event.type === "financial_report" && event.createdSeason === save.season && event.createdWeek === save.week ? { ...event, financialSnapshot: snapshot, body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`, variant: snapshot.profit >= 0 ? "positive" : "negative" } : event);
+  if (save.currentEvent?.type === "financial_report") save.currentEvent = { ...save.currentEvent, financialSnapshot: snapshot, body: financialReportBody(snapshot), note: financialReportNote(snapshot) };
+  save.eventQueue = save.eventQueue.map((event) => event.type === "financial_report" && event.createdSeason === save.season && event.createdWeek === save.week ? { ...event, financialSnapshot: snapshot, body: financialReportBody(snapshot), note: financialReportNote(snapshot), variant: snapshot.profit >= 0 ? "positive" : "negative" } : event);
 }
 
 function ensureFinancialReportAfterTransfer(save: GameSave) {
@@ -411,7 +423,8 @@ function ensureFinancialReportAfterTransfer(save: GameSave) {
     id: `financial_report_transfer_update_${save.season}_${save.week}_${save.seenEventKeys.length}`,
     type: "financial_report",
     title: "Financial report",
-    body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`,
+    body: financialReportBody(snapshot),
+    note: financialReportNote(snapshot),
     requiresDecision: false,
     createdSeason: save.season,
     createdWeek: save.week,
@@ -430,7 +443,8 @@ function ensureFinancialReportAfterCup(save: GameSave) {
     id: `financial_report_cup_update_${save.season}_${save.week}_${save.seenEventKeys.length}`,
     type: "financial_report",
     title: "Financial report",
-    body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`,
+    body: financialReportBody(snapshot),
+    note: financialReportNote(snapshot),
     requiresDecision: false,
     createdSeason: save.season,
     createdWeek: save.week,
@@ -936,7 +950,8 @@ function pushStandardEvents(save: GameSave) {
     id: `financial_report_${weekKey}`,
     type: "financial_report",
     title: "Financial report",
-    body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`,
+    body: financialReportBody(snapshot),
+    note: financialReportNote(snapshot),
     requiresDecision: false,
     createdSeason: save.season,
     createdWeek: save.week,

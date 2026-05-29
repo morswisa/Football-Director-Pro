@@ -169,3 +169,6 @@
 - Added regression coverage proving a promoted season records positive board/trust/reputation movement and that the queued season-summary event includes the season-impact explanation.
 - Verified the season-impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check, and the `develop-web-game` Playwright client workaround run from the project directory.
 - Deployed the season-impact pass to Vercel preview: `https://football-director-qn57otqul-mor-swisas-projects.vercel.app`.
+- Continued the finance acceptance pass by adding opening and closing balance to financial snapshots, financial report event copy, the Finances screen, and report breakdowns. Regression coverage now proves period profit equals closing balance minus opening balance and that refreshed transfer reports keep balance-movement copy.
+- Verified the financial balance-context pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile flow that reached a financial report and confirmed opening/closing balances, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the financial balance-context pass to Vercel preview: `https://football-director-db6tzgysi-mor-swisas-projects.vercel.app`.

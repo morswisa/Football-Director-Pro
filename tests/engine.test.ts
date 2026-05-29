@@ -740,6 +740,8 @@ describe("game engine", () => {
     const updatedReport = save.eventQueue.find((event) => event.type === "financial_report");
     expect(save.currentEvent?.type).toBe("contract_response");
     expect(updatedReport?.financialSnapshot?.expenses.feesOut).toBeGreaterThan(0);
+    expect(updatedReport?.note).toContain("Balance movement");
+    expect(updatedReport?.body).toContain("Balance moved from");
   });
 
   it("uses one latest financial snapshot for summary surfaces", () => {
@@ -753,6 +755,9 @@ describe("game engine", () => {
     const latest = latestFinancialSnapshot(save);
     expect(latest.profit).toBe(save.currentEvent!.financialSnapshot!.profit);
     expect(latest.totalIncome - latest.totalExpenses).toBe(latest.profit);
+    expect(latest.balanceAfter - latest.balanceBefore).toBe(latest.profit);
+    expect(save.currentEvent?.body).toContain("Balance moved from");
+    expect(save.currentEvent?.note).toContain("Income");
   });
 
   it("runs many seasons without crashing", () => {

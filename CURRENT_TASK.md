@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-qn57otqul-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-db6tzgysi-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -50,6 +50,7 @@ Playable V1 includes:
 - Squad-depth safety fills AI/user clubs with generated depth players when long careers, loans, or retirements leave a club short.
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.
+- Financial snapshots include opening balance and closing balance, and financial report copy explains the period balance movement alongside income, expenses, and profit/loss.
 - Mandatory decision modals for event-queue decisions and missing-manager states; the season cannot continue until the user answers.
 - Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero. The selected budget applies only to the active transfer window and expires outside transfer-window weeks.
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
@@ -68,7 +69,7 @@ Playable V1 includes:
 - Final web-V1 acceptance pass: play through several careers from a clean save and fix only issues that break the original planned loop or make existing planned systems unclear.
 - Final-check remaining decision feedback during acceptance playtesting and close any specific choice that still changes trust/fan/finance without visible explanation.
 - Continue checking post-event explanations during acceptance playtesting, especially season-end and finance-heavy flows.
-- Continue checking finance-heavy flows during acceptance playtesting for any remaining unexplained balance movement.
+- Continue checking edge finance flows during acceptance playtesting, especially bankruptcy and large manager-compensation moments.
 - Continue final balance tuning against longer human-style careers, especially wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Verify every planned V1 surface one last time on mobile: Dashboard Continue loop, Roster, League, Manager, Finances, Stadium, Training/Youth popups, History, Settings, match playback, and save/import/export.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.

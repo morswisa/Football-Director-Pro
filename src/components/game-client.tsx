@@ -540,6 +540,8 @@ function FinancesTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
           <span className="text-neutral-500">Report income</span><b className="text-primary">{formatMoney(latestFinance.totalIncome)}</b>
           <span className="text-neutral-500">Report expenses</span><b className="text-danger">{formatMoney(latestFinance.totalExpenses)}</b>
           <span className="text-neutral-500">Report result</span><b className={latestFinance.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(latestFinance.profit)}</b>
+          <span className="text-neutral-500">Opening balance</span><b>{formatMoney(latestFinance.balanceBefore)}</b>
+          <span className="text-neutral-500">Closing balance</span><b>{formatMoney(latestFinance.balanceAfter)}</b>
           <span className="text-neutral-500">Weekly wages</span><b>{formatMoney(finance.weeklyWages)}</b>
           <span className="text-neutral-500">Annual sponsorship</span><b>{formatMoney(finance.sponsorship)}</b>
           <span className="text-neutral-500">Board confidence</span><b>{pct(current.club.boardConfidence)}</b>
@@ -947,6 +949,10 @@ function FinancialRows({ snapshot }: { snapshot?: FinancialSnapshot }) {
       <div className="flex justify-between rounded-lg bg-surface-muted px-3 py-2 text-xs">
         <span className="font-bold uppercase text-neutral-500">Report period</span>
         <b>{snapshot.month} · Period {snapshot.week}</b>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Opening balance <b className="block">{formatMoney(snapshot.balanceBefore)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Closing balance <b className="block">{formatMoney(snapshot.balanceAfter)}</b></p>
       </div>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Expenses</p>

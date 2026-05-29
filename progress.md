@@ -23,13 +23,14 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 ## 2026-05-30
 
 - Added season-end impact tracking and display: season summaries now show balance, board confidence, manager trust, and reputation deltas, and History retains those season impact values.
+- Added financial opening/closing balance context so reports reconcile period profit/loss with the displayed club balance.
 
 ## Next TODO
 
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
-- Watch for any remaining finance-heavy events that still need clearer balance/profit explanation.
+- Watch for any remaining edge finance flows that need clearer explanation, especially bankruptcy and large manager-compensation moments.
 - Continue balance tuning for wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency across longer human-style careers.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after season-impact pass: `https://football-director-qn57otqul-mor-swisas-projects.vercel.app`.
+- Latest preview after financial balance-context pass: `https://football-director-db6tzgysi-mor-swisas-projects.vercel.app`.

@@ -234,6 +234,8 @@ export interface PendingDeal {
 export interface FinancialSnapshot {
   week: number;
   month: string;
+  balanceBefore: number;
+  balanceAfter: number;
   expenses: {
     wages: number;
     stadiumRunning: number;

@@ -76,6 +76,7 @@
 - Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
+- Financial surfaces must also show opening balance and closing balance so the player can reconcile report profit/loss with the displayed club balance.
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.
 - Header period labels include both month and period number so repeated same-month decisions are clearly part of the same in-game period.
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
