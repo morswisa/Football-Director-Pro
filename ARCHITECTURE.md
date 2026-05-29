@@ -70,7 +70,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Sale proposals carry `toClubId` and staged `PendingDeal.buyerClubId` so bid, sale-ready, and sale-confirmed events can attribute the bidding club.
 - `GameSave.liveMatch` stores transient live-playback metadata so the fixture is not simulated twice when the user chooses `Play Match`.
 - `GameSave.cup` stores the current seasonal Chairman's Cup run. Cup fixtures are stored in `fixtures` with `competition: "cup"` and are resolved through the same match preview/result modal path, but they do not update league records.
-- Legacy `activeProposal` still exists for compatibility with older code/tests, but the UI now wraps manager proposals into event cards.
+- Legacy `activeProposal` has been removed. Manager-led transfer, loan, sale, and contract proposals are represented only as `GameEvent` records in `eventQueue/currentEvent`.
 
 ## Calendar And Economy
 

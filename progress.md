@@ -14,4 +14,5 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 
 ## Next TODO
 
-- Continue remaining V1 scope: activeProposal retirement, season-end clarity, and Capacitor native platform generation after web V1 acceptance.
+- Continue remaining V1 scope: season-end clarity, final edge-case balance coverage, and Capacitor native platform generation after web V1 acceptance.
+- Latest preview after retiring the legacy proposal path: `https://football-director-lak47wj92-mor-swisas-projects.vercel.app`.

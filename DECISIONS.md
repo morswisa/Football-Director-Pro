@@ -12,6 +12,7 @@
 - The season cannot continue while a required decision is unresolved.
 - Dashboard Continue is the primary gameplay loop; secondary pages are for inspection and focused management.
 - Continue events are persisted in the save file through `eventQueue` and `currentEvent`, not held only in React component state.
+- V1 has one chairman-decision path only: manager-led transfer, loan, sale, and contract proposals must be generated into `eventQueue/currentEvent`; the legacy `activeProposal` side path is retired.
 - A resolved event immediately advances to the next queued event; only when the queue is empty does the next Continue generate the next period's events.
 - Buy/sell transfer proposals are gated to transfer-window months; contract-renewal proposals may occur outside transfer windows.
 - Loan proposals are gated to transfer-window months and expire into the same decision queue as other manager-led transfer actions.

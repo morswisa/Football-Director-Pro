@@ -3,14 +3,12 @@
 import { create } from "zustand";
 import {
   advanceToNextMatch,
-  approveTransferProposal,
   confirmFireManager,
   createNewGame,
   downgradeTraining,
   downgradeYouthAcademy,
   generateNextEvents,
   normalizeGameState,
-  rejectTransferProposal,
   repairStadium,
   resolveEvent,
   submitManagerHireOffer,
@@ -34,8 +32,6 @@ interface GameStore {
   resolveCurrentEvent: (decision?: { action?: string; terms?: ContractTerms; mode?: TransferBudgetMode }) => Promise<void>;
   hire: (managerId: string, terms: ContractTerms) => Promise<void>;
   fire: () => Promise<void>;
-  approveProposal: (terms?: ContractTerms) => Promise<void>;
-  rejectProposal: () => Promise<void>;
   upgradeStand: (standId: string) => Promise<void>;
   repair: () => Promise<void>;
   upgradeTraining: (levels?: number) => Promise<void>;
@@ -103,20 +99,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const save = confirmFireManager(current);
     await persistSave(save);
     set({ save, message: "Manager dismissed. New candidates are available." });
-  },
-  async approveProposal(terms) {
-    const current = get().save;
-    if (!current) return;
-    const save = approveTransferProposal(current, terms);
-    await persistSave(save);
-    set({ save, message: "Proposal approved." });
-  },
-  async rejectProposal() {
-    const current = get().save;
-    if (!current) return;
-    const save = rejectTransferProposal(current);
-    await persistSave(save);
-    set({ save, message: "Proposal rejected." });
   },
   async upgradeStand(standId) {
     const current = get().save;

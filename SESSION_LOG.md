@@ -114,3 +114,7 @@
 - Added long-run coverage for a full event-queue season and a multi-season direct engine simulation with checks for finances, squad size, relationships, financial snapshots, and game-over stability.
 - Verified the balance pass with `npm test`, `npm run lint`, `npm run build`, and `npm run e2e`.
 - Deployed the long-run balance pass to Vercel preview: `https://football-director-krp2meu9l-mor-swisas-projects.vercel.app`.
+- Reviewed remaining V1 work for the current status request. The main outstanding items are finishing the in-progress legacy `activeProposal` retirement, clarifying season-end progression, adding final V1 balance/test coverage around edge cases, and deferring Capacitor native platform generation until the web V1 is accepted.
+- Retired the legacy `activeProposal` flow from the save type, schema, store, decision modal, engine exports, and tests so manager-led decisions now use only the save-backed `eventQueue/currentEvent` path.
+- Verified the active-proposal retirement with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright MCP mobile dashboard smoke check, and the develop-web-game Playwright client workaround run from the project directory.
+- Deployed the active-proposal retirement pass to Vercel preview: `https://football-director-lak47wj92-mor-swisas-projects.vercel.app`.

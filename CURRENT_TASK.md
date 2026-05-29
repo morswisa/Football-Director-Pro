@@ -6,10 +6,11 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-krp2meu9l-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-lak47wj92-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
+- Legacy `activeProposal` proposal handling has been removed; manager-led proposals now enter the same save-backed `eventQueue/currentEvent` path as every other chairman decision.
 
 ## Implemented Milestone
 
@@ -51,12 +52,12 @@ Playable V1 includes:
 - History now surfaces current-season record context before season-end history exists.
 - Capacitor config and mobile scripts.
 - Settings covers the original local/offline V1 needs: manual save, export copy/download, validated import into Slot 1, reset local career with confirmation, sound toggle, and normal/large text size.
+- Manager-led transfer and contract proposals no longer have a legacy side path; they are generated, displayed, resolved, and persisted through `GameEvent` records only.
 
 ## Next Steps
 
 - Continue closing remaining items from the original V1 plan only.
 - Improve depth of planned V1 systems where still shallow: richer event frequency tuning and season-end progression clarity.
-- Replace or fully retire the legacy `activeProposal` compatibility path after event-queue coverage is complete.
 - Expand tests around bankruptcy/debt edge cases, facility economics, manager churn, and promotion/relegation edge cases.
 - Continue tuning the newly implemented wage economy and manager compensation values against longer simulated careers.
 - Add native platforms with `npm run mobile:add:ios` and `npm run mobile:add:android` when the web V1 is accepted.

@@ -345,7 +345,6 @@ export interface GameSave {
   fixtures: Fixture[];
   currentRound: number;
   lastMatch?: Fixture;
-  activeProposal?: TransferProposal;
   eventQueue: GameEvent[];
   currentEvent?: GameEvent;
   seenEventKeys: string[];

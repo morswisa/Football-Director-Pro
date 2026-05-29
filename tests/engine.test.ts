@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   advanceToNextMatch,
-  approveTransferProposal,
   calculateManagerCompensation,
   calculateRecommendedManagerWage,
   calculateRecommendedPlayerWage,
@@ -11,7 +10,6 @@ import {
   leagueTable,
   latestFinancialSnapshot,
   normalizeGameState,
-  rejectTransferProposal,
   resolveEvent,
   returnSeasonLoans,
   submitManagerHireOffer,
@@ -112,10 +110,23 @@ describe("game engine", () => {
 
   it("generates manager-led proposals without manual scouting", () => {
     let save = createNewGame(setup);
-    for (let i = 0; i < 4 && !save.activeProposal; i += 1) save = advanceToNextMatch(save);
-    expect(save.activeProposal?.title).toBeTruthy();
+    const club = save.clubs[save.userClubId];
+    const player = save.players[club.playerIds[0]];
+    player.contractYears = 1;
+    save.week = 6;
+    save.currentRound = 6;
+    save.currentEvent = undefined;
+    save.eventQueue = [];
+    save = generateNextEvents(save);
+    let guard = 0;
+    while (save.currentEvent && save.currentEvent.type !== "contract_offer" && guard < 12) {
+      save = resolveEvent(save, save.currentEvent.id, save.currentEvent.type === "match_preview" ? { action: "see" } : undefined);
+      guard += 1;
+    }
+    expect(save.currentEvent?.type).toBe("contract_offer");
+    expect(save.currentEvent?.proposal?.type).toBe("contract");
     const before = save.clubs[save.userClubId].finances.balance;
-    save = approveTransferProposal(save);
+    save = resolveEvent(save, save.currentEvent!.id, { action: "offer", terms: { wage: player.wage, years: 2 } });
     expect(save.clubs[save.userClubId].finances.balance).not.toBeNaN();
     expect(save.clubs[save.userClubId].finances.balance).toBeLessThanOrEqual(before + 2_000_000);
   });
@@ -460,7 +471,6 @@ describe("game engine", () => {
     let save = createNewGame(setup);
     for (let i = 0; i < 100; i += 1) {
       save = advanceToNextMatch(save);
-      if (save.activeProposal) save = approveTransferProposal(save);
       if (i % 15 === 0) save = upgradeStand(save, "north");
       expect(save.clubs[save.userClubId].finances.balance).not.toBeNaN();
       if (save.gameOver) break;
@@ -502,9 +512,6 @@ describe("game engine", () => {
     let save = createNewGame({ ...setup, seed: 20260601 });
     for (let i = 0; i < 260; i += 1) {
       save = advanceToNextMatch(save);
-      if (save.activeProposal) {
-        save = save.activeProposal.type === "buy" ? rejectTransferProposal(save) : approveTransferProposal(save);
-      }
       if (i % 30 === 0) save = upgradeStand(save, "north");
       const club = save.clubs[save.userClubId];
       const squad = club.playerIds.map((id) => save.players[id]).filter(Boolean);

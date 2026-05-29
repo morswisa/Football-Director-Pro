@@ -20,7 +20,6 @@ export const gameSaveSchema = z.object({
   fixtures: z.array(z.any()),
   currentRound: z.number(),
   lastMatch: z.any().optional(),
-  activeProposal: z.any().optional(),
   eventQueue: z.array(z.any()).default([]),
   currentEvent: z.any().optional(),
   seenEventKeys: z.array(z.string()).default([]),

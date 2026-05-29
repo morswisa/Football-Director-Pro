@@ -671,7 +671,6 @@ export function advanceToNextMatch(input: GameSave) {
   save.lastMatch = userFixture;
   save.week += 1;
   save.currentRound += 1;
-  if (!save.activeProposal && save.week % 3 === 0) save.activeProposal = generateManagerTransferProposal(save);
   const maxLeagueRound = Math.max(...save.fixtures.filter((fixture) => (fixture.competition ?? "league") === "league").map((fixture) => fixture.round));
   if (save.currentRound > maxLeagueRound) save = finishSeason(save);
   return withUpdate(save);
@@ -754,12 +753,6 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
 }
 
 function queueProposalIfAvailable(save: GameSave) {
-  if (save.activeProposal) {
-    const event = proposalToEvent(save, save.activeProposal);
-    if (event) enqueue(save, event);
-    save.activeProposal = undefined;
-    return;
-  }
   if (save.week % 2 !== 0 && !isTransferWindow(save.week)) return;
   const proposal = generateManagerTransferProposal(save);
   if (!proposal) return;
@@ -1424,7 +1417,6 @@ export function startNextSeason(input: GameSave) {
   save.season += 1;
   save.week = 1;
   save.currentRound = 0;
-  save.activeProposal = undefined;
   save.lastMatch = undefined;
   resetClubRecords(save);
   save = agePlayers(save);
@@ -1623,77 +1615,6 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
     requestedYears,
   };
 }
-
-export function approveTransferProposal(input: GameSave, terms?: ContractTerms) {
-  const save = clone(input);
-  const proposal = save.activeProposal;
-  if (!proposal) return save;
-  const club = userClub(save);
-  const player = save.players[proposal.playerId];
-  if (!player) return save;
-  if (proposal.type === "buy") {
-    if (club.finances.balance < proposal.fee) return save;
-    if (proposal.fromClubId) save.clubs[proposal.fromClubId].playerIds = save.clubs[proposal.fromClubId].playerIds.filter((id) => id !== player.id);
-    club.playerIds.push(player.id);
-    player.clubId = club.id;
-    refreshUserWageBill(save);
-    club.finances.balance -= proposal.fee;
-    club.managerTrust = Math.min(99, club.managerTrust + 3);
-  }
-  if (proposal.type === "sell") {
-    club.playerIds = club.playerIds.filter((id) => id !== player.id);
-    player.clubId = undefined;
-    refreshUserWageBill(save);
-    club.finances.balance += proposal.fee;
-    club.managerTrust = Math.min(99, club.managerTrust + 1);
-  }
-  if (proposal.type === "loan") {
-    const loanIn = proposal.loanDirection !== "out";
-    if (loanIn) {
-      if (club.finances.balance < proposal.fee) return save;
-      if (proposal.fromClubId) save.clubs[proposal.fromClubId].playerIds = save.clubs[proposal.fromClubId].playerIds.filter((id) => id !== player.id);
-      if (!club.playerIds.includes(player.id)) club.playerIds.push(player.id);
-      player.clubId = club.id;
-      player.loan = { direction: "in", parentClubId: proposal.fromClubId ?? "", temporaryClubId: club.id, expiresSeason: save.season, wageShare: proposal.requestedWage ?? proposal.wageDelta };
-      refreshUserWageBill(save);
-      club.finances.balance -= proposal.fee;
-      club.managerTrust = Math.min(99, club.managerTrust + 2);
-    } else {
-      const destination = proposal.toClubId ? save.clubs[proposal.toClubId] : undefined;
-      club.playerIds = club.playerIds.filter((id) => id !== player.id);
-      if (destination && !destination.playerIds.includes(player.id)) destination.playerIds.push(player.id);
-      player.clubId = destination?.id;
-      player.loan = { direction: "out", parentClubId: club.id, temporaryClubId: destination?.id ?? "", expiresSeason: save.season, wageShare: proposal.requestedWage ?? Math.abs(proposal.wageDelta) };
-      refreshUserWageBill(save);
-      club.finances.balance += proposal.fee;
-      club.managerTrust = Math.min(99, club.managerTrust + 1);
-    }
-  }
-  if (proposal.type === "contract") {
-    const wage = terms?.wage ?? proposal.requestedWage ?? player.wage + proposal.wageDelta;
-    const years = terms?.years ?? proposal.requestedYears ?? 3;
-    player.contractYears = years;
-    player.wage = wage;
-    refreshUserWageBill(save);
-    player.morale = Math.min(99, player.morale + (wage >= (proposal.requestedWage ?? wage) ? 8 : 2));
-    club.managerTrust = Math.min(99, club.managerTrust + 2);
-  }
-  save.activeProposal = undefined;
-  return withUpdate(updateAchievements(save));
-}
-
-export function rejectTransferProposal(input: GameSave) {
-  const save = clone(input);
-  save.activeProposal = undefined;
-  const club = userClub(save);
-  club.boardConfidence = Math.max(20, club.boardConfidence - 1);
-  club.managerTrust = Math.max(0, club.managerTrust - 4);
-  return withUpdate(save);
-}
-
-export const generateContractProposal = generateManagerTransferProposal;
-export const approveSaleProposal = approveTransferProposal;
-export const rejectSaleProposal = rejectTransferProposal;
 
 export function generateManagerHireOffer(input: GameSave, managerId: string) {
   const save = clone(input);

@@ -760,8 +760,6 @@ function ContractOfferControls({ player, requestedWage, requestedYears, approve 
 
 function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; setTab: (tab: Tab) => void; suppressed?: boolean }) {
   const current = useCurrent(save)!;
-  const approve = useGameStore((state) => state.approveProposal);
-  const reject = useGameStore((state) => state.rejectProposal);
 
   if (suppressed) return null;
 
@@ -772,42 +770,6 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
           <p className="text-xs font-semibold uppercase text-danger">Career stopped</p>
           <h2 className="mt-1 text-xl font-bold">Board Decision</h2>
           <p className="mt-2 text-sm leading-6 text-neutral-600">{save.gameOver}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (save.activeProposal) {
-    const player = save.players[save.activeProposal.playerId];
-    return (
-      <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-5">
-        <div role="dialog" aria-modal="true" aria-labelledby="decision-title" className="w-full rounded-xl bg-white p-5 shadow-2xl">
-          <p className="text-xs font-semibold uppercase text-primary">Decision required</p>
-          <h2 id="decision-title" className="mt-1 text-xl font-bold">{save.activeProposal.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">{save.activeProposal.rationale}</p>
-          {player ? (
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-              <p className="rounded-lg bg-surface-muted px-2 py-3"><b className={cn("mx-auto block w-8 rounded-md py-1 text-white", positionClass(player.position))}>{displayPosition(player.position)}</b><span className="block text-xs text-neutral-500">Position</span></p>
-              <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{player.rating}</b><span className="block text-xs text-neutral-500">Rating</span></p>
-              <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{player.age}</b><span className="block text-xs text-neutral-500">Age</span></p>
-            </div>
-          ) : null}
-          {save.activeProposal.type === "contract" && player ? (
-            <ContractOfferControls player={player} requestedWage={save.activeProposal.requestedWage ?? player.wage + save.activeProposal.wageDelta} requestedYears={save.activeProposal.requestedYears ?? 3} approve={approve} />
-          ) : (
-            <>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <p className="rounded-lg bg-surface-muted px-3 py-3">Fee <b className="block">{formatMoney(save.activeProposal.fee)}</b></p>
-                <p className="rounded-lg bg-surface-muted px-3 py-3">Wages <b className="block">{formatMoney(save.activeProposal.wageDelta)}</b></p>
-              </div>
-              <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
-                <Button onClick={() => approve()}>Approve</Button>
-                <Button variant="secondary" onClick={reject}>Reject</Button>
-              </div>
-            </>
-          )}
-          {save.activeProposal.type === "contract" ? <Button variant="secondary" className="mt-3 w-full" onClick={reject}>Reject Request</Button> : null}
-          <p className="mt-3 text-center text-xs text-neutral-500">You must answer before the season can continue.</p>
         </div>
       </div>
     );
