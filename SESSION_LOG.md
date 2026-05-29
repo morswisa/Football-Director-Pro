@@ -165,6 +165,11 @@
 
 ## 2026-05-30
 
+- Reviewed the current remaining game scope for the user. The remaining work is finalization-focused: complete the clean-save acceptance pass, verify all original V1 surfaces on mobile, tune long-run economy/relationships, close only original-scope issues found during that pass, then package with Capacitor after the web build is accepted.
+- Expanded the Playwright clean-save acceptance path to cover club creation, League, Roster sorting, Manager, Finances, Stadium, Training/Youth popups, History, Settings, and the first required Continue events through transfer-budget confirmation.
+- The expanded acceptance path exposed an event-header attribution bug: the opening League Path club update could render the current manager header when the event carried a `managerId`. Fixed the UI gate so manager headers render only for manager-subject events, and added e2e coverage that the opening club update shows the club rather than manager trust context.
+- Verified this acceptance pass with `npm run e2e`, `npm run lint`, `npm test` (41 tests), `npm run build`, the develop-web-game Playwright client, and a focused mobile screenshot of the League Path event.
+- Deployed the acceptance-header pass to Vercel preview: `https://football-director-reocha0wa-mor-swisas-projects.vercel.app`.
 - Continued the final acceptance pass by making season-end consequences explicit: `SeasonHistory` now stores balance, board-confidence, manager-trust, and reputation before/after values; season-summary events include a season-impact note; and the season-summary and History UI render those deltas.
 - Added regression coverage proving a promoted season records positive board/trust/reputation movement and that the queued season-summary event includes the season-impact explanation.
 - Verified the season-impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check, and the `develop-web-game` Playwright client workaround run from the project directory.
