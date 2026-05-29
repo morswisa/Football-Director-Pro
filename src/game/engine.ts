@@ -42,6 +42,17 @@ function playersForClub(save: GameSave, club: Club) {
   return club.playerIds.map((id) => save.players[id]).filter(Boolean);
 }
 
+function playerWeeklyCostForClub(player: Player, clubId: string) {
+  if (player.loan && player.loan.temporaryClubId === clubId) return player.loan.wageShare;
+  return player.wage;
+}
+
+function refreshUserWageBill(save: GameSave) {
+  const club = userClub(save);
+  const manager = getManager(save, club);
+  club.finances.weeklyWages = playersForClub(save, club).reduce((sum, player) => sum + playerWeeklyCostForClub(player, club.id), 0) + (manager?.wage ?? 0);
+}
+
 function getManager(save: GameSave, club: Club) {
   return club.managerId ? save.managers[club.managerId] : undefined;
 }
@@ -201,8 +212,8 @@ function transferBudgetAmount(save: GameSave, mode: TransferBudgetMode) {
 function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   const club = userClub(save);
   const weekTransactions = club.finances.transactions.filter((tx) => tx.week === save.week);
-  const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
-  const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid") || tx.label.toLowerCase().includes("loan fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received") || tx.label.toLowerCase().includes("loan fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const managerCosts = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("manager")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
   const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award") || tx.label.toLowerCase().includes("cup prize")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const cupMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("cup matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
@@ -508,7 +519,7 @@ export function processWeeklyFinances(input: GameSave, matchdayIncome = 0) {
   const club = userClub(save);
   const squad = playersForClub(save, club);
   const manager = getManager(save, club);
-  const weeklyWages = squad.reduce((sum, player) => sum + player.wage, 0) + (manager?.wage ?? 0);
+  const weeklyWages = squad.reduce((sum, player) => sum + playerWeeklyCostForClub(player, club.id), 0) + (manager?.wage ?? 0);
   const sponsor = Math.round(club.finances.sponsorship / 38);
   const merch = Math.round(club.reputation * 85 + club.record.won * 120);
   const upkeep = club.finances.upkeep + Math.round((100 - club.stadium.condition) * 75);
@@ -596,6 +607,28 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
       managerId: manager.id,
       proposal: { ...proposal, requestedWage, requestedYears },
       note: "This is an external transfer target, not a current squad contract. Walking away reduces manager trust by 4; completing the signing improves it by 4.",
+    };
+  }
+  if (proposal.type === "loan") {
+    const sourceClub = proposal.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
+    const destinationClub = proposal.toClubId ? save.clubs[proposal.toClubId] : undefined;
+    const loanIn = proposal.loanDirection !== "out";
+    return {
+      id: `contract_offer_${proposal.id}`,
+      type: "contract_offer",
+      title: loanIn ? "Manager suggests loan signing" : "Loan offer received",
+      body: loanIn
+        ? `${manager.name} wants to loan ${player.name} from ${sourceClub?.name ?? "another club"} until the end of the season. The deal needs a ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} loan fee and a weekly wage contribution around ${(proposal.requestedWage ?? proposal.wageDelta).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`
+        : `${destinationClub?.name ?? "Another club"} wants to loan ${player.name} until the end of the season. They would pay a ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} loan fee and cover ${(proposal.requestedWage ?? Math.abs(proposal.wageDelta)).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} of his weekly wages.`,
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: manager.id,
+      proposal: { ...proposal, requestedWage: proposal.requestedWage ?? Math.abs(proposal.wageDelta), requestedYears: 1 },
+      note: loanIn
+        ? "Loan signings add short-term squad depth without a permanent transfer fee. Completing the loan improves manager trust by 2; walking away reduces it by 2."
+        : "Loaning out a squad player can reduce wage pressure and improve development. Accepting improves manager trust by 1; rejecting reduces it by 1.",
     };
   }
   return {
@@ -854,7 +887,107 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     return withUpdate(updateAchievements(save));
   } else if (event.type === "contract_offer" && event.proposal && player) {
     const proposal = event.proposal;
-    if (action === "reject" && proposal.type === "buy") {
+    if (proposal.type === "loan") {
+      const loanIn = proposal.loanDirection !== "out";
+      if (action === "reject") {
+        club.managerTrust = Math.max(0, club.managerTrust - (loanIn ? 2 : 1));
+        enqueue(save, {
+          id: `contract_response_loan_rejected_${proposal.id}`,
+          type: "contract_response",
+          title: loanIn ? "Loan target dropped" : "Loan offer rejected",
+          body: loanIn
+            ? `You walked away from a loan deal for ${player.name}. Manager trust -2.`
+            : `You rejected the loan offer for ${player.name}. Manager trust -1.`,
+          requiresDecision: false,
+          createdSeason: save.season,
+          createdWeek: save.week,
+          playerId: player.id,
+          managerId: manager?.id,
+          variant: "negative",
+        });
+      } else if (loanIn) {
+        const offeredFee = decision?.terms?.fee ?? proposal.fee;
+        const wageShare = decision?.terms?.wage ?? proposal.requestedWage ?? proposal.wageDelta;
+        const source = proposal.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
+        const parentAccepts = offeredFee >= proposal.fee * 0.9 && wageShare >= (proposal.requestedWage ?? proposal.wageDelta) * 0.85;
+        if (!parentAccepts) {
+          club.managerTrust = Math.max(0, club.managerTrust - 1);
+          enqueue(save, {
+            id: `contract_response_loan_refused_${proposal.id}`,
+            type: "contract_response",
+            title: "Loan terms refused",
+            body: `${source?.name ?? "The parent club"} rejected the loan package for ${player.name}. Manager trust -1.`,
+            requiresDecision: false,
+            createdSeason: save.season,
+            createdWeek: save.week,
+            playerId: player.id,
+            managerId: manager?.id,
+            variant: "negative",
+          });
+        } else if (club.finances.balance >= offeredFee && (!save.transferBudget || save.transferBudget.amount >= offeredFee)) {
+          if (source) source.playerIds = source.playerIds.filter((id) => id !== player.id);
+          if (!club.playerIds.includes(player.id)) club.playerIds.push(player.id);
+          player.clubId = club.id;
+          player.loan = { direction: "in", parentClubId: proposal.fromClubId ?? "", temporaryClubId: club.id, expiresSeason: save.season, wageShare };
+          refreshUserWageBill(save);
+          club.finances.balance -= offeredFee;
+          club.finances.transactions.unshift({ id: `tx_loan_paid_${proposal.id}`, week: save.week, label: `Loan fee paid: ${player.name}`, amount: -offeredFee });
+          club.managerTrust = Math.min(99, club.managerTrust + 2);
+          enqueue(save, {
+            id: `contract_response_loan_signed_${proposal.id}`,
+            type: "contract_response",
+            title: "Loan signing completed",
+            body: `${player.name} has joined on loan from ${source?.name ?? "his parent club"} until the end of the season. Loan fee ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; weekly contribution ${wageShare.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Manager trust +2.`,
+            requiresDecision: false,
+            createdSeason: save.season,
+            createdWeek: save.week,
+            playerId: player.id,
+            managerId: manager?.id,
+            variant: "positive",
+          });
+          ensureFinancialReportAfterTransfer(save);
+        } else {
+          club.managerTrust = Math.max(0, club.managerTrust - 3);
+          enqueue(save, {
+            id: `contract_response_loan_blocked_${proposal.id}`,
+            type: "contract_response",
+            title: "Loan blocked",
+            body: `${player.name}'s loan could not be completed within the available budget. Manager trust -3.`,
+            requiresDecision: false,
+            createdSeason: save.season,
+            createdWeek: save.week,
+            playerId: player.id,
+            managerId: manager?.id,
+            variant: "negative",
+          });
+        }
+      } else {
+        const destination = proposal.toClubId ? save.clubs[proposal.toClubId] : undefined;
+        const wageCovered = proposal.requestedWage ?? Math.abs(proposal.wageDelta);
+        club.playerIds = club.playerIds.filter((id) => id !== player.id);
+        if (destination && !destination.playerIds.includes(player.id)) destination.playerIds.push(player.id);
+        player.clubId = destination?.id;
+        player.loan = { direction: "out", parentClubId: club.id, temporaryClubId: destination?.id ?? "", expiresSeason: save.season, wageShare: wageCovered };
+        refreshUserWageBill(save);
+        player.morale = Math.min(99, player.morale + 5);
+        club.finances.balance += proposal.fee;
+        club.finances.transactions.unshift({ id: `tx_loan_received_${proposal.id}`, week: save.week, label: `Loan fee received: ${player.name}`, amount: proposal.fee });
+        club.managerTrust = Math.min(99, club.managerTrust + 1);
+        enqueue(save, {
+          id: `contract_response_loan_out_${proposal.id}`,
+          type: "contract_response",
+          title: "Loan agreed",
+          body: `${player.name} has joined ${destination?.name ?? "another club"} on loan until the end of the season. The club receives ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and saves ${wageCovered.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Manager trust +1.`,
+          requiresDecision: false,
+          createdSeason: save.season,
+          createdWeek: save.week,
+          playerId: player.id,
+          managerId: manager?.id,
+          variant: "positive",
+        });
+        ensureFinancialReportAfterTransfer(save);
+      }
+    } else if (action === "reject" && proposal.type === "buy") {
       club.managerTrust = Math.max(0, club.managerTrust - 4);
       enqueue(save, {
         id: `contract_response_target_dropped_${proposal.id}`,
@@ -936,6 +1069,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         player.clubId = club.id;
         player.wage = wage;
         player.contractYears = years;
+        refreshUserWageBill(save);
         club.finances.balance -= offeredFee;
         club.finances.transactions.unshift({ id: `tx_transfer_paid_${proposal.id}`, week: save.week, label: `Transfer fee paid: ${player.name}`, amount: -offeredFee });
         club.managerTrust = Math.min(99, club.managerTrust + 4);
@@ -976,6 +1110,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       if (accepted) {
         player.wage = wage;
         player.contractYears = years;
+        refreshUserWageBill(save);
         player.morale = Math.min(99, player.morale + 9);
         club.managerTrust = Math.min(99, club.managerTrust + 3);
       } else {
@@ -1035,6 +1170,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     if (soldPlayer && action !== "reject") {
       club.playerIds = club.playerIds.filter((id) => id !== soldPlayer.id);
       soldPlayer.clubId = undefined;
+      refreshUserWageBill(save);
       club.finances.balance += deal.fee;
       club.finances.transactions.unshift({ id: `tx_transfer_received_${deal.id}`, week: save.week, label: `Transfer fee received: ${soldPlayer.name}`, amount: deal.fee });
       enqueue(save, {
@@ -1070,6 +1206,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     if (action === "offer") {
       player.contractYears = 2;
       player.wage = Math.max(player.wage, Math.round(player.rating * 95));
+      refreshUserWageBill(save);
       player.morale = Math.min(99, player.morale + 8);
       enqueue(save, {
         id: `youth_promoted_${player.id}_${save.season}`,
@@ -1086,6 +1223,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     } else {
       club.playerIds = club.playerIds.filter((id) => id !== player.id);
       delete save.players[player.id];
+      refreshUserWageBill(save);
     }
   } else if (event.type === "match_preview") {
     const playLive = action === "play";
@@ -1162,6 +1300,7 @@ export function finishSeason(input: GameSave) {
 
 export function startNextSeason(input: GameSave) {
   let save = clone(input);
+  save = returnSeasonLoans(save);
   save.season += 1;
   save.week = 1;
   save.currentRound = 0;
@@ -1176,6 +1315,21 @@ export function startNextSeason(input: GameSave) {
   const division = save.divisions.find((item) => item.id === userClub(save).divisionId);
   save.fixtures = division ? generateSeasonFixtures(division) : [];
   return withUpdate(updateAchievements(save));
+}
+
+export function returnSeasonLoans(input: GameSave) {
+  const save = clone(input);
+  Object.values(save.players).forEach((player) => {
+    if (!player.loan || player.loan.expiresSeason > save.season) return;
+    const temporaryClub = save.clubs[player.loan.temporaryClubId];
+    const parentClub = save.clubs[player.loan.parentClubId];
+    if (temporaryClub) temporaryClub.playerIds = temporaryClub.playerIds.filter((id) => id !== player.id);
+    if (parentClub && !parentClub.playerIds.includes(player.id)) parentClub.playerIds.push(player.id);
+    player.clubId = parentClub?.id;
+    player.loan = undefined;
+  });
+  refreshUserWageBill(save);
+  return save;
 }
 
 export function agePlayers(input: GameSave) {
@@ -1229,7 +1383,7 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
   const [kindRoll, s1] = randomInt(state, 1, 100);
   state = s1;
   const windowOpen = isTransferWindow(save.week);
-  if (windowOpen && kindRoll <= 48) {
+  if (windowOpen && kindRoll <= 40) {
     const ownRatings = playersForClub(save, club).map((p) => p.rating);
     const targetRating = Math.max(...ownRatings) - 2;
     const candidates = Object.values(save.players).filter((player) => player.clubId !== club.id && player.rating >= targetRating - 10 && player.value <= club.finances.balance * 0.75);
@@ -1250,7 +1404,7 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
       expiresWeek: save.week + 2,
     };
   }
-  if (windowOpen && kindRoll <= 76) {
+  if (windowOpen && kindRoll <= 66) {
     const saleCandidates = playersForClub(save, club).filter((player) => player.age > 29 || player.contractYears <= 1).sort((a, b) => b.value - a.value);
     const player = saleCandidates[0];
     if (!player) return undefined;
@@ -1271,6 +1425,61 @@ export function generateManagerTransferProposal(save: GameSave): TransferProposa
       wageDelta: -player.wage,
       expiresWeek: save.week + 2,
     };
+  }
+  if (windowOpen && kindRoll <= 88) {
+    if (kindRoll <= 80) {
+      const ownRatings = playersForClub(save, club).map((p) => p.rating);
+      const targetRating = Math.max(...ownRatings) - 6;
+      const candidates = Object.values(save.players).filter((player) => player.clubId && player.clubId !== club.id && !player.loan && player.rating >= targetRating - 8 && player.value > club.finances.balance * 0.55);
+      if (candidates.length > 0) {
+        const [player, s2] = pickOne(state, candidates);
+        save.rngState = s2;
+        const wageShare = Math.max(100, Math.round(player.wage * 0.55));
+        return {
+          id: `proposal_${save.week}_loan_in_${player.id}`,
+          type: "loan",
+          loanDirection: "in",
+          week: save.week,
+          title: `Loan ${player.name}`,
+          rationale: `${manager.name} wants short-term depth without paying a permanent transfer fee.`,
+          playerId: player.id,
+          fromClubId: player.clubId,
+          toClubId: club.id,
+          fee: Math.round(player.value * 0.035),
+          wageDelta: wageShare,
+          expiresWeek: save.week + 2,
+          requestedWage: wageShare,
+          requestedYears: 1,
+        };
+      }
+    }
+    const loanOutCandidates = playersForClub(save, club)
+      .filter((player) => !player.loan && (player.age <= 23 || player.rating < 55))
+      .sort((a, b) => a.rating - b.rating || a.age - b.age);
+    const player = loanOutCandidates[0];
+    if (player) {
+      const sameDivision = save.divisions.find((division) => division.id === club.divisionId);
+      const bidderIds = (sameDivision?.clubIds ?? []).filter((id) => id !== club.id);
+      const [bidderId, s2] = pickOne(state, bidderIds.length ? bidderIds : Object.keys(save.clubs).filter((id) => id !== club.id));
+      save.rngState = s2;
+      const wageCovered = Math.max(50, Math.round(player.wage * 0.75));
+      return {
+        id: `proposal_${save.week}_loan_out_${player.id}`,
+        type: "loan",
+        loanDirection: "out",
+        week: save.week,
+        title: `Loan out ${player.name}`,
+        rationale: `${manager.name} thinks regular football elsewhere would help ${player.name}.`,
+        playerId: player.id,
+        fromClubId: club.id,
+        toClubId: bidderId,
+        fee: Math.round(player.value * 0.025),
+        wageDelta: -wageCovered,
+        expiresWeek: save.week + 2,
+        requestedWage: wageCovered,
+        requestedYears: 1,
+      };
+    }
   }
   const renewals = playersForClub(save, club).filter((player) => player.contractYears <= 1 || player.morale < 55).sort((a, b) => b.rating - a.rating);
   const player = renewals[0];
@@ -1305,20 +1514,45 @@ export function approveTransferProposal(input: GameSave, terms?: ContractTerms) 
     if (proposal.fromClubId) save.clubs[proposal.fromClubId].playerIds = save.clubs[proposal.fromClubId].playerIds.filter((id) => id !== player.id);
     club.playerIds.push(player.id);
     player.clubId = club.id;
+    refreshUserWageBill(save);
     club.finances.balance -= proposal.fee;
     club.managerTrust = Math.min(99, club.managerTrust + 3);
   }
   if (proposal.type === "sell") {
     club.playerIds = club.playerIds.filter((id) => id !== player.id);
     player.clubId = undefined;
+    refreshUserWageBill(save);
     club.finances.balance += proposal.fee;
     club.managerTrust = Math.min(99, club.managerTrust + 1);
+  }
+  if (proposal.type === "loan") {
+    const loanIn = proposal.loanDirection !== "out";
+    if (loanIn) {
+      if (club.finances.balance < proposal.fee) return save;
+      if (proposal.fromClubId) save.clubs[proposal.fromClubId].playerIds = save.clubs[proposal.fromClubId].playerIds.filter((id) => id !== player.id);
+      if (!club.playerIds.includes(player.id)) club.playerIds.push(player.id);
+      player.clubId = club.id;
+      player.loan = { direction: "in", parentClubId: proposal.fromClubId ?? "", temporaryClubId: club.id, expiresSeason: save.season, wageShare: proposal.requestedWage ?? proposal.wageDelta };
+      refreshUserWageBill(save);
+      club.finances.balance -= proposal.fee;
+      club.managerTrust = Math.min(99, club.managerTrust + 2);
+    } else {
+      const destination = proposal.toClubId ? save.clubs[proposal.toClubId] : undefined;
+      club.playerIds = club.playerIds.filter((id) => id !== player.id);
+      if (destination && !destination.playerIds.includes(player.id)) destination.playerIds.push(player.id);
+      player.clubId = destination?.id;
+      player.loan = { direction: "out", parentClubId: club.id, temporaryClubId: destination?.id ?? "", expiresSeason: save.season, wageShare: proposal.requestedWage ?? Math.abs(proposal.wageDelta) };
+      refreshUserWageBill(save);
+      club.finances.balance += proposal.fee;
+      club.managerTrust = Math.min(99, club.managerTrust + 1);
+    }
   }
   if (proposal.type === "contract") {
     const wage = terms?.wage ?? proposal.requestedWage ?? player.wage + proposal.wageDelta;
     const years = terms?.years ?? proposal.requestedYears ?? 3;
     player.contractYears = years;
     player.wage = wage;
+    refreshUserWageBill(save);
     player.morale = Math.min(99, player.morale + (wage >= (proposal.requestedWage ?? wage) ? 8 : 2));
     club.managerTrust = Math.min(99, club.managerTrust + 2);
   }

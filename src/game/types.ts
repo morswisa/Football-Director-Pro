@@ -4,6 +4,7 @@ export type Personality = "Winner" | "Builder" | "Pragmatist" | "Maverick" | "Me
 export type ProposalType = "buy" | "sell" | "contract" | "loan";
 export type FixtureStatus = "scheduled" | "played";
 export type CompetitionType = "league" | "cup";
+export type LoanDirection = "in" | "out";
 export type ManagerStatus = "free_agent" | "contracted";
 export type GameEventType =
   | "club_update"
@@ -87,8 +88,17 @@ export interface Player {
   fitness: number;
   morale: number;
   personality: Personality;
+  loan?: LoanInfo;
   seasonStats: PlayerStats;
   careerStats: PlayerStats;
+}
+
+export interface LoanInfo {
+  direction: LoanDirection;
+  parentClubId: string;
+  temporaryClubId: string;
+  expiresSeason: number;
+  wageShare: number;
 }
 
 export interface PlayerStats {
@@ -194,6 +204,7 @@ export interface TransferProposal {
   fee: number;
   wageDelta: number;
   expiresWeek: number;
+  loanDirection?: LoanDirection;
   requestedWage?: number;
   requestedYears?: number;
 }

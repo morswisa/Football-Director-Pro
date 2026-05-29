@@ -12,6 +12,7 @@ import {
   latestFinancialSnapshot,
   normalizeGameState,
   resolveEvent,
+  returnSeasonLoans,
   submitManagerHireOffer,
   upgradeStand,
 } from "../src/game/engine";
@@ -226,6 +227,93 @@ describe("game engine", () => {
     expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
     const report = save.eventQueue.find((event) => event.type === "financial_report") ?? save.currentEvent;
     expect(report?.financialSnapshot?.expenses.feesOut).toBeGreaterThan(0);
+  });
+
+  it("completes loan-in deals and returns the player at season end", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const player = Object.values(save.players).find((item) => item.clubId !== club.id && item.value > club.finances.balance * 0.5)!;
+    const parentClubId = player.clubId!;
+    save.week = 2;
+    save.transferBudget = { mode: "normal", amount: club.finances.balance };
+    save.currentEvent = {
+      id: "loan_in_event",
+      type: "contract_offer",
+      title: "Manager suggests loan signing",
+      body: "Loan target",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_loan_in",
+        type: "loan",
+        loanDirection: "in",
+        week: save.week,
+        title: "Loan player",
+        rationale: "Depth",
+        playerId: player.id,
+        fromClubId: parentClubId,
+        toClubId: club.id,
+        fee: 10_000,
+        wageDelta: 500,
+        expiresWeek: save.week + 2,
+        requestedWage: 500,
+        requestedYears: 1,
+      },
+    };
+    save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: 10_000, wage: 500, years: 1 } });
+    expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
+    expect(save.players[player.id].loan?.direction).toBe("in");
+    expect(latestFinancialSnapshot(save).expenses.feesOut).toBeGreaterThan(0);
+    save = returnSeasonLoans(save);
+    expect(save.clubs[save.userClubId].playerIds).not.toContain(player.id);
+    expect(save.clubs[parentClubId].playerIds).toContain(player.id);
+    expect(save.players[player.id].loan).toBeUndefined();
+  });
+
+  it("accepts outgoing loans and restores the player to the parent club", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const destination = save.divisions.find((item) => item.id === club.divisionId)!.clubIds.map((id) => save.clubs[id]).find((item) => item.id !== club.id)!;
+    const player = club.playerIds.map((id) => save.players[id]).sort((a, b) => a.rating - b.rating)[0];
+    save.week = 2;
+    save.currentEvent = {
+      id: "loan_out_event",
+      type: "contract_offer",
+      title: "Loan offer received",
+      body: "Loan out",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_loan_out",
+        type: "loan",
+        loanDirection: "out",
+        week: save.week,
+        title: "Loan out player",
+        rationale: "Development",
+        playerId: player.id,
+        fromClubId: club.id,
+        toClubId: destination.id,
+        fee: 8_000,
+        wageDelta: -400,
+        expiresWeek: save.week + 2,
+        requestedWage: 400,
+        requestedYears: 1,
+      },
+    };
+    save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: 8_000, wage: 400, years: 1 } });
+    expect(save.clubs[save.userClubId].playerIds).not.toContain(player.id);
+    expect(save.clubs[destination.id].playerIds).toContain(player.id);
+    expect(save.players[player.id].loan?.direction).toBe("out");
+    expect(latestFinancialSnapshot(save).income.feesIn).toBeGreaterThan(0);
+    save = returnSeasonLoans(save);
+    expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
+    expect(save.players[player.id].loan).toBeUndefined();
   });
 
   it("walking away from a transfer target creates a clear target-dropped response", () => {

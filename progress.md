@@ -9,7 +9,8 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Tried to run the develop-web-game Playwright client, but its script could not resolve the local `playwright` package from the skill directory. Used the project Playwright e2e and in-app browser verification instead.
 - Browser-verified Settings at 430x932 and saved `settings-verification.png`; controls fit and the large-text state is visible.
 - Implemented the fictional Chairman's Cup as the V1 domestic cup: scheduled cup weeks, draw event, cup match preview/result, prize money, dashboard/history display, and unit/browser coverage.
+- Implemented manager-led loans: loan-in, loan-out, wage-share costs, loan fee transactions, parent-club return at season end, UI controls, and unit/browser coverage.
 
 ## Next TODO
 
-- Continue remaining V1 scope: loans, richer long-run balancing, activeProposal retirement, season-end clarity, and Capacitor native platform generation after web V1 acceptance.
+- Continue remaining V1 scope: richer long-run balancing, activeProposal retirement, season-end clarity, and Capacitor native platform generation after web V1 acceptance.

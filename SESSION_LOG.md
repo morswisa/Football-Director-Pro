@@ -105,3 +105,7 @@
 - Added unit coverage for cup ties to prove cup matches do not change league records and that cup prize money appears in financial snapshots.
 - Verified the cup pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and a browser automation pass that reached the Chairman's Cup draw inside the Continue loop.
 - Deployed the cup pass to Vercel preview: `https://football-director-r42qch223-mor-swisas-projects.vercel.app`.
+- Continued the persistent MVP goal by implementing manager-led loans: loan-in offers with fee and weekly wage contribution, loan-out offers with fee income and wage relief, loan trust effects, loan financial report integration, roster loan labels, and end-of-season loan returns.
+- Added unit coverage for loan-in and loan-out flows, including financial report fee visibility and return to parent club.
+- Verified the loans pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and a browser automation pass that reached a loan decision in the Continue loop.
+- Deployed the loans pass to Vercel preview: `https://football-director-7h06b6gcm-mor-swisas-projects.vercel.app`.

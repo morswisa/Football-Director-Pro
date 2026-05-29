@@ -339,7 +339,9 @@ function SquadTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void
               <PersonAvatar name={player.name} seedKey={player.id} className="h-9 w-9 shrink-0 rounded-md text-[10px]" />
               <p className="truncate text-sm font-bold">{player.name}</p>
             </div>
-            <p className="truncate text-xs text-neutral-500">Age {player.age} · {player.contractYears}y · {formatWeeklyWage(player.wage)}</p>
+            <p className="truncate text-xs text-neutral-500">
+              Age {player.age} · {player.loan ? `Loan ${player.loan.direction === "in" ? "in" : "out"} · ${formatWeeklyWage(player.loan.wageShare)}` : `${player.contractYears}y · ${formatWeeklyWage(player.wage)}`}
+            </p>
           </div>
           <span className={cn("justify-self-end rounded-md px-2 py-1 text-xs font-bold text-white", player.rating >= 70 ? "bg-primary" : player.rating >= 55 ? "bg-warning" : "bg-neutral-500")}>{player.rating}</span>
         </Card>
@@ -851,6 +853,10 @@ function EventEntityHeader({ save }: { save: GameSave }) {
   if (player) {
     const context = event?.proposal?.type === "buy"
       ? `Transfer target from ${sourceClub?.name ?? "another club"}`
+      : event?.proposal?.type === "loan"
+        ? event.proposal.loanDirection === "out"
+          ? `Current squad player · Loan club: ${targetClub?.name ?? "unknown club"}`
+          : `Loan target from ${sourceClub?.name ?? "another club"}`
       : event?.proposal?.type === "sell"
         ? `Current squad player · Bidder: ${targetClub?.name ?? "unknown club"}`
         : player.clubId === current.club.id
@@ -1043,6 +1049,72 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
   );
 }
 
+function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; player: Player; proposal: NonNullable<GameSave["currentEvent"]>["proposal"] }) {
+  const resolve = useGameStore((state) => state.resolveCurrentEvent);
+  const current = useCurrent(save)!;
+  const loanIn = proposal?.loanDirection !== "out";
+  const expectedFee = proposal?.fee ?? Math.round(player.value * 0.03);
+  const requestedWage = proposal?.requestedWage ?? Math.abs(proposal?.wageDelta ?? Math.round(player.wage * 0.5));
+  const feeOptions = uniqueMoneyOptions(expectedFee, [0.8, 0.9, 1, 1.1, 1.2], 100);
+  const wageOptions = uniqueMoneyOptions(requestedWage, [0.75, 0.85, 1, 1.15, 1.3], 50);
+  const [fee, setFee] = useState(expectedFee);
+  const [wage, setWage] = useState(requestedWage);
+  const sourceClub = proposal?.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
+  const destinationClub = proposal?.toClubId ? save.clubs[proposal.toClubId] : undefined;
+
+  if (!loanIn) {
+    return (
+      <div className="mt-4 space-y-4">
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Loan club <b className="block truncate">{destinationClub?.name ?? "Unknown"}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Player <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Loan fee in <b className="block">{formatMoney(expectedFee)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly wage covered <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
+        </div>
+        <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept loan +1, reject loan -1. The player returns at season end.</p>
+        <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+          <Button onClick={() => resolve({ action: "offer", terms: { fee: expectedFee, wage: requestedWage, years: 1 } })}>Accept Loan</Button>
+          <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Parent club <b className="block truncate">{sourceClub?.name ?? "Unknown"}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Target <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Expected loan fee <b className="block">{formatMoney(expectedFee)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Wage contribution <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
+      </div>
+      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: completed loan +2, weak terms refused -1, blocked by budget -3, walk away -2.</p>
+      <div>
+        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Loan fee</p>
+        <div className="grid grid-cols-5 gap-2">
+          {feeOptions.map((option) => (
+            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", fee === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatMoney(option)}</button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly contribution</p>
+        <div className="grid grid-cols-5 gap-2">
+          {wageOptions.map((option) => (
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
+          ))}
+        </div>
+      </div>
+      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+        <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years: 1 } })}>Submit Loan</Button>
+        <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
+      </div>
+    </div>
+  );
+}
+
 function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult }) {
   const resolve = useGameStore((state) => state.resolveCurrentEvent);
   const fixture = save.lastMatch!;
@@ -1128,7 +1200,7 @@ function EventModal({ save }: { save: GameSave }) {
         {event.type === "financial_report" ? <FinancialRows snapshot={event.financialSnapshot} /> : null}
         {event.type === "transfer_budget" ? <TransferBudgetControls save={save} /> : null}
 
-        {event.type === "contract_offer" && player && proposal?.type !== "buy" ? (
+        {event.type === "contract_offer" && player && proposal?.type === "contract" ? (
           <>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage <b className="block">{formatMoney(player.wage)}/w</b></p>
@@ -1143,6 +1215,10 @@ function EventModal({ save }: { save: GameSave }) {
 
         {event.type === "contract_offer" && proposal?.type === "buy" ? (
           player ? <BuyNegotiationControls save={save} player={player} proposal={proposal} /> : null
+        ) : null}
+
+        {event.type === "contract_offer" && proposal?.type === "loan" ? (
+          player ? <LoanNegotiationControls save={save} player={player} proposal={proposal} /> : null
         ) : null}
 
         {event.type === "incoming_bid" ? (

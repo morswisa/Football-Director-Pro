@@ -5,6 +5,7 @@
 - The game is an owner/chairman simulation, not a tactics-heavy football manager.
 - The player cannot manually scout/search players in V1.
 - Transfers are manager-led proposals. The chairman can approve or reject them.
+- Loans are also manager-led only. The chairman can approve/reject loan-in and loan-out proposals, but cannot manually search for loan targets.
 - Paid purchase proposals are negotiations, not one-click approvals: the chairman offers a club fee and player contract terms, then the selling club and player can accept or refuse.
 - Same-week transfer fees must appear in financial report snapshots.
 - Required chairman decisions must appear as blocking modal dialogs.
@@ -13,6 +14,7 @@
 - Continue events are persisted in the save file through `eventQueue` and `currentEvent`, not held only in React component state.
 - A resolved event immediately advances to the next queued event; only when the queue is empty does the next Continue generate the next period's events.
 - Buy/sell transfer proposals are gated to transfer-window months; contract-renewal proposals may occur outside transfer windows.
+- Loan proposals are gated to transfer-window months and expire into the same decision queue as other manager-led transfer actions.
 - Transfer-window starts require a budget choice before the manager can operate with a clear budget.
 - Manager trust is a club-level relationship metric affected by chairman decisions.
 - Player positions are simplified to G, D, M, and F.

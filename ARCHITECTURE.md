@@ -61,6 +61,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `GameSave.financialSnapshot` stores the latest generated financial breakdown for display and persistence.
 - `latestFinancialSnapshot(save)` is the shared read model for Dashboard, Finance, and financial event cards.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
+- Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
 - Engine function `normalizeGameState` is used by the store to normalize older or generated saves before UI hydration.
@@ -74,7 +75,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 ## Calendar And Economy
 
 - Internal progress still uses `week` and `currentRound`, but UI presents `monthForWeek`.
-- Transfer-window gating currently allows buy/sell proposals in August and January.
+- Transfer-window gating currently allows buy/sell/loan proposals in August and January.
+- Loan lifecycle is season-scoped. Loan-in players count toward the temporary squad at their wage-share cost; loan-out players leave the squad until `returnSeasonLoans` restores them to the parent club before the next season starts.
 - Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
 - `src/game/economy.ts` owns formula-based wage helpers for players and managers plus manager compensation.
