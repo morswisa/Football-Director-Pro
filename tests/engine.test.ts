@@ -534,6 +534,7 @@ describe("game engine", () => {
   it("negotiates paid transfers and includes fees in financial snapshots", () => {
     let save = createNewGame(setup);
     const club = save.clubs[save.userClubId];
+    const trustBefore = club.managerTrust;
     save.week = 2;
     save.currentEvent = {
       id: "contract_offer_test_buy",
@@ -572,10 +573,20 @@ describe("game engine", () => {
       createdSeason: save.season,
       createdWeek: save.week,
     });
-    save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: save.currentEvent.proposal.fee, wage: player.wage, years: 3 } });
+    const sourceClubId = player.clubId!;
+    const transferFee = save.currentEvent.proposal.fee;
+    const balanceBefore = club.finances.balance;
+    save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: transferFee, wage: player.wage, years: 3 } });
     expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
+    expect(save.clubs[sourceClubId].playerIds).not.toContain(player.id);
+    expect(save.players[player.id].clubId).toBe(club.id);
+    expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore + 4);
+    expect(save.clubs[save.userClubId].finances.balance).toBe(balanceBefore - transferFee);
+    expect(save.currentEvent?.title).toBe("Signing completed");
+    expect(save.currentEvent?.body).toContain("Manager trust +4");
     const report = save.eventQueue.find((event) => event.type === "financial_report") ?? save.currentEvent;
     expect(report?.financialSnapshot?.expenses.feesOut).toBeGreaterThan(0);
+    expect(report?.body).toContain("Balance moved from");
   });
 
   it("completes loan-in deals and returns the player at season end", () => {
@@ -612,9 +623,15 @@ describe("game engine", () => {
         requestedYears: 1,
       },
     };
+    const trustBefore = club.managerTrust;
+    const balanceBefore = club.finances.balance;
     save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: 10_000, wage: 500, years: 1 } });
     expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
     expect(save.players[player.id].loan?.direction).toBe("in");
+    expect(save.currentEvent?.title).toBe("Loan signing completed");
+    expect(save.currentEvent?.body).toContain("Manager trust +2");
+    expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore + 2);
+    expect(save.clubs[save.userClubId].finances.balance).toBe(balanceBefore - 10_000);
     expect(latestFinancialSnapshot(save).expenses.feesOut).toBeGreaterThan(0);
     save = returnSeasonLoans(save);
     expect(save.clubs[save.userClubId].playerIds).not.toContain(player.id);
@@ -655,10 +672,16 @@ describe("game engine", () => {
         requestedYears: 1,
       },
     };
+    const trustBefore = club.managerTrust;
+    const balanceBefore = club.finances.balance;
     save = resolveEvent(save, save.currentEvent.id, { action: "offer", terms: { fee: 8_000, wage: 400, years: 1 } });
     expect(save.clubs[save.userClubId].playerIds).not.toContain(player.id);
     expect(save.clubs[destination.id].playerIds).toContain(player.id);
     expect(save.players[player.id].loan?.direction).toBe("out");
+    expect(save.currentEvent?.title).toBe("Loan agreed");
+    expect(save.currentEvent?.body).toContain("Manager trust +1");
+    expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore + 1);
+    expect(save.clubs[save.userClubId].finances.balance).toBe(balanceBefore + 8_000);
     expect(latestFinancialSnapshot(save).income.feesIn).toBeGreaterThan(0);
     save = returnSeasonLoans(save);
     expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
