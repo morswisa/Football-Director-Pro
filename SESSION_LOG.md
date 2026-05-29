@@ -203,3 +203,8 @@
 - Added regression coverage for division-scaled matchday income and lower-league season-award progression.
 - Verified the balance-tuning pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
 - Deployed the balance-tuning pass to Vercel preview: `https://football-director-kdprixtd4-mor-swisas-projects.vercel.app`.
+- Continued transfer-balance acceptance with a temporary multi-season diagnostic focused on sale proceeds, buying spend, loan fees, and wage pressure. The diagnostic showed sale proceeds are the main positive cash spike, and the audit found a concrete consistency bug: confirmed sold players left the user's club but were not added to the buying club.
+- Fixed sale confirmation so sold players move into the buyer's squad, receive the buyer club ID, clear any loan state, and remain part of the simulated world.
+- Added regression coverage proving an accepted and confirmed incoming bid removes the player from the user club and adds him to the bidder.
+- Verified the sale-consistency pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
+- Deployed the sale-consistency pass to Vercel preview: `https://football-director-m1hjouemf-mor-swisas-projects.vercel.app`.

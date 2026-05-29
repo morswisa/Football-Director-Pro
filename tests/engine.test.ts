@@ -733,6 +733,11 @@ describe("game engine", () => {
     expect(save.currentEvent?.type).toBe("sale_ready");
     expect(save.currentEvent?.pendingDeal?.buyerClubId).toBe(bidder.id);
     expect(save.currentEvent?.body).toContain(bidder.name);
+    save = resolveEvent(save, save.currentEvent.id, { action: "confirm" });
+    expect(save.players[player.id].clubId).toBe(bidder.id);
+    expect(save.clubs[club.id].playerIds).not.toContain(player.id);
+    expect(save.clubs[bidder.id].playerIds).toContain(player.id);
+    expect(save.currentEvent?.body).toContain(bidder.name);
   });
 
   it("adds an updated financial report when a transfer happens after the original report", () => {

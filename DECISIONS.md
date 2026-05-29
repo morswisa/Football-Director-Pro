@@ -89,6 +89,7 @@
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.
 - Header period labels include both month and period number so repeated same-month decisions are clearly part of the same in-game period.
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
+- Confirmed sales must preserve world consistency: the sold player leaves the user club and joins the buying club rather than becoming unattached.
 - Event headers must match the event subject: financial and club updates use the club header, player decisions use the player header, and manager-specific events use the manager header.
 - Walking away from an external transfer target must not use squad-contract rejection language.
 - Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.

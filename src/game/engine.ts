@@ -1420,8 +1420,11 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     const deal = event.pendingDeal;
     const soldPlayer = save.players[deal.playerId];
     if (soldPlayer && action !== "reject") {
+      const buyingClub = deal.buyerClubId ? save.clubs[deal.buyerClubId] : undefined;
       club.playerIds = club.playerIds.filter((id) => id !== soldPlayer.id);
-      soldPlayer.clubId = undefined;
+      if (buyingClub && !buyingClub.playerIds.includes(soldPlayer.id)) buyingClub.playerIds.push(soldPlayer.id);
+      soldPlayer.clubId = buyingClub?.id;
+      soldPlayer.loan = undefined;
       refreshUserWageBill(save);
       club.finances.balance += deal.fee;
       club.finances.transactions.unshift({ id: `tx_transfer_received_${deal.id}`, week: save.week, label: `Transfer fee received: ${soldPlayer.name}`, amount: deal.fee });
@@ -1429,7 +1432,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `sale_confirmed_${deal.id}`,
         type: "sale_confirmed",
         title: "Player sale confirmed",
-        body: `${soldPlayer.name} has been sold to ${deal.buyerClubId ? save.clubs[deal.buyerClubId]?.name ?? "the buying club" : "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
+        body: `${soldPlayer.name} has been sold to ${buyingClub?.name ?? "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,

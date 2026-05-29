@@ -79,6 +79,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - UI impact summaries for transfer, loan, contract, sale, youth, and manager-contract decisions are previews only; the engine remains authoritative and applies the final deltas through `resolveEvent`.
 - Buy-proposal rejection resolves to a target-specific response event, while squad contract rejection uses squad-specific language.
 - Sale proposals carry `toClubId` and staged `PendingDeal.buyerClubId` so bid, sale-ready, and sale-confirmed events can attribute the bidding club.
+- Sale confirmation transfers the player record to `PendingDeal.buyerClubId`, removes the player from the user club, adds him to the buyer's squad, and clears loan state before refreshing the user wage bill.
 - `GameSave.liveMatch` stores transient live-playback metadata so the fixture is not simulated twice when the user chooses `Play Match`.
 - `GameSave.cup` stores the current seasonal Chairman's Cup run. Cup fixtures are stored in `fixtures` with `competition: "cup"` and are resolved through the same match preview/result modal path, but they do not update league records.
 - Legacy `activeProposal` has been removed. Manager-led transfer, loan, sale, and contract proposals are represented only as `GameEvent` records in `eventQueue/currentEvent`.
@@ -104,6 +105,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Season-transition coverage includes a regression for reused fixture/event IDs so the Continue queue cannot stall at week 1 of a later season.
 - Multi-seed season-boundary coverage runs deterministic Continue-loop careers across multiple completed seasons to catch seed-specific event-queue stalls.
 - Balance coverage includes division-scaled matchday income and lower-league season-award ordering, in addition to the longer multi-season stability tests.
+- Transfer consistency coverage proves incoming-bid sale confirmation moves the player into the buyer club's squad instead of orphaning the player.
 - Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
 - The post-match impact note is generated from those actual stored values, not from a duplicated UI-only formula.
 - `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.
