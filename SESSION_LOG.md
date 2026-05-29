@@ -188,3 +188,6 @@
 - While checking the finance modal, found that non-player club updates could inherit the current manager as their header. Adjusted event headers so manager portraits appear only when the event explicitly carries a manager ID; financial reports now present as club updates.
 - Verified the finance consistency pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a focused mobile financial-report smoke check, and the `develop-web-game` Playwright client.
 - Deployed the finance consistency pass to Vercel preview: `https://football-director-6s36ltubi-mor-swisas-projects.vercel.app`.
+- Adjusted informational event footers so non-decision `Continue` buttons no longer stick over long financial-report rows; decision controls remain sticky where needed.
+- Verified the financial-report readability pass with `npm run lint`, `npm test`, `npm run build`, `npm run e2e`, a focused mobile financial-report screenshot, and the `develop-web-game` Playwright client.
+- Deployed the financial-report readability pass to Vercel preview: `https://football-director-mz6c0aa6l-mor-swisas-projects.vercel.app`.

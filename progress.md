@@ -31,6 +31,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Fixed live-match result leakage by making live playback replace the dashboard while running instead of rendering over an already-resolved dashboard.
 - Fixed a finance consistency issue: weekly balance updates and financial report line items now share one breakdown, and ticket sales are shown even when the period is loss-making.
 - Fixed event-header attribution so financial reports and generic club updates no longer show the current manager by default.
+- Changed informational event Continue buttons to normal footer actions so long financial reports remain readable without rows being covered.
 
 ## Next TODO
 
@@ -40,4 +41,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Re-run longer balance tuning after the shared finance breakdown change, especially wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after finance consistency pass: `https://football-director-6s36ltubi-mor-swisas-projects.vercel.app`.
+- Latest preview after financial-report readability pass: `https://football-director-mz6c0aa6l-mor-swisas-projects.vercel.app`.

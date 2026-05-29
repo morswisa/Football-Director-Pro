@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-6s36ltubi-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-mz6c0aa6l-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -57,6 +57,7 @@ Playable V1 includes:
 - Weekly finance processing and financial report line items now share one breakdown model, so displayed income/expenses reconcile with the actual balance movement and ticket sales remain visible even in loss-making home periods.
 - Bank warnings and debt-limit career stops now show the current balance, debt limit, and remaining headroom or over-limit amount.
 - Mandatory decision modals for event-queue decisions and missing-manager states; the season cannot continue until the user answers.
+- Informational update modals use normal footer actions when sticky buttons would cover long financial rows, while required decision controls stay easy to reach.
 - Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero. The selected budget applies only to the active transfer window and expires outside transfer-window weeks.
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
 - Chairman decision cards now surface selected trust, morale, wage-bill, balance, and replacement impact for the main decision types where those values can change, so relationship/economy movement is visible before confirming.

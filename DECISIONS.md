@@ -76,6 +76,7 @@
 - Downgrading a facility gives no cash refund, but lowers weekly upkeep.
 - Facility popups allow preselecting `+1` through `+5` levels before applying an upgrade or downgrade.
 - Action-heavy modals should keep primary confirmation controls sticky at the bottom where possible so required decisions are not hidden below long content.
+- Informational update modals can use a normal footer button instead of a sticky action when sticky controls would obscure long financial/history content.
 - Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.

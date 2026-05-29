@@ -1502,7 +1502,7 @@ function EventModal({ save }: { save: GameSave }) {
         ) : null}
 
         {!["transfer_budget", "manager_contract_decision", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type) ? (
-          <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
+          <Button className="mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
         ) : null}
         {nextFixture && event.type === "match_preview" ? <p className="mt-3 text-center text-xs text-neutral-500">{save.clubs[nextFixture.homeClubId].name} vs {save.clubs[nextFixture.awayClubId].name}</p> : null}
       </div>

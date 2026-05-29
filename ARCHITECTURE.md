@@ -45,6 +45,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
 - Event entity headers are subject-driven: `playerId` renders player context, explicit `managerId` renders manager context, and other club events render the club header.
+- Event actions distinguish blocking decisions from informational updates: decision controls can stay sticky for reachability, while ordinary Continue actions remain inline to avoid covering long report rows.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
 - Training and Youth facility management is launched from their dashboard metric cards only.
