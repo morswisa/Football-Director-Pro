@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-r3ehxwk65-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-45ihrz36e-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -40,6 +40,7 @@ Playable V1 includes:
 - Player and manager wage recommendations are formula-driven by division, rating/reputation, age/role/potential, and personality where relevant.
 - Long-run balancing now updates sponsorship, debt limit, stadium upkeep, board confidence, manager trust, and stadium condition across match and season progression.
 - Promotion and relegation are both modeled in season transitions, with club reputation and confidence changes.
+- Edge-case coverage now proves debt-limit game over, facility upgrade/downgrade economics, manager churn lock behavior, and relegation movement between divisions.
 - Squad-depth safety fills AI/user clubs with generated depth players when long careers, loans, or retirements leave a club short.
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.
@@ -58,7 +59,7 @@ Playable V1 includes:
 ## Next Steps
 
 - Continue closing remaining items from the original V1 plan only.
-- Improve depth of planned V1 systems where still shallow: richer event frequency tuning and final edge-case balance coverage.
-- Expand tests around bankruptcy/debt edge cases, facility economics, manager churn, and promotion/relegation edge cases.
+- Improve depth of planned V1 systems where still shallow: richer event frequency tuning and final balance tuning against longer human-style careers.
+- Expand playtest coverage around complete multi-season human flows before native packaging.
 - Continue tuning the newly implemented wage economy and manager compensation values against longer simulated careers.
 - Add native platforms with `npm run mobile:add:ios` and `npm run mobile:add:android` when the web V1 is accepted.

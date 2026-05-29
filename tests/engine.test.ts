@@ -4,8 +4,11 @@ import {
   calculateManagerCompensation,
   calculateRecommendedManagerWage,
   calculateRecommendedPlayerWage,
+  checkDebtAndBankruptcy,
   confirmFireManager,
   createNewGame,
+  downgradeTraining,
+  downgradeYouthAcademy,
   finishSeason,
   generateNextEvents,
   leagueTable,
@@ -15,6 +18,8 @@ import {
   returnSeasonLoans,
   submitManagerHireOffer,
   upgradeStand,
+  upgradeTraining,
+  upgradeYouthAcademy,
 } from "../src/game/engine";
 import { cupRoundWeeks } from "../src/game/calendar";
 import { migrateSave } from "../src/game/persistence";
@@ -173,6 +178,94 @@ describe("game engine", () => {
     expect(save.currentEvent?.body).toContain("Season award");
     save = resolveEvent(save, save.currentEvent!.id);
     expect(save.currentEvent?.type).toBe("season_intro");
+  });
+
+  it("ends the career when the balance crosses the debt limit", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    club.finances.debtLimit = -100_000;
+    club.finances.balance = -100_001;
+    save = checkDebtAndBankruptcy(save);
+    expect(save.gameOver).toContain("debt limit");
+  });
+
+  it("applies facility upgrades and downgrades without refunding cash", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    club.finances.balance = 1_000_000;
+    const startingBalance = club.finances.balance;
+    const startingTraining = club.trainingLevel;
+    const startingYouth = club.youthLevel;
+    const startingUpkeep = club.finances.upkeep;
+
+    save = upgradeTraining(save, 2);
+    save = upgradeYouthAcademy(save, 1);
+    const upgradedClub = save.clubs[save.userClubId];
+    expect(upgradedClub.trainingLevel).toBe(startingTraining + 2);
+    expect(upgradedClub.youthLevel).toBe(startingYouth + 1);
+    expect(upgradedClub.finances.upkeep).toBeGreaterThan(startingUpkeep);
+    expect(upgradedClub.finances.balance).toBeLessThan(startingBalance);
+
+    const balanceAfterUpgrades = upgradedClub.finances.balance;
+    const upkeepAfterUpgrades = upgradedClub.finances.upkeep;
+    save = downgradeTraining(save, 2);
+    save = downgradeYouthAcademy(save, 1);
+    const downgradedClub = save.clubs[save.userClubId];
+    expect(downgradedClub.trainingLevel).toBe(startingTraining);
+    expect(downgradedClub.youthLevel).toBe(startingYouth);
+    expect(downgradedClub.finances.balance).toBe(balanceAfterUpgrades);
+    expect(downgradedClub.finances.upkeep).toBeLessThan(upkeepAfterUpgrades);
+    expect(downgradedClub.finances.upkeep).toBeGreaterThanOrEqual(0);
+  });
+
+  it("allows emergency manager replacement but blocks repeated manager churn", () => {
+    let save = createNewGame(setup);
+    save = confirmFireManager(save);
+    expect(save.clubs[save.userClubId].managerId).toBeUndefined();
+    const lockedUntil = save.managerActionLockUntilWeek;
+    expect(lockedUntil).toBe(save.week + 4);
+
+    const candidate = save.managerCandidates[0];
+    const expectedWage = calculateRecommendedManagerWage(candidate, 7);
+    save = submitManagerHireOffer(save, candidate.id, { wage: expectedWage, years: 2, compensationFee: candidate.compensationFee ?? 0 });
+    const hiredManagerId = save.clubs[save.userClubId].managerId;
+    expect(hiredManagerId).toBe(candidate.id);
+    expect(save.managerActionLockUntilWeek).toBe(lockedUntil);
+
+    const nextCandidate = save.managerCandidates[0];
+    const beforeBalance = save.clubs[save.userClubId].finances.balance;
+    save = submitManagerHireOffer(save, nextCandidate.id, { wage: calculateRecommendedManagerWage(nextCandidate, 7), years: 2, compensationFee: nextCandidate.compensationFee ?? 0 });
+    expect(save.clubs[save.userClubId].managerId).toBe(hiredManagerId);
+    expect(save.clubs[save.userClubId].finances.balance).toBe(beforeBalance);
+    save = confirmFireManager(save);
+    expect(save.clubs[save.userClubId].managerId).toBe(hiredManagerId);
+  });
+
+  it("records relegation and moves the club to the lower division", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    const oldDivision = save.divisions.find((division) => division.id === club.divisionId)!;
+    const targetDivision = save.divisions.find((division) => division.level === 2)!;
+    oldDivision.clubIds = oldDivision.clubIds.filter((id) => id !== club.id);
+    targetDivision.clubIds.push(club.id);
+    club.divisionId = targetDivision.id;
+    club.reputation = 55;
+    targetDivision.clubIds.forEach((clubId, index) => {
+      const targetClub = save.clubs[clubId];
+      targetClub.record = clubId === club.id
+        ? { played: 38, won: 2, drawn: 3, lost: 33, gf: 21, ga: 91, points: 9 }
+        : { played: 38, won: 18 + (index % 5), drawn: 8, lost: 12, gf: 65 + index, ga: 45, points: 62 + index };
+    });
+
+    save = finishSeason(save);
+    const history = save.history[0];
+    const updatedClub = save.clubs[save.userClubId];
+    const lowerDivision = save.divisions.find((division) => division.level === 3)!;
+    expect(history.outcome).toBe("relegated");
+    expect(history.nextDivisionName).toBe(lowerDivision.name);
+    expect(updatedClub.divisionId).toBe(lowerDivision.id);
+    expect(updatedClub.reputation).toBe(51);
+    expect(lowerDivision.clubIds).toContain(updatedClub.id);
   });
 
   it("simulates matches through preview and result events", () => {

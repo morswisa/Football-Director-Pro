@@ -32,6 +32,7 @@
 - The V1 domestic cup is modeled as the fictional Chairman's Cup. It is a single-player seasonal knockout run for the user's club, integrated into Continue events, and cup ties do not affect league points.
 - Long-run balance should prefer self-correcting season systems over manual cleanup: sponsorship/debt scale by level, relationships react to results and finances, stadium condition decays, and clubs receive generated depth players if squads become unplayable.
 - Season transition clarity is part of V1: after a season ends, the player must see the prior season summary before the next season intro, including prize money, promotion/relegation/stay status, next division, record, cup run, and trophies.
+- V1 balance must be backed by edge-case tests for systems that can end or derail a career: debt limits, manager churn, facility economics, and promotion/relegation movement.
 
 ## Technology
 
