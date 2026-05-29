@@ -180,6 +180,9 @@
 - Added sale-chain acceptance coverage for a starter sale: accepting a bid shows sale-ready impact, confirming the sale shows board/morale impact, the next Continue surfaces replacement pressure, and the following event is a same-position replacement target within the intended rating band.
 - Verified the sale-chain coverage pass with `npm test` (42 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright client.
 - Deployed the sale-chain coverage pass to Vercel preview: `https://football-director-prnruhqdb-mor-swisas-projects.vercel.app`.
+- Extended season-boundary acceptance coverage for relegation. The test now verifies the negative season summary, season-impact note, next-division intro, and that the next season can reach a user match preview with season-scoped fixture IDs in the relegated division.
+- Verified the season-boundary coverage pass with `npm test` (42 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright client.
+- Deployed the season-boundary coverage pass to Vercel preview: `https://football-director-98cyzjg07-mor-swisas-projects.vercel.app`.
 - Continued the final acceptance pass by making season-end consequences explicit: `SeasonHistory` now stores balance, board-confidence, manager-trust, and reputation before/after values; season-summary events include a season-impact note; and the season-summary and History UI render those deltas.
 - Added regression coverage proving a promoted season records positive board/trust/reputation movement and that the queued season-summary event includes the season-impact explanation.
 - Verified the season-impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check, and the `develop-web-game` Playwright client workaround run from the project directory.

@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-prnruhqdb-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-98cyzjg07-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -25,6 +25,7 @@ Playable V1 includes:
 - Event headers are now guarded in the UI as well as event data: manager portraits appear only on manager-subject events, so older queued club updates with a stored `managerId` still render as club updates.
 - Season summary now appears before the next season intro after a season transition, with finish, record, goal difference, season award, balance, promotion/relegation/stay status, next division, cup summary, and trophies.
 - Season summaries and History now preserve and display season-level impact deltas for balance, board confidence, manager trust, and club reputation.
+- Season-boundary acceptance coverage now verifies a relegation summary, negative season impact, next-division intro, and the first match preview in the new division.
 - Dashboard metric buttons are the primary navigation into League, Roster, Manager, Training, Youth, Finances, Stadium, and History; duplicate top/bottom navigation has been removed.
 - Full league standings table for the user's division.
 - League fixtures now use a true round-robin schedule, so every club in the user's division has one match per round and the Continue loop cannot stall on a no-user-fixture round.

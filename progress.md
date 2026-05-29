@@ -48,6 +48,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Deployed queue-order/deep-acceptance pass to Vercel preview: `https://football-director-g91l7byct-mor-swisas-projects.vercel.app`.
 - Extended transfer-window acceptance coverage for successful buy, loan-in, and loan-out decisions: player movement, balance deltas, manager-trust deltas, immediate response copy, and financial snapshot fee lines are now asserted. Verified with `npm test` (41 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game client.
 - Added sale-chain acceptance coverage for a starter sale across the actual Continue order: sale-ready preview, sale-confirmed board/morale impact, replacement-pressure update, and same-position replacement target. Verified with `npm test` (42 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game client.
+- Extended season-boundary acceptance coverage for relegation: negative season summary, season impact, next-division intro, and first match preview in the relegated division now run as one tested Continue sequence. Verified with `npm test` (42 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game client.
 
 ## Next TODO
 
@@ -61,3 +62,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
 - Latest preview after transfer-decision coverage: `https://football-director-mdxeef9tf-mor-swisas-projects.vercel.app`.
 - Latest preview after sale-chain coverage: `https://football-director-prnruhqdb-mor-swisas-projects.vercel.app`.
+- Latest preview after season-boundary coverage: `https://football-director-98cyzjg07-mor-swisas-projects.vercel.app`.

@@ -470,6 +470,33 @@ describe("game engine", () => {
     expect(updatedClub.reputation).toBe(51);
     expect(lowerDivision.clubIds).toContain(updatedClub.id);
     expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
+
+    save = generateNextEvents(save);
+    expect(save.currentEvent?.type).toBe("season_summary");
+    expect(save.currentEvent?.variant).toBe("negative");
+    expect(save.currentEvent?.body).toContain("Relegated");
+    expect(save.currentEvent?.seasonHistory?.nextDivisionName).toBe(lowerDivision.name);
+    expect(save.currentEvent?.note).toContain("Season impact");
+    expect(save.currentEvent?.note).toContain("club reputation");
+    save = resolveEvent(save, save.currentEvent!.id);
+    expect(save.currentEvent?.type).toBe("season_intro");
+    expect(save.currentEvent?.body).toContain(lowerDivision.name);
+
+    let guard = 0;
+    while (save.currentEvent && save.currentEvent.type !== "match_preview" && guard < 20) {
+      const decision = save.currentEvent.type === "transfer_budget"
+        ? { mode: "normal" as const }
+        : save.currentEvent.type === "contract_offer" || save.currentEvent.type === "incoming_bid"
+          ? { action: "reject" }
+          : undefined;
+      save = resolveEvent(save, save.currentEvent.id, decision);
+      guard += 1;
+    }
+    expect(save.currentEvent?.type).toBe("match_preview");
+    const nextFixture = save.currentEvent?.fixtureId ? save.fixtures.find((fixture) => fixture.id === save.currentEvent!.fixtureId) : undefined;
+    expect(nextFixture?.id).toContain(`fx_${save.season}_${lowerDivision.id}_`);
+    expect(nextFixture?.homeClubId === save.userClubId || nextFixture?.awayClubId === save.userClubId).toBe(true);
+    expect(lowerDivision.clubIds).toContain(save.userClubId);
   });
 
   it("simulates matches through preview and result events", () => {

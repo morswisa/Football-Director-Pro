@@ -107,6 +107,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Balance edge cases are covered in unit tests: debt-limit game over, no-refund facility downgrades with lower upkeep, manager action locks, and relegation division movement.
 - Human-style multi-season coverage resolves real Continue events with conservative chairman decisions and periodic facility investments to verify that the playable loop progresses across seasons.
 - Season-transition coverage includes a regression for reused fixture/event IDs so the Continue queue cannot stall at week 1 of a later season.
+- Season-boundary coverage also verifies relegation as a player-facing Continue sequence: `season_summary` with negative impact, next-division `season_intro`, and a new-season `match_preview` from the relegated division.
 - Multi-seed season-boundary coverage runs deterministic Continue-loop careers across multiple completed seasons to catch seed-specific event-queue stalls.
 - Balance coverage includes division-scaled matchday income and lower-league season-award ordering, in addition to the longer multi-season stability tests.
 - Transfer consistency coverage proves incoming-bid sale confirmation moves the player into the buyer club's squad instead of orphaning the player.
