@@ -38,6 +38,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Verified the balance pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the develop-web-game Playwright screenshot pass.
 - Ran transfer-balance diagnostics and fixed sale-world consistency: confirmed sold players now join the buying club instead of becoming unattached. Added regression coverage and verified with the full local test/build/e2e/browser pass.
 - Added first-team sale tradeoffs: selling an important player can reduce board confidence and squad morale, with UI previews before the chairman confirms. Verified with the full local test/build/e2e/browser pass.
+- Added manager replacement pressure after starter sales: the Continue queue now surfaces replacement need, and transfer windows can immediately produce a manager-led same-position target. Verified with the full local test/build/e2e/browser pass.
 
 ## Next TODO
 
@@ -46,7 +47,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
 - Continue final mobile acceptance checks across all V1 surfaces and longer balance runs.
 - Continue longer balance tuning after the ticket/prize pass, especially transfer-sale windfalls, wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
-- Continue transfer-balance tuning after the sale-tradeoff fix, especially replacement quality after repeated player sales.
+- Continue final acceptance around replacement quality after repeated sales and whether the manager target pool feels varied enough.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after sale-tradeoff pass: `https://football-director-qyabmhr3y-mor-swisas-projects.vercel.app`.
+- Latest preview after replacement-pressure pass: `https://football-director-j4dvh060a-mor-swisas-projects.vercel.app`.

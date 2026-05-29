@@ -889,6 +889,46 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
   };
 }
 
+function enqueueReplacementAfterSale(save: GameSave, soldPlayer: Player, fee: number, saleImpact: ReturnType<typeof calculateSaleImpact>) {
+  const club = userClub(save);
+  const manager = getManager(save, club);
+  if (!manager || !saleImpact.starter) return;
+  enqueue(save, {
+    id: `replacement_needed_${soldPlayer.id}_${save.season}_${save.week}`,
+    type: "manager_frustrated",
+    title: "Replacement needed",
+    body: `${manager.name} says ${club.name} should replace ${soldPlayer.name} before the sale weakens the squad over the long run.`,
+    note: `The sale brought in ${fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}, but the manager will look for a ${soldPlayer.position} close to ${soldPlayer.rating}/100 quality.`,
+    requiresDecision: false,
+    createdSeason: save.season,
+    createdWeek: save.week,
+    managerId: manager.id,
+    variant: "negative",
+  });
+  if (!isTransferWindow(save.week)) return;
+  const candidates = Object.values(save.players)
+    .filter((player) => player.id !== soldPlayer.id && player.clubId && player.clubId !== club.id && !player.loan && player.position === soldPlayer.position)
+    .filter((player) => player.rating >= Math.max(30, soldPlayer.rating - 9) && player.value <= Math.max(80_000, club.finances.balance * 0.72))
+    .sort((a, b) => Math.abs(a.rating - soldPlayer.rating) - Math.abs(b.rating - soldPlayer.rating) || a.value - b.value);
+  if (candidates.length === 0) return;
+  const [replacement, next] = pickOne(save.rngState, candidates.slice(0, 6));
+  save.rngState = next;
+  const event = proposalToEvent(save, {
+    id: `proposal_replacement_${save.week}_${replacement.id}`,
+    type: "buy",
+    week: save.week,
+    title: `Replace ${soldPlayer.name}`,
+    rationale: `${manager.name} wants a replacement ${replacement.position} after selling ${soldPlayer.name}.`,
+    playerId: replacement.id,
+    fromClubId: replacement.clubId,
+    toClubId: club.id,
+    fee: Math.round(replacement.value * 1.06),
+    wageDelta: replacement.wage,
+    expiresWeek: save.week + 2,
+  });
+  if (event) enqueue(save, event);
+}
+
 function queueProposalIfAvailable(save: GameSave) {
   const transferWindow = isTransferWindow(save.week);
   const contractReviewWeek = save.week % 6 === 0;
@@ -1473,6 +1513,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         note: saleImpact.summary,
         variant: "positive",
       });
+      enqueueReplacementAfterSale(save, soldPlayer, deal.fee, saleImpact);
       ensureFinancialReportAfterTransfer(save);
       if (soldPlayer.careerStats.apps >= 80 || soldPlayer.rating >= 76) {
         save.hallOfFame.push(soldPlayer.name);

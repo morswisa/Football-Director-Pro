@@ -749,6 +749,7 @@ describe("game engine", () => {
     expect(save.clubs[club.id].boardConfidence).toBe(beforeBoard + expectedImpact.boardDelta);
     expect(save.players[teammate.id].morale).toBe(beforeMorale + expectedImpact.moraleDelta);
     expect(save.currentEvent?.body).toContain("Board confidence");
+    expect(save.eventQueue.some((event) => event.type === "manager_frustrated" && event.title === "Replacement needed")).toBe(true);
   });
 
   it("adds an updated financial report when a transfer happens after the original report", () => {

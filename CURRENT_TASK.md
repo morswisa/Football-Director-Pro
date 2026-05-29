@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-qyabmhr3y-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-j4dvh060a-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -44,6 +44,7 @@ Playable V1 includes:
 - Transfer and bid decisions now identify whether the player is an external target or current squad player, show source/bidding club context, and include manager-trust impact in response copy.
 - Confirmed player sales now move the sold player into the buying club's squad instead of removing him from the world, preserving transfer-state consistency.
 - Selling a key, first-team, or long-serving player now carries an explicit tradeoff: board confidence and squad morale can drop unless the deal is clearly justified by age, contract situation, or premium fee.
+- Confirming a starter sale now queues manager replacement pressure, and during transfer windows can immediately add a manager-led replacement target if a suitable affordable player exists.
 - Manager model now uses Training, Tactics, Transfers, Youth, Reputation, style, personality, wage, contract years, and status; `Man Management` and `Wage Discipline` are removed from V1.
 - Match preview offers `See Match` for an instant result and `Play Match` for a fast live minute-by-minute playback with score, stats, events, and final whistle before continuing.
 - Live match playback now advances one minute at a time and temporarily replaces the dashboard surface so the final result cannot leak before final whistle.

@@ -91,6 +91,7 @@
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
 - Confirmed sales must preserve world consistency: the sold player leaves the user club and joins the buying club rather than becoming unattached.
 - Confirming the sale of an important first-team or long-serving player should have relationship cost through board confidence and squad morale, with reduced cost when age, short contract, or a premium fee makes the deal sensible.
+- Starter sales should create replacement pressure. The manager can follow a confirmed starter sale with a replacement-needed update and, during transfer windows, a manager-led same-position target if the market has a suitable affordable player.
 - Event headers must match the event subject: financial and club updates use the club header, player decisions use the player header, and manager-specific events use the manager header.
 - Walking away from an external transfer target must not use squad-contract rejection language.
 - Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.

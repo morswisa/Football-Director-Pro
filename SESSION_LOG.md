@@ -213,3 +213,7 @@
 - Added regression coverage proving a confirmed key-player sale applies the expected board-confidence and squad-morale deltas.
 - Verified the sale-tradeoff pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
 - Deployed the sale-tradeoff pass to Vercel preview: `https://football-director-qyabmhr3y-mor-swisas-projects.vercel.app`.
+- Continued sale/replacement balance tuning by adding manager replacement pressure after starter sales. Confirming a starter sale now queues a `Replacement needed` manager update, and in transfer windows the manager can immediately queue an affordable same-position replacement target through the existing buy-negotiation flow.
+- Added regression coverage proving a confirmed key-player sale queues the replacement-pressure event.
+- Verified the replacement-pressure pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
+- Deployed the replacement-pressure pass to Vercel preview: `https://football-director-j4dvh060a-mor-swisas-projects.vercel.app`.
