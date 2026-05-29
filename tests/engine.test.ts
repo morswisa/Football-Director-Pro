@@ -752,6 +752,54 @@ describe("game engine", () => {
     expect(save.eventQueue.some((event) => event.type === "manager_frustrated" && event.title === "Replacement needed")).toBe(true);
   });
 
+  it("queues a same-position replacement target after an affordable starter sale", () => {
+    let save = createNewGame(setup);
+    save.week = 1;
+    const club = save.clubs[save.userClubId];
+    const bidder = save.divisions.find((item) => item.id === club.divisionId)!.clubIds.map((id) => save.clubs[id]).find((item) => item.id !== club.id)!;
+    const player = save.players[club.playerIds[0]];
+    player.position = "M";
+    player.rating = 62;
+    player.value = 220_000;
+    const replacement = Object.values(save.players).find((item) => item.clubId && item.clubId !== club.id && item.position === "M")!;
+    replacement.rating = 60;
+    replacement.value = 120_000;
+    replacement.wage = 1_200;
+    save.currentEvent = {
+      id: "incoming_bid_replacement_test",
+      type: "incoming_bid",
+      title: "Bid received",
+      body: "Bid",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      playerId: player.id,
+      managerId: club.managerId,
+      proposal: {
+        id: "proposal_bidder_replacement",
+        type: "sell",
+        week: save.week,
+        title: "Sell starter",
+        rationale: "Bid",
+        playerId: player.id,
+        fromClubId: club.id,
+        toClubId: bidder.id,
+        fee: 320_000,
+        wageDelta: -player.wage,
+        expiresWeek: save.week + 2,
+      },
+    };
+
+    save = resolveEvent(save, save.currentEvent.id, { action: "accept" });
+    save = resolveEvent(save, save.currentEvent!.id, { action: "confirm" });
+
+    const replacementEvent = save.eventQueue.find((event) => event.type === "contract_offer" && event.proposal?.id.startsWith("proposal_replacement"));
+    const replacementTarget = replacementEvent?.proposal?.playerId ? save.players[replacementEvent.proposal.playerId] : undefined;
+    expect(replacementEvent?.proposal?.type).toBe("buy");
+    expect(replacementTarget?.position).toBe(player.position);
+    expect(replacementTarget?.rating ?? 0).toBeGreaterThanOrEqual(player.rating - 9);
+  });
+
   it("adds an updated financial report when a transfer happens after the original report", () => {
     let save = createNewGame(setup);
     const club = save.clubs[save.userClubId];

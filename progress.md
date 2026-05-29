@@ -39,6 +39,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Ran transfer-balance diagnostics and fixed sale-world consistency: confirmed sold players now join the buying club instead of becoming unattached. Added regression coverage and verified with the full local test/build/e2e/browser pass.
 - Added first-team sale tradeoffs: selling an important player can reduce board confidence and squad morale, with UI previews before the chairman confirms. Verified with the full local test/build/e2e/browser pass.
 - Added manager replacement pressure after starter sales: the Continue queue now surfaces replacement need, and transfer windows can immediately produce a manager-led same-position target. Verified with the full local test/build/e2e/browser pass.
+- Added permanent replacement-target acceptance coverage for starter sales: if a suitable affordable market player exists, the queued replacement target must be same-position and close enough in rating. Verified with the full local test/build/e2e/browser pass.
 
 ## Next TODO
 
@@ -50,4 +51,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Continue final acceptance around replacement quality after repeated sales and whether the manager target pool feels varied enough.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after replacement-pressure pass: `https://football-director-j4dvh060a-mor-swisas-projects.vercel.app`.
+- Latest preview after replacement-target coverage: `https://football-director-98lmb733p-mor-swisas-projects.vercel.app`.

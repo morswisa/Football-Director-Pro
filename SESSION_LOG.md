@@ -217,3 +217,6 @@
 - Added regression coverage proving a confirmed key-player sale queues the replacement-pressure event.
 - Verified the replacement-pressure pass with `npm test` (40 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
 - Deployed the replacement-pressure pass to Vercel preview: `https://football-director-j4dvh060a-mor-swisas-projects.vercel.app`.
+- Extended the replacement-pressure regression so an affordable starter sale during the transfer window must queue a same-position buy target close enough in rating, not just a generic manager warning. The first version of the test was too specific about the exact player ID; corrected it to assert the real product contract: same position and acceptable quality range.
+- Verified the replacement-target coverage pass with `npm test` (41 tests), `npm run lint`, `npm run build`, `npm run e2e`, and the `develop-web-game` Playwright client with screenshot inspection.
+- Deployed the replacement-target coverage pass to Vercel preview: `https://football-director-98lmb733p-mor-swisas-projects.vercel.app`.
