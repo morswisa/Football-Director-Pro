@@ -298,6 +298,7 @@ export interface GameEvent {
   proposal?: TransferProposal;
   pendingDeal?: PendingDeal;
   financialSnapshot?: FinancialSnapshot;
+  seasonHistory?: SeasonHistory;
   note?: string;
   variant?: "positive" | "negative" | "neutral";
 }
@@ -305,9 +306,20 @@ export interface GameEvent {
 export interface SeasonHistory {
   season: number;
   divisionName: string;
+  divisionLevel?: number;
   position: number;
+  played?: number;
+  won?: number;
+  drawn?: number;
+  lost?: number;
+  goalsFor?: number;
+  goalsAgainst?: number;
   points: number;
   balance: number;
+  prizeMoney?: number;
+  outcome?: "promoted" | "relegated" | "stayed";
+  nextDivisionName?: string;
+  cupSummary?: string;
   trophies: string[];
 }
 

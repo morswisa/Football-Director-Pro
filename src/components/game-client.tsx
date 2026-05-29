@@ -10,7 +10,7 @@ import { Card, StatCard } from "./ui/card";
 import { evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
 import { cupRoundName, monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
-import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, TransferBudgetMode } from "@/game/types";
+import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
 import { cn, formatMoney, ordinal, pct } from "@/lib/utils";
 import { useGameStore } from "@/store/game-store";
 
@@ -591,7 +591,15 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       </Card>
       <Card>
         <h2 className="text-lg font-bold">Trophy Cabinet</h2>
-        <p className="mt-2 text-sm text-neutral-500">{save.history.flatMap((item) => item.trophies).length || "No"} trophies or promotions recorded.</p>
+        {save.history.flatMap((item) => item.trophies).length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-500">No trophies or promotions recorded.</p>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {save.history.flatMap((item) => item.trophies.map((trophy) => `${item.season}: ${trophy}`)).map((label) => (
+              <span key={label} className="rounded-md bg-primary px-2 py-1 text-xs font-black text-white">{label}</span>
+            ))}
+          </div>
+        )}
       </Card>
       <Card>
         <h2 className="text-lg font-bold">{save.cup.name}</h2>
@@ -611,8 +619,21 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       <Card>
         <h3 className="mb-3 text-sm font-bold">Season History</h3>
         {save.history.length === 0 ? <p className="text-sm text-neutral-500">Finish a season to create history.</p> : save.history.map((item) => (
-          <div key={item.season} className="border-t border-line py-2 text-sm first:border-t-0">
-            <b>{item.season}</b> · {item.divisionName} · {item.position}th · {item.points} pts · {formatMoney(item.balance)}
+          <div key={item.season} className="border-t border-line py-3 text-sm first:border-t-0">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <b>{item.season}/{String(item.season + 1).slice(2)}</b>
+                <p className="text-xs text-neutral-500">{item.divisionName}</p>
+              </div>
+              <span className={cn("rounded-md px-2 py-1 text-[10px] font-black uppercase", item.outcome === "promoted" ? "bg-primary text-white" : item.outcome === "relegated" ? "bg-red-100 text-danger" : "bg-surface-muted text-neutral-600")}>{item.outcome ?? "stayed"}</span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <p className="rounded-md bg-surface-muted px-2 py-1">Finish <b className="block">{ordinal(item.position)}</b></p>
+              <p className="rounded-md bg-surface-muted px-2 py-1">Record <b className="block">{item.won ?? 0}-{item.drawn ?? 0}-{item.lost ?? 0}</b></p>
+              <p className="rounded-md bg-surface-muted px-2 py-1">Award <b className="block">{formatMoney(item.prizeMoney ?? 0)}</b></p>
+              <p className="rounded-md bg-surface-muted px-2 py-1">Balance <b className="block">{formatMoney(item.balance)}</b></p>
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">Next: {item.nextDivisionName ?? item.divisionName} · {item.cupSummary ?? "No cup record"}</p>
           </div>
         ))}
       </Card>
@@ -1124,6 +1145,36 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
   );
 }
 
+function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
+  const goalDifference = (history.goalsFor ?? 0) - (history.goalsAgainst ?? 0);
+  const outcomeLabel = history.outcome === "promoted" ? "Promoted" : history.outcome === "relegated" ? "Relegated" : "Stayed";
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Finish <b className="block">{ordinal(history.position)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Points <b className="block">{history.points}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Record <b className="block">{history.won ?? 0}-{history.drawn ?? 0}-{history.lost ?? 0}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Goal diff <b className="block">{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Season award <b className="block">{formatMoney(history.prizeMoney ?? 0)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Balance <b className="block">{formatMoney(history.balance)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Outcome <b className={cn("block", history.outcome === "promoted" ? "text-primary" : history.outcome === "relegated" ? "text-danger" : "")}>{outcomeLabel}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Next league <b className="block truncate">{history.nextDivisionName ?? history.divisionName}</b></p>
+      </div>
+      <div className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
+        <b className="block text-neutral-800">Cup</b>
+        {history.cupSummary ?? "No cup record."}
+      </div>
+      {history.trophies.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {history.trophies.map((trophy) => (
+            <span key={trophy} className="rounded-md bg-primary px-2 py-1 text-xs font-black text-white">{trophy}</span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function EventModal({ save }: { save: GameSave }) {
   const event = save.currentEvent;
   const current = useCurrent(save)!;
@@ -1157,6 +1208,10 @@ function EventModal({ save }: { save: GameSave }) {
               </div>
             ))}
           </div>
+        ) : null}
+
+        {event.type === "season_summary" && event.seasonHistory ? (
+          <SeasonSummaryPanel history={event.seasonHistory} />
         ) : null}
 
         {event.type === "financial_report" ? <FinancialRows snapshot={event.financialSnapshot} /> : null}

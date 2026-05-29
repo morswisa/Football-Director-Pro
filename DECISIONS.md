@@ -31,6 +31,7 @@
 - Settings covers the local-only V1 save lifecycle directly in the app: manual save, export, import, reset, sound toggle, and text size. Import replaces Slot 1 only after schema validation/migration succeeds.
 - The V1 domestic cup is modeled as the fictional Chairman's Cup. It is a single-player seasonal knockout run for the user's club, integrated into Continue events, and cup ties do not affect league points.
 - Long-run balance should prefer self-correcting season systems over manual cleanup: sponsorship/debt scale by level, relationships react to results and finances, stadium condition decays, and clubs receive generated depth players if squads become unplayable.
+- Season transition clarity is part of V1: after a season ends, the player must see the prior season summary before the next season intro, including prize money, promotion/relegation/stay status, next division, record, cup run, and trophies.
 
 ## Technology
 

@@ -118,3 +118,7 @@
 - Retired the legacy `activeProposal` flow from the save type, schema, store, decision modal, engine exports, and tests so manager-led decisions now use only the save-backed `eventQueue/currentEvent` path.
 - Verified the active-proposal retirement with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright MCP mobile dashboard smoke check, and the develop-web-game Playwright client workaround run from the project directory.
 - Deployed the active-proposal retirement pass to Vercel preview: `https://football-director-lak47wj92-mor-swisas-projects.vercel.app`.
+- Improved season-end clarity: `SeasonHistory` now stores record, goals, prize money, outcome, next division, cup summary, and trophies; the Continue queue now shows the season review before the next season intro; and the History screen renders structured season cards instead of a single summary line.
+- Added unit coverage proving a promoted season queues `season_summary` before `season_intro` and carries reward/movement data.
+- Verified the season-end clarity pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright MCP mobile dashboard smoke check, and the develop-web-game Playwright client workaround run from the project directory.
+- Deployed the season-end clarity pass to Vercel preview: `https://football-director-r3ehxwk65-mor-swisas-projects.vercel.app`.

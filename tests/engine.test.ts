@@ -6,6 +6,7 @@ import {
   calculateRecommendedPlayerWage,
   confirmFireManager,
   createNewGame,
+  finishSeason,
   generateNextEvents,
   leagueTable,
   latestFinancialSnapshot,
@@ -153,6 +154,25 @@ describe("game engine", () => {
     expect(save.transferBudget?.mode).toBe("strict");
     expect(save.transferBudget?.amount).toBeGreaterThanOrEqual(0);
     expect(save.currentEvent?.title).toBe("Transfer budget confirmed");
+  });
+
+  it("queues a detailed season summary before the next season intro", () => {
+    let save = createNewGame(setup);
+    const club = save.clubs[save.userClubId];
+    club.record = { played: 38, won: 30, drawn: 4, lost: 4, gf: 92, ga: 31, points: 94 };
+    save = finishSeason(save);
+    const history = save.history[0];
+    expect(history.outcome).toBe("promoted");
+    expect(history.prizeMoney).toBeGreaterThan(0);
+    expect(history.nextDivisionName).not.toBe(history.divisionName);
+    expect(history.won).toBe(30);
+    expect(save.week).toBe(1);
+    save = generateNextEvents(save);
+    expect(save.currentEvent?.type).toBe("season_summary");
+    expect(save.currentEvent?.seasonHistory?.season).toBe(history.season);
+    expect(save.currentEvent?.body).toContain("Season award");
+    save = resolveEvent(save, save.currentEvent!.id);
+    expect(save.currentEvent?.type).toBe("season_intro");
   });
 
   it("simulates matches through preview and result events", () => {

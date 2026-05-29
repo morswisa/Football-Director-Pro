@@ -764,12 +764,41 @@ function nextUserFixture(save: GameSave) {
   return save.fixtures.find((fixture) => (fixture.competition ?? "league") === "league" && fixture.round === save.currentRound && fixture.status === "scheduled" && (fixture.homeClubId === save.userClubId || fixture.awayClubId === save.userClubId));
 }
 
+function ordinalLabel(value: number) {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}th`;
+  if (value % 10 === 1) return `${value}st`;
+  if (value % 10 === 2) return `${value}nd`;
+  if (value % 10 === 3) return `${value}rd`;
+  return `${value}th`;
+}
+
 function pushStandardEvents(save: GameSave) {
   const club = userClub(save);
   const manager = getManager(save, club);
   const fixture = nextUserFixture(save);
   const seasonKey = `s${save.season}`;
   const weekKey = `s${save.season}_w${save.week}`;
+  const lastHistory = save.history[0];
+  if (lastHistory && !eventSeen(save, `season_summary_${lastHistory.season}`)) {
+    const outcomeCopy =
+      lastHistory.outcome === "promoted"
+        ? `Promotion secured. Next season: ${lastHistory.nextDivisionName ?? "a higher division"}.`
+        : lastHistory.outcome === "relegated"
+          ? `Relegated. Next season: ${lastHistory.nextDivisionName ?? "a lower division"}.`
+          : `Stayed in ${lastHistory.nextDivisionName ?? lastHistory.divisionName}.`;
+    enqueue(save, {
+      id: `season_summary_${lastHistory.season}`,
+      type: "season_summary",
+      title: `${lastHistory.season}/${String(lastHistory.season + 1).slice(2)} season review`,
+      body: `${lastHistory.divisionName}: finished ${ordinalLabel(lastHistory.position)} with ${lastHistory.points} points. ${outcomeCopy} Season award: ${lastHistory.prizeMoney?.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }) ?? "£0"}.`,
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      seasonHistory: lastHistory,
+      variant: lastHistory.outcome === "relegated" ? "negative" : lastHistory.outcome === "promoted" || lastHistory.trophies.length ? "positive" : "neutral",
+    });
+  }
   if (save.week === 1) {
     enqueue(save, {
       id: `season_intro_${seasonKey}`,
@@ -789,19 +818,6 @@ function pushStandardEvents(save: GameSave) {
       requiresDecision: false,
       createdSeason: save.season,
       createdWeek: save.week,
-    });
-  }
-  const lastHistory = save.history[0];
-  if (lastHistory && !eventSeen(save, `season_summary_${lastHistory.season}`)) {
-    enqueue(save, {
-      id: `season_summary_${lastHistory.season}`,
-      type: "season_summary",
-      title: "Season summary",
-      body: `${lastHistory.divisionName}: finished ${lastHistory.position} with ${lastHistory.points} points. Balance after awards: ${lastHistory.balance.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
-      requiresDecision: false,
-      createdSeason: save.season,
-      createdWeek: save.week,
-      variant: lastHistory.trophies.length ? "positive" : "neutral",
     });
   }
   const windowLabel = monthForWeek(save.week);
@@ -1371,26 +1387,45 @@ export function finishSeason(input: GameSave) {
   const club = userClub(save);
   const table = leagueTable(save);
   const position = table.findIndex((item) => item.id === club.id) + 1;
-  const divisionLevel = save.divisions.find((d) => d.id === club.divisionId)?.level ?? 7;
+  const currentDivision = save.divisions.find((d) => d.id === club.divisionId);
+  const divisionLevel = currentDivision?.level ?? 7;
   const prize = seasonPrize(divisionLevel, position);
   club.finances.balance += prize;
   club.finances.transactions.unshift({ id: `tx_prize_${save.season}`, week: save.week, label: `Season award: ${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}`, amount: prize });
-  const promoted = position <= 3 && save.divisions.find((d) => d.id === club.divisionId)?.level !== 1;
+  const promoted = position <= 3 && currentDivision?.level !== 1;
   const relegated = position >= 18 && divisionLevel !== 7;
+  const promotionDivision = promoted ? save.divisions.find((d) => d.level === divisionLevel - 1) : undefined;
+  const relegationDivision = relegated ? save.divisions.find((d) => d.level === divisionLevel + 1) : undefined;
+  const nextDivisionName = promotionDivision?.name ?? relegationDivision?.name ?? currentDivision?.name ?? "League";
+  const cupSummary = save.cup?.won
+    ? `Won ${save.cup.name}`
+    : save.cup?.results.length
+      ? `${save.cup.eliminated ? "Reached" : "Still active in"} ${save.cup.results.at(-1)?.roundName ?? save.cup.name}`
+      : `No ${save.cup.name} ties played`;
   const trophies = [...(promoted ? ["Promotion"] : []), ...(save.cup?.won ? [save.cup.name] : [])];
   club.boardConfidence = Math.max(5, Math.min(99, club.boardConfidence + (promoted ? 12 : relegated ? -14 : position <= 8 ? 4 : position >= 16 ? -6 : 0) + (club.finances.balance > 0 ? 2 : -4)));
   club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + (position <= 6 ? 3 : position >= 16 ? -4 : 0)));
   save.history.unshift({
     season: save.season,
-    divisionName: save.divisions.find((d) => d.id === club.divisionId)?.name ?? "League",
+    divisionName: currentDivision?.name ?? "League",
+    divisionLevel,
     position,
+    played: club.record.played,
+    won: club.record.won,
+    drawn: club.record.drawn,
+    lost: club.record.lost,
+    goalsFor: club.record.gf,
+    goalsAgainst: club.record.ga,
     points: club.record.points,
     balance: club.finances.balance,
+    prizeMoney: prize,
+    outcome: promoted ? "promoted" : relegated ? "relegated" : "stayed",
+    nextDivisionName,
+    cupSummary,
     trophies,
   });
   if (promoted) {
-    const currentDivision = save.divisions.find((d) => d.id === club.divisionId);
-    const nextDivision = save.divisions.find((d) => d.level === (currentDivision?.level ?? 7) - 1);
+    const nextDivision = promotionDivision;
     if (currentDivision && nextDivision) {
       currentDivision.clubIds = currentDivision.clubIds.filter((id) => id !== club.id);
       nextDivision.clubIds.push(club.id);
@@ -1399,8 +1434,7 @@ export function finishSeason(input: GameSave) {
     }
   }
   if (relegated) {
-    const currentDivision = save.divisions.find((d) => d.id === club.divisionId);
-    const nextDivision = save.divisions.find((d) => d.level === (currentDivision?.level ?? 1) + 1);
+    const nextDivision = relegationDivision;
     if (currentDivision && nextDivision) {
       currentDivision.clubIds = currentDivision.clubIds.filter((id) => id !== club.id);
       nextDivision.clubIds.push(club.id);

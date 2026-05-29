@@ -36,6 +36,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Standings are derived from `leagueTable(save)` and rendered from the current division records.
 - Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
+- After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
@@ -79,6 +80,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Loan lifecycle is season-scoped. Loan-in players count toward the temporary squad at their wage-share cost; loan-out players leave the squad until `returnSeasonLoans` restores them to the parent club before the next season starts.
 - Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
+- `SeasonHistory` stores the season's finish, record, goals, prize money, outcome, next division, cup summary, trophies, and closing balance for both the season-summary event and History screen.
 - Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
 - Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
 - `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.
