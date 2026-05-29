@@ -129,3 +129,10 @@
 - Added regression coverage for Continue-loop event cadence across a full season, checking that match previews and financial reports remain regular while manager proposal volume stays within a bounded range.
 - Verified the cadence tuning with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright MCP mobile dashboard smoke check, and the develop-web-game Playwright client workaround run from the project directory.
 - Deployed the Continue cadence tuning pass to Vercel preview: `https://football-director-1kkyewuc3-mor-swisas-projects.vercel.app`.
+- Added a multi-season human-style Continue playtest that makes conservative budget, transfer, contract, sale, youth, and facility decisions across multiple seasons.
+- The playtest exposed two real issues: first-season lower-league sponsorship was too low for a cautious chairman to survive, and promotion/relegation could create uneven division sizes that left the user without a match preview after season transition.
+- Fixed lower-league sponsorship baselines, aligned initial sponsorship with season economy, replaced fixture generation with a true round-robin schedule, and made promotion/relegation swap clubs between adjacent divisions to preserve 20 clubs per division.
+- Added fixture-shape coverage proving every user-division round contains each club exactly once.
+- Reviewed the remaining game work for the current status request. The remaining work is now mostly finalization: complete verification/deploy/commit for the multi-season human-style fixes, run longer balance tuning around wages/manager compensation, complete the final web-V1 acceptance pass, then add Capacitor native iOS/Android platforms only after the web version is accepted.
+- Verified the multi-season human-style stability pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the multi-season human-style stability pass to Vercel preview: `https://football-director-os35x05aa-mor-swisas-projects.vercel.app`.

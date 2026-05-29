@@ -50,6 +50,51 @@ function resolveBalancedEvent(save: ReturnType<typeof createNewGame>) {
   return resolveEvent(save, event.id, { action: "continue" });
 }
 
+function resolveHumanStyleEvent(save: ReturnType<typeof createNewGame>) {
+  const event = save.currentEvent;
+  if (!event) return save;
+  const club = save.clubs[save.userClubId];
+  const proposal = event.proposal;
+  const player = event.playerId ? save.players[event.playerId] : undefined;
+  if (event.type === "transfer_budget") {
+    const mode = club.finances.balance < 0 ? "strict" : club.finances.balance > 900_000 ? "generous" : "normal";
+    return resolveEvent(save, event.id, { mode });
+  }
+  if (event.type === "match_preview") return resolveEvent(save, event.id, { action: "see" });
+  if (event.type === "incoming_bid" && proposal && player) {
+    const accept = player.age >= 31 || player.contractYears <= 1 || proposal.fee >= player.value;
+    return resolveEvent(save, event.id, { action: accept ? "accept" : "reject" });
+  }
+  if (event.type === "sale_ready") return resolveEvent(save, event.id, { action: "confirm" });
+  if (event.type === "youth_contract" && player) {
+    const keep = player.potential >= 62 && club.playerIds.length < 30;
+    return resolveEvent(save, event.id, { action: keep ? "offer" : "release" });
+  }
+  if (event.type === "contract_offer" && proposal && player) {
+    if (proposal.type === "buy") {
+      const fee = proposal.fee;
+      const wage = proposal.requestedWage ?? player.wage;
+      const affordableFee = fee <= Math.max(40_000, club.finances.balance * 0.35);
+      const affordableWage = wage <= Math.max(2_000, club.finances.weeklyWages * 0.18);
+      const withinBudget = !save.transferBudget || fee <= save.transferBudget.amount;
+      if (affordableFee && affordableWage && withinBudget) return resolveEvent(save, event.id, { action: "offer", terms: { fee, wage, years: proposal.requestedYears ?? 3 } });
+      return resolveEvent(save, event.id, { action: "reject" });
+    }
+    if (proposal.type === "loan") {
+      const loanIn = proposal.loanDirection !== "out";
+      const wage = proposal.requestedWage ?? Math.abs(proposal.wageDelta);
+      if (!loanIn || club.finances.balance > proposal.fee * 2) return resolveEvent(save, event.id, { action: "offer", terms: { fee: proposal.fee, wage, years: 1 } });
+      return resolveEvent(save, event.id, { action: "reject" });
+    }
+    const requestedWage = proposal.requestedWage ?? player.wage + proposal.wageDelta;
+    const keyPlayer = player.rating >= 58 || player.contractYears <= 1 || player.morale < 50;
+    const wageIsSafe = requestedWage <= Math.max(2_000, club.finances.weeklyWages * 0.16);
+    if (keyPlayer && wageIsSafe) return resolveEvent(save, event.id, { action: "offer", terms: { wage: requestedWage, years: proposal.requestedYears ?? 2 } });
+    return resolveEvent(save, event.id, { action: "reject" });
+  }
+  return resolveEvent(save, event.id, { action: "continue" });
+}
+
 describe("game engine", () => {
   it("creates a deterministic world", () => {
     const a = createNewGame(setup);
@@ -58,6 +103,12 @@ describe("game engine", () => {
     expect(Object.keys(a.clubs)).toHaveLength(140);
     expect(a.fixtures.length).toBeGreaterThan(300);
     expect(a.clubs[a.userClubId].name).toBe("Sunnyvale FC");
+    const userDivision = a.divisions.find((division) => division.id === a.clubs[a.userClubId].divisionId)!;
+    for (let round = 0; round < (userDivision.clubIds.length - 1) * 2; round += 1) {
+      const roundClubIds = a.fixtures.filter((fixture) => fixture.round === round).flatMap((fixture) => [fixture.homeClubId, fixture.awayClubId]);
+      expect(new Set(roundClubIds).size).toBe(userDivision.clubIds.length);
+      expect(roundClubIds).toContain(a.userClubId);
+    }
   });
 
   it("advances matches and updates the league table", () => {
@@ -171,6 +222,7 @@ describe("game engine", () => {
     expect(history.prizeMoney).toBeGreaterThan(0);
     expect(history.nextDivisionName).not.toBe(history.divisionName);
     expect(history.won).toBe(30);
+    expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
     expect(save.week).toBe(1);
     save = generateNextEvents(save);
     expect(save.currentEvent?.type).toBe("season_summary");
@@ -246,7 +298,11 @@ describe("game engine", () => {
     const club = save.clubs[save.userClubId];
     const oldDivision = save.divisions.find((division) => division.id === club.divisionId)!;
     const targetDivision = save.divisions.find((division) => division.level === 2)!;
+    const fillerId = targetDivision.clubIds[0];
     oldDivision.clubIds = oldDivision.clubIds.filter((id) => id !== club.id);
+    targetDivision.clubIds = targetDivision.clubIds.filter((id) => id !== fillerId);
+    oldDivision.clubIds.push(fillerId);
+    save.clubs[fillerId].divisionId = oldDivision.id;
     targetDivision.clubIds.push(club.id);
     club.divisionId = targetDivision.id;
     club.reputation = 55;
@@ -266,6 +322,7 @@ describe("game engine", () => {
     expect(updatedClub.divisionId).toBe(lowerDivision.id);
     expect(updatedClub.reputation).toBe(51);
     expect(lowerDivision.clubIds).toContain(updatedClub.id);
+    expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
   });
 
   it("simulates matches through preview and result events", () => {
@@ -652,6 +709,62 @@ describe("game engine", () => {
     expect(periods).toBeGreaterThanOrEqual(38);
     expect(periods).toBeLessThanOrEqual(48);
   }, 30_000);
+
+  it("plays multiple human-style seasons through the continue loop", () => {
+    let save = createNewGame({ ...setup, seed: 20260622 });
+    const counts = new Map<string, number>();
+    let decisions = 0;
+    let facilityActions = 0;
+    let investmentCursor = 0;
+    const startingTraining = save.clubs[save.userClubId].trainingLevel;
+    const startingYouth = save.clubs[save.userClubId].youthLevel;
+
+    for (let step = 0; step < 1200 && save.history.length < 2; step += 1) {
+      save = generateNextEvents(save);
+      let guard = 0;
+      while (save.currentEvent && guard < 100) {
+        const type = save.currentEvent.type;
+        counts.set(type, (counts.get(type) ?? 0) + 1);
+        if (save.currentEvent.requiresDecision) decisions += 1;
+        save = resolveHumanStyleEvent(save);
+        guard += 1;
+      }
+      expect(guard).toBeLessThan(100);
+
+      const club = save.clubs[save.userClubId];
+      if (!save.currentEvent && !save.gameOver && step % 22 === 0 && club.finances.balance > 750_000) {
+        if (investmentCursor % 3 === 0) save = upgradeTraining(save, 1);
+        else if (investmentCursor % 3 === 1) save = upgradeYouthAcademy(save, 1);
+        else save = upgradeStand(save, "north");
+        investmentCursor += 1;
+        facilityActions += 1;
+      }
+
+      const latest = latestFinancialSnapshot(save);
+      const squad = save.clubs[save.userClubId].playerIds.map((id) => save.players[id]).filter(Boolean);
+      expect(latest.totalIncome - latest.totalExpenses).toBe(latest.profit);
+      expect(save.clubs[save.userClubId].finances.balance).not.toBeNaN();
+      expect(save.clubs[save.userClubId].finances.weeklyWages).not.toBeNaN();
+      expect(save.clubs[save.userClubId].managerTrust).toBeGreaterThanOrEqual(0);
+      expect(save.clubs[save.userClubId].managerTrust).toBeLessThanOrEqual(99);
+      expect(save.clubs[save.userClubId].boardConfidence).toBeGreaterThanOrEqual(5);
+      expect(save.clubs[save.userClubId].boardConfidence).toBeLessThanOrEqual(99);
+      expect(squad.length).toBeGreaterThanOrEqual(11);
+      expect(squad.length).toBeLessThanOrEqual(36);
+      if (save.gameOver) break;
+    }
+
+    const club = save.clubs[save.userClubId];
+    expect(save.gameOver).toBeUndefined();
+    expect(save.history.length).toBeGreaterThanOrEqual(2);
+    expect(counts.get("season_summary")).toBeGreaterThanOrEqual(1);
+    expect(counts.get("match_preview")).toBeGreaterThanOrEqual(76);
+    expect(decisions).toBeGreaterThanOrEqual(90);
+    expect(facilityActions).toBeGreaterThanOrEqual(1);
+    expect(club.trainingLevel + club.youthLevel).toBeGreaterThan(startingTraining + startingYouth);
+    expect(club.finances.balance).toBeGreaterThan(club.finances.debtLimit);
+    expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
+  }, 40_000);
 
   it("runs many direct engine seasons with stable balances and squads", () => {
     let save = createNewGame({ ...setup, seed: 20260601 });

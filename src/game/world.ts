@@ -103,6 +103,19 @@ function createStadium(name: string, level: number): Stadium {
   };
 }
 
+function initialSponsorship(level: number, reputation: number) {
+  const baseByLevel: Record<number, number> = {
+    1: 42_000_000,
+    2: 10_000_000,
+    3: 4_500_000,
+    4: 2_600_000,
+    5: 1_800_000,
+    6: 1_250_000,
+    7: 950_000,
+  };
+  return Math.round((baseByLevel[level] ?? baseByLevel[7]) * (0.82 + reputation / 220));
+}
+
 function createClub(seed: number, name: string, divisionId: string, level: number, colors: [string, string], index: number): [Club, Player[], Manager, number] {
   let state = seed;
   const players: Player[] = [];
@@ -115,11 +128,12 @@ function createClub(seed: number, name: string, divisionId: string, level: numbe
   state = next;
   const weeklyWages = players.reduce((sum, player) => sum + player.wage, 0) + manager.wage;
   const clubId = id("club", index);
+  const reputation = Math.max(20, 95 - level * 9);
   const club: Club = {
     id: clubId,
     name,
     divisionId,
-    reputation: Math.max(20, 95 - level * 9),
+    reputation,
     playerIds: players.map((player) => player.id),
     managerId: manager.id,
     primaryColor: colors[0],
@@ -129,7 +143,7 @@ function createClub(seed: number, name: string, divisionId: string, level: numbe
     finances: {
       balance: Math.max(450_000, 5_500_000 - level * 650_000),
       weeklyWages,
-      sponsorship: Math.max(55_000, 850_000 - level * 90_000),
+      sponsorship: initialSponsorship(level, reputation),
       ticketIncome: 0,
       merchIncome: 0,
       upkeep: Math.max(12_000, 70_000 - level * 6_000),
@@ -147,27 +161,33 @@ function createClub(seed: number, name: string, divisionId: string, level: numbe
 }
 
 export function generateSeasonFixtures(division: Division): import("./types").Fixture[] {
-  const clubIds = [...division.clubIds];
+  const clubIds = division.clubIds.length % 2 === 0 ? [...division.clubIds] : [...division.clubIds, "__bye__"];
   const fixtures: import("./types").Fixture[] = [];
-  let round = 0;
-  for (let i = 0; i < clubIds.length - 1; i += 1) {
-    for (let j = i + 1; j < clubIds.length; j += 1) {
+  let rotation = [...clubIds];
+  const rounds = rotation.length - 1;
+  for (let round = 0; round < rounds; round += 1) {
+    for (let i = 0; i < rotation.length / 2; i += 1) {
+      const a = rotation[i];
+      const b = rotation[rotation.length - 1 - i];
+      if (a === "__bye__" || b === "__bye__") continue;
+      const firstHome = round % 2 === 0 ? a : b;
+      const firstAway = round % 2 === 0 ? b : a;
       fixtures.push({
-        id: `fx_${division.id}_${i}_${j}_h`,
+        id: `fx_${division.id}_${round}_${i}_h`,
         round,
-        homeClubId: clubIds[i],
-        awayClubId: clubIds[j],
+        homeClubId: firstHome,
+        awayClubId: firstAway,
         status: "scheduled",
       });
       fixtures.push({
-        id: `fx_${division.id}_${i}_${j}_a`,
-        round: round + clubIds.length - 1,
-        homeClubId: clubIds[j],
-        awayClubId: clubIds[i],
+        id: `fx_${division.id}_${round}_${i}_a`,
+        round: round + rounds,
+        homeClubId: firstAway,
+        awayClubId: firstHome,
         status: "scheduled",
       });
-      round = (round + 1) % (clubIds.length - 1);
     }
+    rotation = [rotation[0], rotation[rotation.length - 1], ...rotation.slice(1, -1)];
   }
   return fixtures.sort((a, b) => a.round - b.round);
 }

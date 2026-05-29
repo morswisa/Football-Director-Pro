@@ -133,12 +133,12 @@ function currentDivisionLevel(save: GameSave) {
 function sponsorshipForLevel(level: number, reputation: number) {
   const baseByLevel: Record<number, number> = {
     1: 42_000_000,
-    2: 8_500_000,
-    3: 2_400_000,
-    4: 1_550_000,
-    5: 950_000,
-    6: 620_000,
-    7: 360_000,
+    2: 10_000_000,
+    3: 4_500_000,
+    4: 2_600_000,
+    5: 1_800_000,
+    6: 1_250_000,
+    7: 950_000,
   };
   return Math.round((baseByLevel[level] ?? baseByLevel[7]) * (0.82 + reputation / 220));
 }
@@ -1429,7 +1429,14 @@ export function finishSeason(input: GameSave) {
   if (promoted) {
     const nextDivision = promotionDivision;
     if (currentDivision && nextDivision) {
+      const replacementId = nextDivision.clubIds.at(-1);
       currentDivision.clubIds = currentDivision.clubIds.filter((id) => id !== club.id);
+      if (replacementId) {
+        nextDivision.clubIds = nextDivision.clubIds.filter((id) => id !== replacementId);
+        currentDivision.clubIds.push(replacementId);
+        save.clubs[replacementId].divisionId = currentDivision.id;
+        save.clubs[replacementId].reputation = Math.max(15, save.clubs[replacementId].reputation - 2);
+      }
       nextDivision.clubIds.push(club.id);
       club.divisionId = nextDivision.id;
       club.reputation += 4;
@@ -1438,7 +1445,14 @@ export function finishSeason(input: GameSave) {
   if (relegated) {
     const nextDivision = relegationDivision;
     if (currentDivision && nextDivision) {
+      const replacementId = nextDivision.clubIds[0];
       currentDivision.clubIds = currentDivision.clubIds.filter((id) => id !== club.id);
+      if (replacementId) {
+        nextDivision.clubIds = nextDivision.clubIds.filter((id) => id !== replacementId);
+        currentDivision.clubIds.push(replacementId);
+        save.clubs[replacementId].divisionId = currentDivision.id;
+        save.clubs[replacementId].reputation = Math.min(95, save.clubs[replacementId].reputation + 2);
+      }
       nextDivision.clubIds.push(club.id);
       club.divisionId = nextDivision.id;
       club.reputation = Math.max(15, club.reputation - 4);

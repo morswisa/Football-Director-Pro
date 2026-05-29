@@ -34,6 +34,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Primary sections are selected by local tab state from dashboard metric buttons: Dashboard, Standings, Roster, Manager, Finances, Stadium, History, and Settings.
 - There is no separate top section grid or bottom navigation; non-dashboard sections provide a Back to Dashboard action.
 - Standings are derived from `leagueTable(save)` and rendered from the current division records.
+- League fixtures are generated with a round-robin scheduler: each club in the user's division appears once per league round, then fixtures repeat with reversed home/away legs.
 - Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
 - After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
@@ -83,7 +84,9 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
 - `SeasonHistory` stores the season's finish, record, goals, prize money, outcome, next division, cup summary, trophies, and closing balance for both the season-summary event and History screen.
 - Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
+- Promotion/relegation swaps a club between adjacent divisions so division sizes remain stable for future fixture generation.
 - Balance edge cases are covered in unit tests: debt-limit game over, no-refund facility downgrades with lower upkeep, manager action locks, and relegation division movement.
+- Human-style multi-season coverage resolves real Continue events with conservative chairman decisions and periodic facility investments to verify that the playable loop progresses across seasons.
 - Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
 - `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.
 - `src/game/economy.ts` owns formula-based wage helpers for players and managers plus manager compensation.

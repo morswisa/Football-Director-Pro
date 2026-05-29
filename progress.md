@@ -11,8 +11,10 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Implemented the fictional Chairman's Cup as the V1 domestic cup: scheduled cup weeks, draw event, cup match preview/result, prize money, dashboard/history display, and unit/browser coverage.
 - Implemented manager-led loans: loan-in, loan-out, wage-share costs, loan fee transactions, parent-club return at season end, UI controls, and unit/browser coverage.
 - Added long-run balancing: sponsorship/debt/upkeep scaling, promotion/relegation relationship effects, match-driven board/trust changes, stadium condition decay, generated squad-depth safety, and long-run tests. The audit found and fixed empty AI squads after many seasons.
+- Added a multi-season human-style Continue playtest and fixed the issues it exposed: low lower-league sponsorship, uneven post-season division sizes, and no-user-fixture rounds after season transitions. Verified with the full local test/build/e2e/browser/develop-web-game pass.
 
 ## Next TODO
 
-- Continue remaining V1 scope: multi-season human-flow playtesting and Capacitor native platform generation after web V1 acceptance.
-- Latest preview after Continue cadence tuning: `https://football-director-1kkyewuc3-mor-swisas-projects.vercel.app`.
+- Finish the current multi-season human-style fixes by committing/pushing the changes.
+- Continue remaining V1 scope: final wage/manager compensation tuning from longer simulated careers and Capacitor native platform generation after web V1 acceptance.
+- Latest preview after multi-season human-style stability pass: `https://football-director-os35x05aa-mor-swisas-projects.vercel.app`.
