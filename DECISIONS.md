@@ -27,6 +27,7 @@
 - Manager attributes are intentionally compact in V1: Training, Tactics, Transfers, Youth, Reputation, style, personality, wage, contract length, and employment status. `Man Management` and `Wage Discipline` are excluded.
 - Manager rating is the average of Training, Tactics, Transfers, and Youth.
 - Manager hiring/firing is not instant. Dismissal requires a compensation confirmation, and hiring requires a wage/contract offer with candidate compensation when the candidate is under contract.
+- Manager dismissal and hiring confirmations must show debt-limit context when immediate compensation costs can move the club into dangerous debt.
 - A manager action lock prevents repeated manager churn in the same short period, while still allowing a club without a manager to negotiate a replacement.
 - Manager contracts age at season transitions, so compensation falls as the remaining deal shortens. Manager action locks are short-term controls and reset at the next season boundary.
 - An expired manager contract is a blocking chairman decision: extend the manager or let him leave, then hire a replacement before the club can continue.

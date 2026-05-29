@@ -113,6 +113,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Team strength uses manager Tactics, Training, and Reputation.
 - Manager candidates can be `free_agent` or `contracted`; contracted candidates carry a compensation fee.
 - Hiring and firing are engine actions with financial consequences and a short action lock, coordinated through Zustand and rendered as Manager tab modals.
+- Manager cost modals compute post-action balance and debt headroom client-side from the same immediate costs sent to the engine; `confirmFireManager` and `submitManagerHireOffer` remain the authoritative mutation and bankruptcy gates.
 - The manager action lock is season-scoped and clears when a new season starts so late-season changes cannot freeze manager decisions into the next campaign.
 - Manager contract-expiry decisions reuse the event modal and deterministic wage formulas, not a separate React-only state path.
 - If an expired manager leaves, the follow-up message is shown immediately; after it is dismissed, queued season events remain parked until the Manager tab hires a replacement.

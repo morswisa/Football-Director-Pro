@@ -127,6 +127,21 @@ function ImpactBox({ children, className }: { children: ReactNode; className?: s
   );
 }
 
+function DebtImpactBox({ balance, debtLimit }: { balance: number; debtLimit: number }) {
+  const headroom = balance - debtLimit;
+  const overLimit = headroom < 0;
+  return (
+    <ImpactBox className={overLimit ? "border-red-100 bg-red-50 text-red-950" : undefined}>
+      <b className="block">{overLimit ? "Debt-limit risk" : "Debt headroom after cost"}</b>
+      <span>Balance after: {formatMoney(balance)}</span>
+      <span className="block">Debt limit: {formatMoney(debtLimit)}</span>
+      <span className="block">
+        {overLimit ? `Over limit by ${formatMoney(Math.abs(headroom))}. Confirming can end the career.` : `Headroom remaining ${formatMoney(headroom)}.`}
+      </span>
+    </ImpactBox>
+  );
+}
+
 function avatarSeed(value: string) {
   let hash = 2166136261;
   for (const char of value) {
@@ -387,6 +402,7 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const lockMessage = locked ? `Manager changes are locked until week ${save.managerActionLockUntilWeek}.` : undefined;
   const divisionLevel = save.divisions.find((division) => division.id === current.club.divisionId)?.level ?? 7;
   const fireCost = current.manager ? calculateManagerCompensation(current.manager) : 0;
+  const balanceAfterFire = current.club.finances.balance - fireCost;
   const hireOffer = hireId ? generateManagerHireOffer(save, hireId) : undefined;
   return (
     <div className="space-y-4">
@@ -459,7 +475,10 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
               <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Weekly wage</span><b>{formatMoney(current.manager.wage)}</b></p>
               <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Contract left</span><b>{current.manager.contractYears * 12} months</b></p>
               <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Compensation</span><b className="text-danger">{formatMoney(fireCost)}</b></p>
-              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Balance after</span><b>{formatMoney(current.club.finances.balance - fireCost)}</b></p>
+              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Balance after</span><b>{formatMoney(balanceAfterFire)}</b></p>
+            </div>
+            <div className="mt-3">
+              <DebtImpactBox balance={balanceAfterFire} debtLimit={current.club.finances.debtLimit} />
             </div>
             <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
               <Button variant="danger" onClick={async () => { await fire(); setFireOpen(false); }}>Confirm</Button>
@@ -477,6 +496,7 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
 
 function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; managerId: string; close: () => void; submit: (terms: ContractTerms) => Promise<void> }) {
   const offer = generateManagerHireOffer(save, managerId);
+  const current = useCurrent(save)!;
   const [wage, setWage] = useState(offer?.expectedWage ?? 1_000);
   const [years, setYears] = useState(2);
   if (!offer) return null;
@@ -484,6 +504,8 @@ function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; 
   const wageOptions = uniqueMoneyOptions(offer.expectedWage, [0.8, 0.9, 1, 1.1, 1.2], 50);
   const yearOptions = [1, 2, 3, 4, 5];
   const immediateCost = offer.outgoingCompensation + offer.candidateCompensation;
+  const balanceAfterCost = current.club.finances.balance - immediateCost;
+  const wageBillAfterHire = current.club.finances.weeklyWages - (current.manager?.wage ?? 0) + wage;
   return (
     <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
       <div className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
@@ -500,6 +522,11 @@ function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; 
           <p className="rounded-lg bg-surface-muted px-3 py-2">Immediate cost <b className="block">{formatMoney(immediateCost)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-2">New club fee <b className="block">{formatMoney(offer.candidateCompensation)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-2">Current manager payoff <b className="block">{formatMoney(offer.outgoingCompensation)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Balance after cost <b className="block">{formatMoney(balanceAfterCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">New wage bill <b className="block">{formatMoney(wageBillAfterHire)}/w</b></p>
+        </div>
+        <div className="mt-3">
+          <DebtImpactBox balance={balanceAfterCost} debtLimit={current.club.finances.debtLimit} />
         </div>
         <div className="mt-4">
           <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
