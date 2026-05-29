@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-ok2wbkg2y-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-r42qch223-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -41,6 +41,7 @@ Playable V1 includes:
 - Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero.
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
 - Match simulation.
+- Domestic cup flow: seasonal Chairman's Cup state, scheduled knockout ties, draw events in the Continue loop, cup match previews/results, non-league cup results, prize money in financial reports, cup status on Dashboard, cup history, and a cup achievement.
 - Event/entity cards and match events use deterministic generated SVG portrait faces for players and managers, built from a shared procedural face template.
 - Finances, stadium, training, youth, history, achievements.
 - History now surfaces current-season record context before season-end history exists.
@@ -50,7 +51,7 @@ Playable V1 includes:
 ## Next Steps
 
 - Continue closing remaining items from the original V1 plan only.
-- Improve depth of planned V1 systems where still shallow: cup competition, loans, richer event frequency tuning, wider balance coverage, and season-end progression clarity.
+- Improve depth of planned V1 systems where still shallow: loans, richer event frequency tuning, wider balance coverage, and season-end progression clarity.
 - Replace or fully retire the legacy `activeProposal` compatibility path after event-queue coverage is complete.
 - Expand tests around long-run simulation, bankruptcy/debt edge cases, facility economics, manager churn, and multi-season promotion/relegation.
 - Continue tuning the newly implemented wage economy and manager compensation values against longer simulated careers.

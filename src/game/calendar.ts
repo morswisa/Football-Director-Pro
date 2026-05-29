@@ -33,6 +33,17 @@ export function seasonPrize(level: number, position: number) {
   return Math.max(150_000, 1_200_000 - level * 125_000 + Math.max(0, 21 - position) * 12_000);
 }
 
+export const cupRoundWeeks = [6, 12, 18, 26, 34];
+
+export function cupRoundName(round: number) {
+  return ["First Round", "Second Round", "Quarter Final", "Semi Final", "Final"][round - 1] ?? `Round ${round}`;
+}
+
+export function cupPrize(round: number, won: boolean) {
+  if (!won) return round >= 4 ? 40_000 : 15_000;
+  return [60_000, 140_000, 320_000, 750_000, 1_800_000][round - 1] ?? 50_000;
+}
+
 export function nextUpgradeCost(level: number, base: number) {
   return Math.round(base * Math.pow(1.08, Math.max(1, level)));
 }

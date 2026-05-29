@@ -101,3 +101,7 @@
 - Updated save migration coverage so `managerActionLockUntilWeek` and `liveMatch` persist through import/load validation.
 - Verified the Settings pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and a 430x932 Playwright browser screenshot of the Settings screen.
 - Deployed the Settings pass to Vercel preview: `https://football-director-ok2wbkg2y-mor-swisas-projects.vercel.app`.
+- Continued the persistent MVP goal by implementing the V1 domestic cup gap as the fictional Chairman's Cup: seasonal cup state, scheduled knockout weeks, draw events, cup match previews/results, forced knockout winners, non-league cup results, cup matchday/prize transactions, dashboard cup status, history cup run display, and a cup achievement.
+- Added unit coverage for cup ties to prove cup matches do not change league records and that cup prize money appears in financial snapshots.
+- Verified the cup pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, and a browser automation pass that reached the Chairman's Cup draw inside the Continue loop.
+- Deployed the cup pass to Vercel preview: `https://football-director-r42qch223-mor-swisas-projects.vercel.app`.

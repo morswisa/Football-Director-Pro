@@ -3,6 +3,7 @@ export type ManagerStyle = "Attacking" | "Balanced" | "Defensive";
 export type Personality = "Winner" | "Builder" | "Pragmatist" | "Maverick" | "Mentor";
 export type ProposalType = "buy" | "sell" | "contract" | "loan";
 export type FixtureStatus = "scheduled" | "played";
+export type CompetitionType = "league" | "cup";
 export type ManagerStatus = "free_agent" | "contracted";
 export type GameEventType =
   | "club_update"
@@ -157,6 +158,8 @@ export interface Fixture {
   homeClubId: string;
   awayClubId: string;
   status: FixtureStatus;
+  competition?: CompetitionType;
+  cupRound?: number;
   result?: MatchResult;
 }
 
@@ -249,6 +252,27 @@ export interface LiveMatchState {
   finished: boolean;
 }
 
+export interface CupRoundResult {
+  season: number;
+  round: number;
+  roundName: string;
+  opponentClubId: string;
+  opponentName: string;
+  goalsFor: number;
+  goalsAgainst: number;
+  won: boolean;
+  prize: number;
+}
+
+export interface CupState {
+  name: string;
+  round: number;
+  maxRounds: number;
+  eliminated: boolean;
+  won: boolean;
+  results: CupRoundResult[];
+}
+
 export interface GameEvent {
   id: string;
   type: GameEventType;
@@ -320,6 +344,7 @@ export interface GameSave {
   managerRetirementIntent?: boolean;
   financialSnapshot?: FinancialSnapshot;
   liveMatch?: LiveMatchState;
+  cup: CupState;
   history: SeasonHistory[];
   achievements: Achievement[];
   hallOfFame: string[];

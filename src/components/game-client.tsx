@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { Card, StatCard } from "./ui/card";
 import { evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
-import { monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
+import { cupRoundName, monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
 import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, TransferBudgetMode } from "@/game/types";
 import { cn, formatMoney, ordinal, pct } from "@/lib/utils";
 import { useGameStore } from "@/store/game-store";
@@ -26,9 +26,18 @@ function useCurrent(save?: GameSave) {
     const players = club.playerIds.map((id) => save.players[id]).filter(Boolean).sort((a, b) => b.rating - a.rating);
     const table = leagueTable(save);
     const position = table.findIndex((item) => item.id === club.id) + 1;
-    const nextFixture = save.fixtures.find((fixture) => fixture.round === save.currentRound && (fixture.homeClubId === club.id || fixture.awayClubId === club.id));
+    const nextFixture = save.fixtures.find((fixture) => (fixture.competition ?? "league") === "league" && fixture.round === save.currentRound && (fixture.homeClubId === club.id || fixture.awayClubId === club.id));
     return { club, manager, players, table, position, nextFixture };
   }, [save]);
+}
+
+function cupStatus(save: GameSave) {
+  if (save.cup.won) return "Winners";
+  if (save.cup.eliminated) {
+    const last = save.cup.results.at(-1);
+    return last ? `Out ${last.roundName}` : "Out";
+  }
+  return cupRoundName(save.cup.round);
 }
 
 function Header({ save, tab, setTab }: { save: GameSave; tab: Tab; setTab: (tab: Tab) => void }) {
@@ -201,6 +210,7 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
         <MiniMetric label="Board" value={`${current.club.boardConfidence}%`} />
         <MiniMetric label="Stadium" value={current.club.stadium.condition} onClick={() => setTab("stadium")} />
         <MiniMetric label="Record" value={`${current.club.record.won}-${current.club.record.drawn}-${current.club.record.lost}`} onClick={() => setTab("history")} />
+        <MiniMetric label="Cup" value={cupStatus(save)} onClick={() => setTab("history")} />
       </div>
       <Card className="flex items-center justify-between gap-2 p-3">
         <span className="text-xs font-bold uppercase text-neutral-500">Last 10</span>
@@ -580,6 +590,21 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       <Card>
         <h2 className="text-lg font-bold">Trophy Cabinet</h2>
         <p className="mt-2 text-sm text-neutral-500">{save.history.flatMap((item) => item.trophies).length || "No"} trophies or promotions recorded.</p>
+      </Card>
+      <Card>
+        <h2 className="text-lg font-bold">{save.cup.name}</h2>
+        <p className="mt-1 text-sm text-neutral-500">{cupStatus(save)}</p>
+        <div className="mt-3 space-y-2">
+          {save.cup.results.length === 0 ? <p className="text-sm text-neutral-500">The first cup tie has not been played yet.</p> : save.cup.results.map((result) => (
+            <div key={`${result.season}_${result.round}`} className="rounded-lg bg-surface-muted px-3 py-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <b>{result.roundName}</b>
+                <b className={result.won ? "text-primary" : "text-danger"}>{result.won ? "Won" : "Lost"}</b>
+              </div>
+              <p className="text-xs text-neutral-500">vs {result.opponentName} · {result.goalsFor}-{result.goalsAgainst} · Prize {formatMoney(result.prize)}</p>
+            </div>
+          ))}
+        </div>
       </Card>
       <Card>
         <h3 className="mb-3 text-sm font-bold">Season History</h3>
@@ -1154,6 +1179,11 @@ function EventModal({ save }: { save: GameSave }) {
 
         {event.type === "match_preview" ? (
           <>
+            {nextFixture?.competition === "cup" ? (
+              <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-center text-xs font-bold text-primary">
+                {save.cup.name} · {cupRoundName(nextFixture.cupRound ?? save.cup.round)}
+              </p>
+            ) : null}
             <div className="mt-4 grid grid-cols-2 gap-3 text-center">
               <div className="rounded-xl bg-surface-muted px-3 py-4">
                 <p className="text-xs font-bold uppercase text-neutral-500">Home</p>
@@ -1179,7 +1209,9 @@ function EventModal({ save }: { save: GameSave }) {
               <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{result.homeOnTarget}-{result.awayOnTarget}</b><span className="block text-xs text-neutral-500">On target</span></p>
             </div>
             <div className="mt-4 space-y-2">
-              {result.events.slice(0, 4).map((matchEvent, index) => (
+              {result.events.length === 0 ? (
+                <div className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-600">No major match events recorded.</div>
+              ) : result.events.slice(0, 4).map((matchEvent, index) => (
                 <div key={`${matchEvent.minute}-${index}`} className="flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm">
                   <PersonAvatar name={matchEvent.playerName} className="h-8 w-8 rounded-md text-[10px]" />
                   <p>{matchEvent.minute}&apos; {matchEvent.description}</p>

@@ -30,6 +30,7 @@ export const gameSaveSchema = z.object({
   managerRetirementIntent: z.boolean().optional(),
   financialSnapshot: z.any().optional(),
   liveMatch: z.any().optional(),
+  cup: z.any().optional(),
   history: z.array(z.any()),
   achievements: z.array(z.any()),
   hallOfFame: z.array(z.string()),

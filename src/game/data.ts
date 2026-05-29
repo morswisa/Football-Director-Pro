@@ -88,4 +88,5 @@ export const starterAchievements: Achievement[] = [
   { id: "stadium_upgrade", title: "Concrete Plans", description: "Upgrade any stadium stand.", progress: 0, target: 1 },
   { id: "promotion", title: "Going Up", description: "Win promotion.", progress: 0, target: 1 },
   { id: "youth_debut", title: "Academy Pathway", description: "Promote a youth player.", progress: 0, target: 1 },
+  { id: "cup_run", title: "Cup Glory", description: "Win the Chairman's Cup.", progress: 0, target: 1 },
 ];

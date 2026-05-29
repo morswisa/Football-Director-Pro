@@ -15,6 +15,7 @@ import {
   submitManagerHireOffer,
   upgradeStand,
 } from "../src/game/engine";
+import { cupRoundWeeks } from "../src/game/calendar";
 import { migrateSave } from "../src/game/persistence";
 
 const setup = {
@@ -152,6 +153,32 @@ describe("game engine", () => {
     expect(save.currentEvent?.type).toBe("match_result");
     expect(save.liveMatch?.fixtureId).toBe(save.lastMatch?.id);
     expect(save.currentRound).toBe(roundBefore + 1);
+  });
+
+  it("plays domestic cup ties without changing league points", () => {
+    let save = createNewGame(setup);
+    const clubId = save.userClubId;
+    save.week = cupRoundWeeks[0];
+    save.currentRound = cupRoundWeeks[0] - 1;
+    const leaguePlayedBefore = save.clubs[clubId].record.played;
+    save = generateNextEvents(save);
+    let guard = 0;
+    while (save.currentEvent && guard < 16) {
+      const fixture = save.currentEvent.fixtureId ? save.fixtures.find((item) => item.id === save.currentEvent!.fixtureId) : undefined;
+      if (save.currentEvent.type === "match_preview" && fixture?.competition === "cup") break;
+      const decision = save.currentEvent.type === "contract_offer" || save.currentEvent.type === "incoming_bid" ? { action: "reject" } : undefined;
+      save = resolveEvent(save, save.currentEvent.id, decision);
+      guard += 1;
+    }
+    const cupFixture = save.currentEvent?.fixtureId ? save.fixtures.find((item) => item.id === save.currentEvent!.fixtureId) : undefined;
+    expect(save.currentEvent?.type).toBe("match_preview");
+    expect(cupFixture?.competition).toBe("cup");
+    save = resolveEvent(save, save.currentEvent!.id, { action: "see" });
+    expect(save.currentEvent?.type).toBe("match_result");
+    expect(save.lastMatch?.competition).toBe("cup");
+    expect(save.cup.results).toHaveLength(1);
+    expect(save.clubs[clubId].record.played).toBe(leaguePlayedBefore);
+    expect(latestFinancialSnapshot(save).income.prizeMoney).toBeGreaterThan(0);
   });
 
   it("negotiates paid transfers and includes fees in financial snapshots", () => {

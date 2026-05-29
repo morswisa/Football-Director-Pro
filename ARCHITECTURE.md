@@ -68,12 +68,14 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Buy-proposal rejection resolves to a target-specific response event, while squad contract rejection uses squad-specific language.
 - Sale proposals carry `toClubId` and staged `PendingDeal.buyerClubId` so bid, sale-ready, and sale-confirmed events can attribute the bidding club.
 - `GameSave.liveMatch` stores transient live-playback metadata so the fixture is not simulated twice when the user chooses `Play Match`.
+- `GameSave.cup` stores the current seasonal Chairman's Cup run. Cup fixtures are stored in `fixtures` with `competition: "cup"` and are resolved through the same match preview/result modal path, but they do not update league records.
 - Legacy `activeProposal` still exists for compatibility with older code/tests, but the UI now wraps manager proposals into event cards.
 
 ## Calendar And Economy
 
 - Internal progress still uses `week` and `currentRound`, but UI presents `monthForWeek`.
 - Transfer-window gating currently allows buy/sell proposals in August and January.
+- Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.
 - `src/game/economy.ts` owns formula-based wage helpers for players and managers plus manager compensation.
 - Player wages scale by division level, rating, age band, squad role, and potential gap.

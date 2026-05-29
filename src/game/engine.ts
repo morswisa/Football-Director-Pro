@@ -1,5 +1,5 @@
 import { clubPrefixes, starterAchievements } from "./data";
-import { isTransferWindow, monthForWeek, nextUpgradeCost, seasonPrize } from "./calendar";
+import { cupPrize, cupRoundName, cupRoundWeeks, isTransferWindow, monthForWeek, nextUpgradeCost, seasonPrize } from "./calendar";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating } from "./economy";
 import { chance, pickOne, randomFloat, randomInt } from "./random";
 import { createNewGame as createWorldGame, generateManagerCandidates, generateSeasonFixtures, resetClubRecords } from "./world";
@@ -52,11 +52,57 @@ function ensureEventState(save: GameSave) {
   save.pendingDeals ??= [];
   save.managerCandidates ??= [];
   save.managerActionLockUntilWeek ??= 0;
+  save.cup ??= { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] };
+  save.cup.name ??= "Chairman's Cup";
+  save.cup.round = Math.max(1, save.cup.round ?? 1);
+  save.cup.maxRounds = Math.max(5, save.cup.maxRounds ?? 5);
+  save.cup.results ??= [];
+  save.cup.eliminated ??= false;
+  save.cup.won ??= false;
   return save;
 }
 
 function currentDivisionLevel(save: GameSave) {
   return save.divisions.find((division) => division.id === userClub(save).divisionId)?.level ?? 7;
+}
+
+function isCupWeek(save: GameSave) {
+  ensureEventState(save);
+  return cupRoundWeeks[save.cup.round - 1] === save.week && !save.cup.eliminated && !save.cup.won;
+}
+
+function findCupFixture(save: GameSave, round = save.cup.round) {
+  return save.fixtures.find((fixture) => fixture.competition === "cup" && fixture.cupRound === round && fixture.id.startsWith(`cup_${save.season}_`));
+}
+
+function createCupFixture(save: GameSave) {
+  ensureEventState(save);
+  const existing = findCupFixture(save);
+  if (existing) return existing;
+  const club = userClub(save);
+  const currentLevel = currentDivisionLevel(save);
+  const minimumLevel = Math.max(1, currentLevel - save.cup.round + 1);
+  const candidateIds = save.divisions
+    .filter((division) => division.level >= minimumLevel)
+    .flatMap((division) => division.clubIds)
+    .filter((clubId) => clubId !== club.id);
+  const fallbackIds = Object.keys(save.clubs).filter((clubId) => clubId !== club.id);
+  const pool = candidateIds.length ? candidateIds : fallbackIds;
+  const [opponentId, s1] = pickOne(save.rngState + save.cup.round * 997, pool);
+  const [homeRoll, s2] = randomInt(s1, 0, 100);
+  save.rngState = s2;
+  const userHome = save.cup.round === save.cup.maxRounds ? homeRoll >= 50 : homeRoll >= 42;
+  const fixture: Fixture = {
+    id: `cup_${save.season}_${save.cup.round}`,
+    round: 800 + save.cup.round,
+    homeClubId: userHome ? club.id : opponentId,
+    awayClubId: userHome ? opponentId : club.id,
+    status: "scheduled",
+    competition: "cup",
+    cupRound: save.cup.round,
+  };
+  save.fixtures.push(fixture);
+  return fixture;
 }
 
 function normalizeManager(manager: Manager, status: Manager["status"], clubId?: string) {
@@ -158,8 +204,9 @@ function buildFinancialSnapshot(save: GameSave): FinancialSnapshot {
   const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const managerCosts = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("manager")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
-  const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
-  const ticketSales = Math.max(0, club.finances.lastWeekProfit > 0 ? Math.round(club.finances.ticketIncome / Math.max(1, club.record.played)) : 0);
+  const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award") || tx.label.toLowerCase().includes("cup prize")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
+  const cupMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("cup matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
+  const ticketSales = Math.max(0, club.finances.lastWeekProfit > 0 ? Math.round(club.finances.ticketIncome / Math.max(1, club.record.played)) : 0) + cupMatchdayIncome;
   const sponsorship = Math.round(club.finances.sponsorship / 38);
   const merchandise = Math.round(club.reputation * 85 + club.record.won * 120);
   const wages = Math.max(0, club.finances.weeklyWages);
@@ -212,6 +259,25 @@ function ensureFinancialReportAfterTransfer(save: GameSave) {
   const snapshot = save.financialSnapshot ?? buildFinancialSnapshot(save);
   enqueue(save, {
     id: `financial_report_transfer_update_${save.season}_${save.week}_${save.seenEventKeys.length}`,
+    type: "financial_report",
+    title: "Financial report",
+    body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`,
+    requiresDecision: false,
+    createdSeason: save.season,
+    createdWeek: save.week,
+    financialSnapshot: snapshot,
+    variant: snapshot.profit >= 0 ? "positive" : "negative",
+  });
+}
+
+function ensureFinancialReportAfterCup(save: GameSave) {
+  refreshQueuedFinancialReports(save);
+  const hasCurrentWeekReport = save.currentEvent?.type === "financial_report" && save.currentEvent.createdSeason === save.season && save.currentEvent.createdWeek === save.week
+    || save.eventQueue.some((event) => event.type === "financial_report" && event.createdSeason === save.season && event.createdWeek === save.week);
+  if (hasCurrentWeekReport) return;
+  const snapshot = save.financialSnapshot ?? buildFinancialSnapshot(save);
+  enqueue(save, {
+    id: `financial_report_cup_update_${save.season}_${save.week}_${save.seenEventKeys.length}`,
     type: "financial_report",
     title: "Financial report",
     body: `The club ${snapshot.profit >= 0 ? "made a profit" : "made a loss"} in ${snapshot.month}.`,
@@ -320,6 +386,10 @@ export function simulateMatch(fixture: Fixture, save: GameSave): [MatchResult, n
 export function applyMatchResult(save: GameSave, fixture: Fixture, result: MatchResult) {
   const home = save.clubs[fixture.homeClubId];
   const away = save.clubs[fixture.awayClubId];
+  if (fixture.competition === "cup") {
+    applyCupMatchResult(save, fixture, result);
+    return;
+  }
   addRecord(home.record, result.homeGoals, result.awayGoals);
   addRecord(away.record, result.awayGoals, result.homeGoals);
   for (const club of [home, away]) {
@@ -330,6 +400,100 @@ export function applyMatchResult(save: GameSave, fixture: Fixture, result: Match
       player.form = Math.max(20, Math.min(99, player.form + (club === home ? result.homeGoals - result.awayGoals : result.awayGoals - result.homeGoals)));
     });
   }
+}
+
+function applyCupMatchResult(save: GameSave, fixture: Fixture, result: MatchResult) {
+  const home = save.clubs[fixture.homeClubId];
+  const away = save.clubs[fixture.awayClubId];
+  for (const club of [home, away]) {
+    playersForClub(save, club).sort((a, b) => b.rating - a.rating).slice(0, 11).forEach((player) => {
+      player.seasonStats.apps += 1;
+      player.careerStats.apps += 1;
+      player.fitness = Math.max(42, player.fitness - 7);
+      const goalsFor = club.id === fixture.homeClubId ? result.homeGoals : result.awayGoals;
+      const goalsAgainst = club.id === fixture.homeClubId ? result.awayGoals : result.homeGoals;
+      player.form = Math.max(20, Math.min(99, player.form + goalsFor - goalsAgainst));
+    });
+  }
+}
+
+function forceCupWinner(save: GameSave, fixture: Fixture, result: MatchResult) {
+  if (result.homeGoals !== result.awayGoals) return result;
+  const [homeWins, s1] = chance(save.rngState + (fixture.cupRound ?? 1) * 193, 0.5);
+  save.rngState = s1;
+  const winnerId = homeWins ? fixture.homeClubId : fixture.awayClubId;
+  const winningClub = save.clubs[winnerId];
+  const [winner, s2] = scorer(save.rngState, save, winningClub);
+  save.rngState = s2;
+  if (homeWins) {
+    result.homeGoals += 1;
+    result.homeShots = Math.max(result.homeShots, result.homeGoals);
+    result.homeOnTarget = Math.max(result.homeOnTarget, result.homeGoals);
+  } else {
+    result.awayGoals += 1;
+    result.awayShots = Math.max(result.awayShots, result.awayGoals);
+    result.awayOnTarget = Math.max(result.awayOnTarget, result.awayGoals);
+  }
+  result.events.push({
+    minute: 90,
+    type: "goal",
+    clubId: winnerId,
+    playerName: winner.name,
+    description: `${winner.name} settles the cup tie for ${winningClub.name}.`,
+  });
+  result.events.sort((a, b) => a.minute - b.minute);
+  return result;
+}
+
+function advanceCupMatch(input: GameSave, fixtureId: string) {
+  const save = clone(input);
+  ensureEventState(save);
+  const fixture = save.fixtures.find((item) => item.id === fixtureId && item.status === "scheduled" && item.competition === "cup");
+  if (!fixture) return withUpdate(save);
+  const [rawResult, next] = simulateMatch(fixture, save);
+  save.rngState = next;
+  const result = forceCupWinner(save, fixture, rawResult);
+  fixture.status = "played";
+  fixture.result = result;
+  applyMatchResult(save, fixture, result);
+  const club = userClub(save);
+  const userHome = fixture.homeClubId === club.id;
+  const goalsFor = userHome ? result.homeGoals : result.awayGoals;
+  const goalsAgainst = userHome ? result.awayGoals : result.homeGoals;
+  const won = goalsFor > goalsAgainst;
+  const round = fixture.cupRound ?? save.cup.round;
+  const opponentId = userHome ? fixture.awayClubId : fixture.homeClubId;
+  const prize = cupPrize(round, won);
+  const matchdayIncome = userHome ? Math.round(calculateMatchdayIncome(save, fixture) * 0.72) : 0;
+  if (matchdayIncome > 0) {
+    club.finances.balance += matchdayIncome;
+    club.finances.ticketIncome += matchdayIncome;
+    club.finances.transactions.unshift({ id: `tx_cup_matchday_${save.season}_${round}`, week: save.week, label: `Cup matchday income: ${cupRoundName(round)}`, amount: matchdayIncome });
+  }
+  club.finances.balance += prize;
+  club.finances.transactions.unshift({ id: `tx_cup_prize_${save.season}_${round}`, week: save.week, label: `Cup prize: ${cupRoundName(round)}`, amount: prize });
+  save.cup.results.push({
+    season: save.season,
+    round,
+    roundName: cupRoundName(round),
+    opponentClubId: opponentId,
+    opponentName: save.clubs[opponentId]?.name ?? "Opponent",
+    goalsFor,
+    goalsAgainst,
+    won,
+    prize,
+  });
+  if (won && round >= save.cup.maxRounds) {
+    save.cup.won = true;
+    save.hallOfFame.unshift(`${save.season} ${save.cup.name} winners`);
+  } else if (won) {
+    save.cup.round = round + 1;
+  } else {
+    save.cup.eliminated = true;
+  }
+  save.lastMatch = structuredClone(fixture);
+  ensureFinancialReportAfterCup(save);
+  return withUpdate(updateAchievements(save));
 }
 
 export function calculateMatchdayIncome(save: GameSave, fixture: Fixture) {
@@ -372,7 +536,7 @@ export function advanceToNextMatch(input: GameSave) {
   if (input.gameOver) return input;
   let save = clone(input);
   ensureEventState(save);
-  const roundFixtures = save.fixtures.filter((fixture) => fixture.round === save.currentRound && fixture.status === "scheduled");
+  const roundFixtures = save.fixtures.filter((fixture) => (fixture.competition ?? "league") === "league" && fixture.round === save.currentRound && fixture.status === "scheduled");
   let userFixture: Fixture | undefined;
   for (const fixture of roundFixtures) {
     const [result, next] = simulateMatch(fixture, save);
@@ -390,7 +554,8 @@ export function advanceToNextMatch(input: GameSave) {
   save.week += 1;
   save.currentRound += 1;
   if (!save.activeProposal && save.week % 3 === 0) save.activeProposal = generateManagerTransferProposal(save);
-  if (save.currentRound > Math.max(...save.fixtures.map((fixture) => fixture.round))) save = finishSeason(save);
+  const maxLeagueRound = Math.max(...save.fixtures.filter((fixture) => (fixture.competition ?? "league") === "league").map((fixture) => fixture.round));
+  if (save.currentRound > maxLeagueRound) save = finishSeason(save);
   return withUpdate(save);
 }
 
@@ -463,7 +628,7 @@ function queueProposalIfAvailable(save: GameSave) {
 }
 
 function nextUserFixture(save: GameSave) {
-  return save.fixtures.find((fixture) => fixture.round === save.currentRound && fixture.status === "scheduled" && (fixture.homeClubId === save.userClubId || fixture.awayClubId === save.userClubId));
+  return save.fixtures.find((fixture) => (fixture.competition ?? "league") === "league" && fixture.round === save.currentRound && fixture.status === "scheduled" && (fixture.homeClubId === save.userClubId || fixture.awayClubId === save.userClubId));
 }
 
 function pushStandardEvents(save: GameSave) {
@@ -477,7 +642,7 @@ function pushStandardEvents(save: GameSave) {
       id: `season_intro_${seasonKey}`,
       type: "season_intro",
       title: `${save.season}/${String(save.season + 1).slice(2)} League Path`,
-      body: `Your club starts this season in ${save.divisions.find((division) => division.id === club.divisionId)?.name ?? "the league"}. The target is simple: build the club without losing control of the finances.`,
+      body: `Your club starts this season in ${save.divisions.find((division) => division.id === club.divisionId)?.name ?? "the league"} and enters the ${save.cup.name}. The target is simple: build the club without losing control of the finances.`,
       requiresDecision: false,
       createdSeason: save.season,
       createdWeek: save.week,
@@ -531,6 +696,33 @@ function pushStandardEvents(save: GameSave) {
     });
   }
   queueProposalIfAvailable(save);
+  if (isCupWeek(save)) {
+    const cupFixture = createCupFixture(save);
+    const opponent = save.clubs[cupFixture.homeClubId === club.id ? cupFixture.awayClubId : cupFixture.homeClubId];
+    enqueue(save, {
+      id: `cup_draw_${save.season}_${save.cup.round}`,
+      type: "club_update",
+      title: `${save.cup.name} draw`,
+      body: `${club.name} will face ${opponent.name} in the ${cupRoundName(save.cup.round)}. Winning pays ${cupPrize(save.cup.round, true).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; losing still pays ${cupPrize(save.cup.round, false).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      fixtureId: cupFixture.id,
+      managerId: manager?.id,
+    });
+    enqueue(save, {
+      id: `match_preview_${cupFixture.id}`,
+      type: "match_preview",
+      title: `${save.cup.name}: ${cupRoundName(save.cup.round)}`,
+      body: `${cupFixture.homeClubId === club.id ? "Home" : "Away"} cup tie against ${opponent.name} in ${monthForWeek(save.week)}.`,
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      fixtureId: cupFixture.id,
+      managerId: manager?.id,
+      note: "Cup matches do not affect league points, but prize money and a cup run can change the season.",
+    });
+  }
   const snapshot = buildFinancialSnapshot(save);
   save.financialSnapshot = snapshot;
   enqueue(save, {
@@ -897,22 +1089,24 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     }
   } else if (event.type === "match_preview") {
     const playLive = action === "play";
+    const previewFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
     save.currentEvent = undefined;
     markEventSeen(save, event.id);
-    save = advanceToNextMatch(save);
+    save = previewFixture?.competition === "cup" ? advanceCupMatch(save, previewFixture.id) : advanceToNextMatch(save);
     ensureEventState(save);
     ensureManagerState(save);
     if (save.lastMatch?.result) {
+      const isCup = save.lastMatch.competition === "cup";
       save.currentEvent = {
         id: `match_result_${save.lastMatch.id}`,
         type: "match_result",
-        title: "Match result",
-        body: `${save.clubs[save.lastMatch.homeClubId].name} ${save.lastMatch.result.homeGoals} - ${save.lastMatch.result.awayGoals} ${save.clubs[save.lastMatch.awayClubId].name}`,
+        title: isCup ? `${save.cup.name} result` : "Match result",
+        body: `${save.clubs[save.lastMatch.homeClubId].name} ${save.lastMatch.result.homeGoals} - ${save.lastMatch.result.awayGoals} ${save.clubs[save.lastMatch.awayClubId].name}${isCup ? ` · ${cupRoundName(save.lastMatch.cupRound ?? save.cup.round)}` : ""}`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
         fixtureId: save.lastMatch.id,
-        variant: "neutral",
+        variant: isCup ? (save.cup.results.at(-1)?.won ? "positive" : "negative") : "neutral",
       };
       save.liveMatch = playLive ? { fixtureId: save.lastMatch.id, currentMinute: 0, revealedEventCount: 0, finished: false } : undefined;
     }
@@ -944,13 +1138,14 @@ export function finishSeason(input: GameSave) {
   club.finances.balance += prize;
   club.finances.transactions.unshift({ id: `tx_prize_${save.season}`, week: save.week, label: `Season award: ${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}`, amount: prize });
   const promoted = position <= 3 && save.divisions.find((d) => d.id === club.divisionId)?.level !== 1;
+  const trophies = [...(promoted ? ["Promotion"] : []), ...(save.cup?.won ? [save.cup.name] : [])];
   save.history.unshift({
     season: save.season,
     divisionName: save.divisions.find((d) => d.id === club.divisionId)?.name ?? "League",
     position,
     points: club.record.points,
     balance: club.finances.balance,
-    trophies: promoted ? ["Promotion"] : [],
+    trophies,
   });
   if (promoted) {
     const currentDivision = save.divisions.find((d) => d.id === club.divisionId);
@@ -977,6 +1172,7 @@ export function startNextSeason(input: GameSave) {
   save = developPlayers(save);
   save = retirePlayers(save);
   save = generateYouthIntake(save);
+  save.cup = { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] };
   const division = save.divisions.find((item) => item.id === userClub(save).divisionId);
   save.fixtures = division ? generateSeasonFixtures(division) : [];
   return withUpdate(updateAchievements(save));
@@ -1374,6 +1570,8 @@ export function updateAchievements(input: GameSave) {
   if (profit && club.finances.lastWeekProfit > 0) profit.progress = 1;
   const promotion = save.achievements.find((item) => item.id === "promotion");
   if (promotion && save.history.some((item) => item.trophies.includes("Promotion"))) promotion.progress = 1;
+  const cup = save.achievements.find((item) => item.id === "cup_run");
+  if (cup && (save.cup?.won || save.history.some((item) => item.trophies.includes("Chairman's Cup")))) cup.progress = 1;
   save.achievements.forEach((achievement) => {
     if (!achievement.unlockedAt && achievement.progress >= achievement.target) achievement.unlockedAt = save.week + save.season * 100;
   });

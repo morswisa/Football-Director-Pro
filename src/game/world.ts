@@ -244,6 +244,7 @@ export function createNewGame(input: ClubSetupInput): GameSave {
     eventQueue: [],
     seenEventKeys: [],
     pendingDeals: [],
+    cup: { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] },
     history: [],
     achievements: structuredClone(starterAchievements),
     hallOfFame: [],
