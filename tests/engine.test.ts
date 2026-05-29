@@ -448,6 +448,9 @@ describe("game engine", () => {
     expect(save.currentEvent?.type).toBe("match_result");
     expect(save.lastMatch?.result).toBeDefined();
     expect(save.liveMatch).toBeUndefined();
+    expect(save.currentEvent?.note).toContain("Impact: board confidence");
+    expect(save.currentEvent?.note).toContain("manager trust");
+    expect(save.currentEvent?.note).toContain("stadium condition");
   });
 
   it("creates live playback state for play match without double simulation", () => {

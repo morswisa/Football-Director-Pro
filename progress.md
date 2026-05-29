@@ -18,12 +18,14 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Added acceptance coverage that hiring a replacement manager resumes the parked season queue.
 - Scoped transfer budgets to active transfer windows so stale strict/zero budgets do not keep affecting manager frustration after the window closes.
 - Added visible impact summaries to the main chairman decision cards so trust, morale, balance, wage-bill, board, and replacement consequences are clearer before choices are confirmed.
+- Added post-match impact notes showing actual board confidence, manager trust, and stadium condition changes after match simulation.
 
 ## Next TODO
 
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
+- Watch for any remaining post-event state changes, especially season-end and finance-heavy events, that still need the same clear impact explanation.
 - Continue balance tuning for wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency across longer human-style careers.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after decision-impact pass: `https://football-director-1pyz8autq-mor-swisas-projects.vercel.app`.
+- Latest preview after match-result impact pass: `https://football-director-49azxexfi-mor-swisas-projects.vercel.app`.

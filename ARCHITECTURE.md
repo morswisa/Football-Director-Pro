@@ -39,6 +39,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, manager contract expiry, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
 - After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
+- Match-result event creation captures the user club's relationship/facility snapshot before simulation and compares it with the post-simulation state, then writes the actual board confidence, manager trust, and stadium condition deltas into the event note.
 - Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
@@ -91,6 +92,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Balance edge cases are covered in unit tests: debt-limit game over, no-refund facility downgrades with lower upkeep, manager action locks, and relegation division movement.
 - Human-style multi-season coverage resolves real Continue events with conservative chairman decisions and periodic facility investments to verify that the playable loop progresses across seasons.
 - Match results adjust board confidence, manager trust, and stadium condition so relationships and facilities move over time instead of staying static.
+- The post-match impact note is generated from those actual stored values, not from a duplicated UI-only formula.
 - `ensureClubSquadDepth` creates generated reserve players when retirements or loans leave a club below playable depth, preventing long-run fixture failures.
 - `src/game/economy.ts` owns formula-based wage helpers for players and managers plus manager compensation.
 - Player wages scale by division level, rating, age band, squad role, and potential gap.

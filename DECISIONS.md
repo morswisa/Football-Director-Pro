@@ -63,6 +63,7 @@
 - The main play experience should run from Dashboard `Continue`, with secondary pages used for inspection and upgrades.
 - Match preview is decision-only: `See Match` jumps to the result, and `Play Match` shows a fast no-control live playback before the same result summary.
 - Cup match previews use the same `See Match` / `Play Match` controls as league fixtures to preserve one consistent match flow.
+- Match results must explain the relationship/facility consequences applied by the engine, so board confidence, manager trust, and stadium condition movement does not feel arbitrary.
 - Relationship metrics must be explainable through repeated outcomes: wins and stable finances help board confidence/trust, losses and negative balances hurt them.
 - Dashboard should not show duplicate controls for the same feature; Training and Youth are opened from their metric cards only.
 - Generated portrait avatars are part of V1 identity. They use one shared procedural SVG template, seeded by player/manager IDs where possible, so faces stay consistent across the career without storing image assets.

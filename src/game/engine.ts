@@ -176,6 +176,28 @@ function adjustRelationshipAfterMatch(save: GameSave, fixture: Fixture, result: 
   club.stadium.condition = Math.max(35, club.stadium.condition - (fixture.competition === "cup" ? 2 : 1));
 }
 
+function relationshipSnapshot(save: GameSave) {
+  const club = userClub(save);
+  return {
+    boardConfidence: club.boardConfidence,
+    managerTrust: club.managerTrust,
+    stadiumCondition: club.stadium.condition,
+  };
+}
+
+function signedDelta(value: number) {
+  if (value > 0) return `+${value}`;
+  if (value < 0) return `${value}`;
+  return "0";
+}
+
+function matchImpactNote(before: ReturnType<typeof relationshipSnapshot>, after: ReturnType<typeof relationshipSnapshot>) {
+  const boardDelta = after.boardConfidence - before.boardConfidence;
+  const trustDelta = after.managerTrust - before.managerTrust;
+  const stadiumDelta = after.stadiumCondition - before.stadiumCondition;
+  return `Impact: board confidence ${signedDelta(boardDelta)} (${before.boardConfidence}% -> ${after.boardConfidence}%), manager trust ${signedDelta(trustDelta)} (${before.managerTrust}% -> ${after.managerTrust}%), stadium condition ${signedDelta(stadiumDelta)} (${before.stadiumCondition}% -> ${after.stadiumCondition}%).`;
+}
+
 function isCupWeek(save: GameSave) {
   ensureEventState(save);
   return cupRoundWeeks[save.cup.round - 1] === save.week && !save.cup.eliminated && !save.cup.won;
@@ -1410,6 +1432,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
   } else if (event.type === "match_preview") {
     const playLive = action === "play";
     const previewFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
+    const relationshipBefore = relationshipSnapshot(save);
     save.currentEvent = undefined;
     markEventSeen(save, event.id);
     save = previewFixture?.competition === "cup" ? advanceCupMatch(save, previewFixture.id) : advanceToNextMatch(save);
@@ -1417,11 +1440,13 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
     ensureManagerState(save);
     if (save.lastMatch?.result) {
       const isCup = save.lastMatch.competition === "cup";
+      const relationshipAfter = relationshipSnapshot(save);
       save.currentEvent = {
         id: `match_result_${save.lastMatch.id}`,
         type: "match_result",
         title: isCup ? `${save.cup.name} result` : "Match result",
         body: `${save.clubs[save.lastMatch.homeClubId].name} ${save.lastMatch.result.homeGoals} - ${save.lastMatch.result.awayGoals} ${save.clubs[save.lastMatch.awayClubId].name}${isCup ? ` · ${cupRoundName(save.lastMatch.cupRound ?? save.cup.round)}` : ""}`,
+        note: matchImpactNote(relationshipBefore, relationshipAfter),
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
