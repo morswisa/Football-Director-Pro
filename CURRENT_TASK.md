@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-ezszjby5b-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-b2bhgfpo9-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -19,7 +19,7 @@ Playable V1 includes:
 - New club creation as the primary start action on the main menu.
 - Local save/load with IndexedDB.
 - Season dashboard with central `Continue` flow backed by `eventQueue` and `currentEvent`.
-- Event card system for season intro, crowd report, transfer-window opening, transfer budget, financial report, contract offers/responses, incoming bids, sale confirmation, youth decisions, manager frustration/retirement hints, match preview, match result, and season summary.
+- Event card system for season intro, crowd report, transfer-window opening, transfer budget, financial report, contract offers/responses, incoming bids, sale confirmation, youth decisions, manager frustration/retirement hints, manager contract expiry, match preview, match result, and season summary.
 - Season summary now appears before the next season intro after a season transition, with finish, record, goal difference, season award, balance, promotion/relegation/stay status, next division, cup summary, and trophies.
 - Dashboard metric buttons are the primary navigation into League, Roster, Manager, Training, Youth, Finances, Stadium, and History; duplicate top/bottom navigation has been removed.
 - Full league standings table for the user's division.
@@ -32,7 +32,7 @@ Playable V1 includes:
 - Facility and stadium screens show selected level changes, costs, upkeep/capacity effects, and bank-impact context before actions.
 - Manager hiring/firing.
 - Manager hiring/firing now uses contract economics: weekly wages, contract years, compensation previews, free-agent/contracted candidate status, and a manager-action lock after changes.
-- Manager contracts now age across seasons, compensation drops as years remaining fall, and short-term manager-action locks clear at season rollover.
+- Manager contracts now age across seasons, compensation drops as years remaining fall, short-term manager-action locks clear at season rollover, and expired manager contracts create a blocking Continue decision to extend the deal or let the manager leave.
 - Manager-led transfer proposals. Contract renewals use wage/year offers; paid purchases use fee + wage + years negotiation with possible club/player refusal.
 - Manager-led proposal cadence is tuned for the Continue loop: transfer-window months can create active proposal weeks, while non-window contract/proposal checks happen only on periodic review weeks instead of every other week.
 - Manager-led loans. Loan-in proposals use a loan fee plus weekly wage contribution, loan-out proposals reduce wage pressure and return players at season end, and loan fees appear in financial reports.

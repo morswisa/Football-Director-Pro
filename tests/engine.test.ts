@@ -38,6 +38,11 @@ function resolveBalancedEvent(save: ReturnType<typeof createNewGame>) {
   if (!event) return save;
   if (event.type === "transfer_budget") return resolveEvent(save, event.id, { mode: "normal" });
   if (event.type === "match_preview") return resolveEvent(save, event.id, { action: "see" });
+  if (event.type === "manager_contract_decision") {
+    const manager = event.managerId ? save.managers[event.managerId] : undefined;
+    const divisionLevel = save.divisions.find((division) => division.id === save.clubs[save.userClubId].divisionId)?.level ?? 7;
+    return resolveEvent(save, event.id, { action: "extend", terms: { wage: manager ? calculateRecommendedManagerWage(manager, divisionLevel) : 1_000, years: 2 } });
+  }
   if (event.type === "contract_offer") {
     const proposal = event.proposal;
     if (proposal?.type === "buy") return resolveEvent(save, event.id, { action: "reject" });
@@ -61,6 +66,11 @@ function resolveHumanStyleEvent(save: ReturnType<typeof createNewGame>) {
     return resolveEvent(save, event.id, { mode });
   }
   if (event.type === "match_preview") return resolveEvent(save, event.id, { action: "see" });
+  if (event.type === "manager_contract_decision") {
+    const manager = event.managerId ? save.managers[event.managerId] : undefined;
+    const divisionLevel = save.divisions.find((division) => division.id === club.divisionId)?.level ?? 7;
+    return resolveEvent(save, event.id, { action: "extend", terms: { wage: manager ? calculateRecommendedManagerWage(manager, divisionLevel) : 1_000, years: 2 } });
+  }
   if (event.type === "incoming_bid" && proposal && player) {
     const accept = player.age >= 31 || player.contractYears <= 1 || proposal.fee >= player.value;
     return resolveEvent(save, event.id, { action: accept ? "accept" : "reject" });
@@ -154,6 +164,15 @@ describe("game engine", () => {
     expect(calculateManagerCompensation(carriedManager)).toBe(0);
     expect(carriedManager.compensationFee).toBe(0);
     expect(save.managerActionLockUntilWeek).toBe(0);
+    save = generateNextEvents(save);
+    while (save.currentEvent && save.currentEvent.type !== "manager_contract_decision") {
+      save = resolveEvent(save, save.currentEvent.id);
+    }
+    expect(save.currentEvent?.type).toBe("manager_contract_decision");
+    save = resolveEvent(save, save.currentEvent!.id, { action: "extend", terms: { wage: calculateRecommendedManagerWage(carriedManager, 7), years: 2 } });
+    expect(save.clubs[save.userClubId].managerId).toBe(carriedManager.id);
+    expect(save.managers[carriedManager.id].contractYears).toBe(2);
+    expect(save.managers[carriedManager.id].compensationFee).toBeGreaterThan(0);
   });
 
   it("calculates wages from rating, division and reputation", () => {

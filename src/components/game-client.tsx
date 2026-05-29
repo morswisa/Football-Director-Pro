@@ -973,6 +973,55 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
   );
 }
 
+function ManagerContractControls({ save }: { save: GameSave }) {
+  const resolve = useGameStore((state) => state.resolveCurrentEvent);
+  const current = useCurrent(save)!;
+  const manager = current.manager;
+  const divisionLevel = save.divisions.find((division) => division.id === current.club.divisionId)?.level ?? 7;
+  const expectedWage = manager ? calculateRecommendedManagerWage(manager, divisionLevel) : 1_000;
+  const [wage, setWage] = useState(expectedWage);
+  const [years, setYears] = useState(2);
+  const wageOptions = uniqueMoneyOptions(expectedWage, [0.9, 1, 1.1, 1.2, 1.35], 100);
+  const yearOptions = [1, 2, 3];
+  if (!manager) return null;
+  const currentWageBill = current.club.finances.weeklyWages;
+  const newWageBill = currentWageBill - manager.wage + wage;
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage <b className="block">{formatWeeklyWage(manager.wage)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Expected wage <b className="block">{formatWeeklyWage(expectedWage)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage bill <b className="block">{formatMoney(currentWageBill)}/w</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">New wage bill <b className="block">{formatMoney(newWageBill)}/w</b></p>
+      </div>
+      <div>
+        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
+        <div className="grid grid-cols-5 gap-2">
+          {wageOptions.map((option) => (
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
+              {formatWeeklyWage(option)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
+        <div className="grid grid-cols-3 gap-2">
+          {yearOptions.map((option) => (
+            <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
+              {option}y
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+        <Button onClick={() => resolve({ action: "extend", terms: { wage, years } })}>Extend Contract</Button>
+        <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Let Him Leave</Button>
+      </div>
+    </div>
+  );
+}
+
 function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; player: Player; proposal: NonNullable<GameSave["currentEvent"]>["proposal"] }) {
   const resolve = useGameStore((state) => state.resolveCurrentEvent);
   const current = useCurrent(save)!;
@@ -1216,6 +1265,7 @@ function EventModal({ save }: { save: GameSave }) {
 
         {event.type === "financial_report" ? <FinancialRows snapshot={event.financialSnapshot} /> : null}
         {event.type === "transfer_budget" ? <TransferBudgetControls save={save} /> : null}
+        {event.type === "manager_contract_decision" ? <ManagerContractControls save={save} /> : null}
 
         {event.type === "contract_offer" && player && proposal?.type === "contract" ? (
           <>
@@ -1314,7 +1364,7 @@ function EventModal({ save }: { save: GameSave }) {
           </>
         ) : null}
 
-        {!["transfer_budget", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type) ? (
+        {!["transfer_budget", "manager_contract_decision", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type) ? (
           <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
         ) : null}
         {nextFixture && event.type === "match_preview" ? <p className="mt-3 text-center text-xs text-neutral-500">{save.clubs[nextFixture.homeClubId].name} vs {save.clubs[nextFixture.awayClubId].name}</p> : null}

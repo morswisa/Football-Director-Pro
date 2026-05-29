@@ -28,6 +28,7 @@
 - Manager hiring/firing is not instant. Dismissal requires a compensation confirmation, and hiring requires a wage/contract offer with candidate compensation when the candidate is under contract.
 - A manager action lock prevents repeated manager churn in the same short period, while still allowing a club without a manager to negotiate a replacement.
 - Manager contracts age at season transitions, so compensation falls as the remaining deal shortens. Manager action locks are short-term controls and reset at the next season boundary.
+- An expired manager contract is a blocking chairman decision: extend the manager or let him leave, then hire a replacement before the club can continue.
 - V1 uses fictional clubs, players, competitions, badges, and copy only.
 - V1 is local/offline only.
 - Settings covers the local-only V1 save lifecycle directly in the app: manual save, export, import, reset, sound toggle, and text size. Import replaces Slot 1 only after schema validation/migration succeeds.

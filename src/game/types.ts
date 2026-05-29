@@ -14,6 +14,7 @@ export type GameEventType =
   | "financial_report"
   | "bank_warning"
   | "manager_frustrated"
+  | "manager_contract_decision"
   | "manager_retirement_hint"
   | "transfer_window_open"
   | "incoming_bid"

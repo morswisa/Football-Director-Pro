@@ -36,7 +36,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Standings are derived from `leagueTable(save)` and rendered from the current division records.
 - League fixtures are generated with a round-robin scheduler: each club in the user's division appears once per league round, then fixtures repeat with reversed home/away legs.
 - Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
-- Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
+- Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, manager contract expiry, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
 - After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
@@ -94,6 +94,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Manager wages scale by division level, rating, reputation, and personality premium.
 - Manager compensation is weekly wage times 4.33 times remaining contract months.
 - Manager contracts are aged during `startNextSeason`, and contracted-manager compensation is recalculated after the remaining years decrease.
+- Expired current-manager contracts are queued as `manager_contract_decision` events during week 1. Resolving the event either writes a new wage/term to the manager or removes the manager and forces the existing hire-manager gate.
 
 ## Managers
 
@@ -103,6 +104,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Manager candidates can be `free_agent` or `contracted`; contracted candidates carry a compensation fee.
 - Hiring and firing are engine actions with financial consequences and a short action lock, coordinated through Zustand and rendered as Manager tab modals.
 - The manager action lock is season-scoped and clears when a new season starts so late-season changes cannot freeze manager decisions into the next campaign.
+- Manager contract-expiry decisions reuse the event modal and deterministic wage formulas, not a separate React-only state path.
 
 ## Core Constraints
 

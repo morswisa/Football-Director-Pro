@@ -140,3 +140,7 @@
 - Added regression coverage proving a one-year manager deal reaches zero compensation after the season changes and that late-season manager-action locks do not persist into the next campaign.
 - Verified the manager-contract lifecycle pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
 - Deployed the manager-contract lifecycle pass to Vercel preview: `https://football-director-ezszjby5b-mor-swisas-projects.vercel.app`.
+- Closed the follow-on manager-contract expiry gap: an expired current-manager deal now queues a blocking `manager_contract_decision` event with wage/term controls, and the chairman can extend the deal or let the manager leave.
+- Added targeted coverage for the expired-contract queue and extension path, alongside multi-season Continue cadence coverage.
+- Verified the expired-manager-contract decision pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the expired-manager-contract decision pass to Vercel preview: `https://football-director-b2bhgfpo9-mor-swisas-projects.vercel.app`.

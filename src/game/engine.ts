@@ -812,6 +812,20 @@ function pushStandardEvents(save: GameSave) {
       createdWeek: save.week,
       managerId: manager?.id,
     });
+    if (manager && manager.contractYears <= 0) {
+      const expectedWage = calculateRecommendedManagerWage(manager, currentDivisionLevel(save));
+      enqueue(save, {
+        id: `manager_contract_decision_${seasonKey}_${manager.id}`,
+        type: "manager_contract_decision",
+        title: "Manager contract expired",
+        body: `${manager.name}'s contract has expired. Offer a new deal or let him leave before the season continues.`,
+        requiresDecision: true,
+        createdSeason: save.season,
+        createdWeek: save.week,
+        managerId: manager.id,
+        note: `Expected wage: ${expectedWage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Letting him leave means the club must hire a replacement.`,
+      });
+    }
     enqueue(save, {
       id: `average_crowd_report_${seasonKey}`,
       type: "average_crowd_report",
@@ -1343,6 +1357,49 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       delete save.players[player.id];
       refreshUserWageBill(save);
     }
+  } else if (event.type === "manager_contract_decision") {
+    if (manager && action !== "release") {
+      const expectedWage = calculateRecommendedManagerWage(manager, currentDivisionLevel(save));
+      const years = Math.max(1, Math.min(3, decision?.terms?.years ?? 2));
+      const wage = Math.max(Math.round(expectedWage * 0.9), decision?.terms?.wage ?? expectedWage);
+      manager.contractYears = years;
+      manager.wage = wage;
+      manager.compensationFee = calculateManagerCompensation(manager);
+      club.managerTrust = Math.min(99, club.managerTrust + 4);
+      save.managerRetirementIntent = false;
+      refreshUserWageBill(save);
+      enqueue(save, {
+        id: `manager_contract_extended_${manager.id}_${save.season}`,
+        type: "club_update",
+        title: "Manager contract extended",
+        body: `${manager.name} has signed a ${years}-year deal worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.`,
+        requiresDecision: false,
+        createdSeason: save.season,
+        createdWeek: save.week,
+        managerId: manager.id,
+        variant: "positive",
+      });
+    } else if (manager) {
+      delete save.managers[manager.id];
+      club.managerId = undefined;
+      club.managerTrust = 50;
+      club.boardConfidence = Math.max(25, club.boardConfidence - 4);
+      save.managerRetirementIntent = false;
+      const [candidates, next] = generateManagerCandidates(save.rngState, currentDivisionLevel(save));
+      save.rngState = next;
+      save.managerCandidates = candidates;
+      refreshUserWageBill(save);
+      enqueue(save, {
+        id: `manager_left_${manager.id}_${save.season}`,
+        type: "club_update",
+        title: "Manager leaves club",
+        body: `${manager.name} has left after his contract expired. The club must appoint a manager before continuing.`,
+        requiresDecision: false,
+        createdSeason: save.season,
+        createdWeek: save.week,
+        variant: "negative",
+      });
+    }
   } else if (event.type === "match_preview") {
     const playLive = action === "play";
     const previewFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
@@ -1469,6 +1526,7 @@ export function startNextSeason(input: GameSave) {
   save.currentRound = 0;
   save.lastMatch = undefined;
   save.managerActionLockUntilWeek = 0;
+  save.managerRetirementIntent = false;
   resetClubRecords(save);
   save = ageManagers(save);
   save = agePlayers(save);
