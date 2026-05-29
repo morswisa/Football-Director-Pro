@@ -26,6 +26,9 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Added financial opening/closing balance context so reports reconcile period profit/loss with the displayed club balance.
 - Added debt headroom context to bank warnings and exact over-limit context to bankruptcy game-over messages.
 - Added debt-headroom context to manager firing and hiring modals so large compensation costs are clear before confirmation.
+- Started final clean-save acceptance and fixed the player-section label mismatch by changing the dashboard metric to `Roster` and adding a `Roster` summary card above the sortable player list.
+- Fixed another final-acceptance issue where generated clubs could appear as `Name 2`; new saves and normalization now prefer natural unused prefix/suffix combinations.
+- Fixed live-match result leakage by making live playback replace the dashboard while running instead of rendering over an already-resolved dashboard.
 
 ## Next TODO
 
@@ -35,4 +38,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Continue balance tuning for wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency across longer human-style careers.
 - Complete one final mobile QA pass across all planned V1 surfaces.
 - Add Capacitor native iOS/Android platforms only after the web V1 is accepted.
-- Latest preview after manager-cost clarity pass: `https://football-director-ihao7bmto-mor-swisas-projects.vercel.app`.
+- Latest preview after final-acceptance UI fixes: `https://football-director-5v1ggay2f-mor-swisas-projects.vercel.app`.

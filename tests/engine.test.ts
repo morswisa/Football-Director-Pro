@@ -247,6 +247,14 @@ describe("game engine", () => {
     const squadNames = normalized.clubs[normalized.userClubId].playerIds.map((id) => normalized.players[id].name);
     expect(new Set(clubNames).size).toBe(clubNames.length);
     expect(new Set(squadNames).size).toBe(squadNames.length);
+    expect(clubNames.every((name) => !/ \d+$/u.test(name))).toBe(true);
+  });
+
+  it("generates natural unique club names without numeric suffixes", () => {
+    const save = createNewGame(setup);
+    const names = Object.values(save.clubs).map((club) => club.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names.every((name) => !/ \d+$/u.test(name))).toBe(true);
   });
 
   it("preserves V1 transient fields during save migration", () => {

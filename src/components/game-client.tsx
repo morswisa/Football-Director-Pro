@@ -244,7 +244,7 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
       </div>
       <div className="grid grid-cols-3 gap-2">
         <MiniMetric label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} />
-        <MiniMetric label="Squad" value={squadRating || "-"} onClick={() => setTab("squad")} />
+        <MiniMetric label="Roster" value={squadRating || "-"} onClick={() => setTab("squad")} />
         <MiniMetric label="Manager" value={currentManagerRating || "-"} onClick={() => setTab("manager")} />
         <MiniMetric label="Training" value={current.club.trainingLevel} onClick={() => openFacility("training")} />
         <MiniMetric label="Youth" value={current.club.youthLevel} onClick={() => openFacility("youth")} />
@@ -365,9 +365,17 @@ function SquadTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void
       return positionOrder(a.position) - positionOrder(b.position) || b.rating - a.rating || a.name.localeCompare(b.name);
     });
   }, [current.players, sort]);
+  const averageRating = Math.round(players.reduce((sum, player) => sum + player.rating, 0) / Math.max(1, players.length));
   return (
     <div className="space-y-3">
       <PageBack setTab={setTab} />
+      <Card className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase text-neutral-500">Roster</p>
+          <h2 className="text-lg font-bold">{players.length} players</h2>
+        </div>
+        <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm font-bold">Avg {averageRating}</p>
+      </Card>
       <div className="sticky top-0 z-10 grid grid-cols-[48px_1fr_56px] gap-2 bg-background pb-2 text-center text-xs font-semibold text-neutral-500">
         <button onClick={() => setSort("position")} className={cn("rounded-md px-2 py-1 text-xs font-bold", sort === "position" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Pos</button>
         <button onClick={() => setSort("name")} className={cn("rounded-md px-2 py-1 text-left text-xs font-bold", sort === "name" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Player</button>
@@ -1266,7 +1274,7 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
   const awayGoals = visibleEvents.filter((event) => event.type === "goal" && event.clubId === away.id).length;
   const progress = minute / 90;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-emerald-950/65 p-5">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background p-5">
       <div role="dialog" aria-modal="true" aria-labelledby="live-match-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
         <p className="text-xs font-semibold uppercase text-primary">Live match</p>
         <h2 id="live-match-title" className="mt-1 text-xl font-black">{home.name} {homeGoals} - {awayGoals} {away.name}</h2>
@@ -1616,6 +1624,16 @@ export function GameClient() {
             <p className="mt-2 text-sm text-neutral-500">Create a club to begin.</p>
             <Button className="mt-5 w-full" onClick={() => router.push("/new-game")}>New Game</Button>
           </div>
+        </div>
+      </AppFrame>
+    );
+  }
+
+  if (save.liveMatch && save.lastMatch?.result && !save.liveMatch.finished) {
+    return (
+      <AppFrame>
+        <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
+          <LiveMatchModal save={save} result={save.lastMatch.result} />
         </div>
       </AppFrame>
     );

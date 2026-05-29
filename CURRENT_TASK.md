@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-ihao7bmto-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-5v1ggay2f-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -27,8 +27,9 @@ Playable V1 includes:
 - League fixtures now use a true round-robin schedule, so every club in the user's division has one match per round and the Continue loop cannot stall on a no-user-fixture round.
 - Simplified player positions to G/D/M/F with position badges.
 - Roster defaults to position order and supports manual sorting by `Pos`, `Player`, or `Rate`.
+- Dashboard and player-list surfaces now consistently label the section as `Roster`, with an in-page roster summary before the sortable player list.
 - Roster rows use a fixed Pos/Player/Rate layout with sticky sort controls.
-- Loaded saves are normalized so duplicate club names and same-club player names receive stable display disambiguation.
+- New saves generate natural unique fictional club names without numeric suffixes, and loaded saves are normalized so duplicate club names and same-club player names receive stable display disambiguation.
 - Youth Academy and Training Ground are managed through dashboard modals instead of a separate Training page, with `+1` through `+5` level selection before confirming upgrades or downgrades.
 - Facility and stadium screens show selected level changes, costs, upkeep/capacity effects, and bank-impact context before actions.
 - Manager hiring/firing.
@@ -41,7 +42,7 @@ Playable V1 includes:
 - Transfer and bid decisions now identify whether the player is an external target or current squad player, show source/bidding club context, and include manager-trust impact in response copy.
 - Manager model now uses Training, Tactics, Transfers, Youth, Reputation, style, personality, wage, contract years, and status; `Man Management` and `Wage Discipline` are removed from V1.
 - Match preview offers `See Match` for an instant result and `Play Match` for a fast live minute-by-minute playback with score, stats, events, and final whistle before continuing.
-- Live match playback now advances one minute at a time and blocks background controls through a dedicated full-screen overlay.
+- Live match playback now advances one minute at a time and temporarily replaces the dashboard surface so the final result cannot leak before final whistle.
 - Match-result events now explain the actual post-match relationship/facility movement, including board confidence, manager trust, and stadium condition deltas.
 - Player and manager wage recommendations are formula-driven by division, rating/reputation, age/role/potential, and personality where relevant.
 - Long-run balancing now updates sponsorship, debt limit, stadium upkeep, board confidence, manager trust, and stadium condition across match and season progression.

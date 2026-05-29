@@ -22,7 +22,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 3. Engine actions return a new `GameSave`; UI never mutates game data directly.
 4. Autosave writes the active save to IndexedDB.
 5. Load game validates and migrates the saved payload before hydrating Zustand.
-6. Store hydration normalizes display names so duplicate generated club names and same-club player names are disambiguated before rendering.
+6. Store hydration normalizes display names so duplicate generated club names and same-club player names are disambiguated before rendering. Club-name disambiguation prefers unused fictional prefix/suffix combinations rather than numeric suffixes.
 7. Settings exposes local-only save control through Zustand: manual save, JSON export, JSON import after Zod migration/validation, reset by deleting Slot 1 from IndexedDB, and persistent accessibility/audio preferences.
 8. Production build emits static files to `out/` for future Capacitor sync.
 9. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
@@ -41,7 +41,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `SeasonHistory.seasonImpact` stores the before/after values for balance, board confidence, manager trust, and club reputation, allowing the season-summary event and History screen to explain season-level relationship/economy movement.
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Match-result event creation captures the user club's relationship/facility snapshot before simulation and compares it with the post-simulation state, then writes the actual board confidence, manager trust, and stadium condition deltas into the event note.
-- Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
+- Live match playback renders as the only active career surface while it is running and advances one minute per tick, preventing background dashboard controls or final-result data from being visible before final whistle.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.

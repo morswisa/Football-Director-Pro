@@ -103,6 +103,32 @@ function createStadium(name: string, level: number): Stadium {
   };
 }
 
+function uniqueClubName(prefix: string, preferredSuffix: string, usedNames: Set<string>) {
+  const preferred = `${prefix} ${preferredSuffix}`;
+  if (!usedNames.has(preferred)) {
+    usedNames.add(preferred);
+    return preferred;
+  }
+  for (const suffix of clubSuffixes) {
+    const name = `${prefix} ${suffix}`;
+    if (!usedNames.has(name)) {
+      usedNames.add(name);
+      return name;
+    }
+  }
+  for (const alternatePrefix of clubPrefixes) {
+    for (const suffix of clubSuffixes) {
+      const name = `${alternatePrefix} ${suffix}`;
+      if (!usedNames.has(name)) {
+        usedNames.add(name);
+        return name;
+      }
+    }
+  }
+  usedNames.add(preferred);
+  return preferred;
+}
+
 function initialSponsorship(level: number, reputation: number) {
   const baseByLevel: Record<number, number> = {
     1: 42_000_000,
@@ -212,6 +238,7 @@ export function createNewGame(input: ClubSetupInput): GameSave {
   const players: Record<string, Player> = {};
   const managers: Record<string, Manager> = {};
   let clubIndex = 1;
+  const usedClubNames = new Set<string>([input.clubName]);
 
   for (let level = 1; level <= 7; level += 1) {
     const divisionId = `division_${level}`;
@@ -221,7 +248,7 @@ export function createNewGame(input: ClubSetupInput): GameSave {
       const prefix = prefixOrder[i % prefixOrder.length];
       const [suffix, s2] = pickOne(state, clubSuffixes);
       state = s2;
-      const name = level === 7 && i === 0 ? input.clubName : `${prefix} ${suffix}`;
+      const name = level === 7 && i === 0 ? input.clubName : uniqueClubName(prefix, suffix, usedClubNames);
       const colors: [string, string] = level === 7 && i === 0 ? [input.primaryColor, input.secondaryColor] : ["#159947", "#f2f7f1"];
       const [club, clubPlayers, manager, next] = createClub(state, name, divisionId, level, colors, clubIndex);
       const userClubId = id("club", clubIndex);

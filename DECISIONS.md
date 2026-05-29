@@ -23,6 +23,7 @@
 - Player positions are simplified to G, D, M, and F.
 - Roster display defaults to position order G -> D -> M -> F, with manual sorting by position, player name, or rating.
 - Roster and standings must prioritize trust: duplicate generated names are disambiguated on load, and roster rows use a fixed three-column layout so position, player, and rating stay aligned.
+- Fictional club-name disambiguation should use natural prefix/suffix combinations before numeric suffixes; fresh V1 saves should not show names like `Town 2`.
 - The manager controls squad selection, tactics, and transfer targeting.
 - Manager attributes are intentionally compact in V1: Training, Tactics, Transfers, Youth, Reputation, style, personality, wage, contract length, and employment status. `Man Management` and `Wage Discipline` are excluded.
 - Manager rating is the average of Training, Tactics, Transfers, and Youth.
@@ -62,6 +63,7 @@
 - Use `Create Club` as the primary first-run entry point.
 - Expose primary club sections through dashboard metric buttons rather than duplicate top/bottom navigation.
 - Use `Roster` as the player-list label in UI.
+- Dashboard player navigation must say `Roster`, not `Squad`, so the main surface matches the agreed V1 wording.
 - The main play experience should run from Dashboard `Continue`, with secondary pages used for inspection and upgrades.
 - Match preview is decision-only: `See Match` jumps to the result, and `Play Match` shows a fast no-control live playback before the same result summary.
 - Cup match previews use the same `See Match` / `Play Match` controls as league fixtures to preserve one consistent match flow.
@@ -84,6 +86,6 @@
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
 - Walking away from an external transfer target must not use squad-contract rejection language.
 - Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.
-- Live match playback is a blocking full-screen state: club navigation resumes after the match result is completed.
+- Live match playback is a blocking opaque full-screen state: club navigation resumes after the match result is completed, and the dashboard must not leak the final score behind the live view.
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.

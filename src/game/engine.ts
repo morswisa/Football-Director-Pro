@@ -1,4 +1,4 @@
-import { clubPrefixes, firstNames, lastNames, personalities, starterAchievements } from "./data";
+import { clubPrefixes, clubSuffixes, firstNames, lastNames, personalities, starterAchievements } from "./data";
 import { cupPrize, cupRoundName, cupRoundWeeks, isTransferWindow, monthForWeek, nextUpgradeCost, seasonPrize } from "./calendar";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating } from "./economy";
 import { chance, pickOne, randomFloat, randomInt } from "./random";
@@ -274,6 +274,36 @@ function ensureManagerState(save: GameSave) {
 }
 
 function ensureUniqueDisplayNames(save: GameSave) {
+  const renameClubNaturally = (club: Club, usedNames: Set<string>) => {
+    if (!usedNames.has(club.name)) {
+      usedNames.add(club.name);
+      return;
+    }
+    const parts = club.name.replace(/ \d+$/u, "").split(" ");
+    const originalPrefix = parts[0] || "Crownford";
+    const originalSuffix = parts.slice(1).join(" ") || "FC";
+    for (const suffix of clubSuffixes) {
+      const candidate = `${originalPrefix} ${suffix}`;
+      if (!usedNames.has(candidate)) {
+        club.name = candidate;
+        usedNames.add(candidate);
+        return;
+      }
+    }
+    for (const prefix of clubPrefixes) {
+      for (const suffix of clubSuffixes) {
+        const candidate = `${prefix} ${suffix}`;
+        if (!usedNames.has(candidate)) {
+          club.name = candidate;
+          usedNames.add(candidate);
+          return;
+        }
+      }
+    }
+    club.name = `${originalPrefix} ${originalSuffix}`;
+    usedNames.add(club.name);
+  };
+
   save.divisions.forEach((division) => {
     const usedPrefixes = new Set<string>();
     division.clubIds.forEach((clubId) => {
@@ -289,12 +319,8 @@ function ensureUniqueDisplayNames(save: GameSave) {
       usedPrefixes.add(prefix);
     });
   });
-  const clubCounts = new Map<string, number>();
-  Object.values(save.clubs).forEach((club) => {
-    const count = clubCounts.get(club.name) ?? 0;
-    clubCounts.set(club.name, count + 1);
-    if (count > 0) club.name = `${club.name} ${count + 1}`;
-  });
+  const usedClubNames = new Set<string>();
+  Object.values(save.clubs).forEach((club) => renameClubNaturally(club, usedClubNames));
   Object.values(save.clubs).forEach((club) => {
     const playerCounts = new Map<string, number>();
     club.playerIds.forEach((playerId) => {
