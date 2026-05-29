@@ -753,7 +753,9 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
 }
 
 function queueProposalIfAvailable(save: GameSave) {
-  if (save.week % 2 !== 0 && !isTransferWindow(save.week)) return;
+  const transferWindow = isTransferWindow(save.week);
+  const contractReviewWeek = save.week % 6 === 0;
+  if (!transferWindow && !contractReviewWeek) return;
   const proposal = generateManagerTransferProposal(save);
   if (!proposal) return;
   const event = proposalToEvent(save, proposal);

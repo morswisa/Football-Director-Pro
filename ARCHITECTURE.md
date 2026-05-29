@@ -77,6 +77,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 
 - Internal progress still uses `week` and `currentRound`, but UI presents `monthForWeek`.
 - Transfer-window gating currently allows buy/sell/loan proposals in August and January.
+- Manager proposal cadence is intentionally gated: transfer-window months can surface transfer/loan/sale decisions, while non-window proposals are limited to periodic contract-review weeks to keep the Continue loop active without flooding the player.
 - Loan lifecycle is season-scoped. Loan-in players count toward the temporary squad at their wage-share cost; loan-out players leave the squad until `returnSeasonLoans` restores them to the parent club before the next season starts.
 - Cup rounds are scheduled by `cupRoundWeeks` in `src/game/calendar.ts`; each tie creates draw/match events, pays cup prize money, and records the run in `GameSave.cup.results`.
 - Season-end prize payments are configured by division level in `src/game/calendar.ts`, with upper-league values modeled after English central payment/merit-payment structures and lower fictional leagues scaled down.

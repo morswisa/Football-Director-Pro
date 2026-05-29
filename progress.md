@@ -14,5 +14,5 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 
 ## Next TODO
 
-- Continue remaining V1 scope: event-frequency tuning, multi-season human-flow playtesting, and Capacitor native platform generation after web V1 acceptance.
-- Latest preview after the edge-case coverage pass: `https://football-director-45ihrz36e-mor-swisas-projects.vercel.app`.
+- Continue remaining V1 scope: multi-season human-flow playtesting and Capacitor native platform generation after web V1 acceptance.
+- Latest preview after Continue cadence tuning: `https://football-director-1kkyewuc3-mor-swisas-projects.vercel.app`.

@@ -621,6 +621,38 @@ describe("game engine", () => {
     expect(save.history.length).toBeGreaterThanOrEqual(1);
   }, 30_000);
 
+  it("keeps the continue event cadence active without flooding manager proposals", () => {
+    let save = createNewGame({ ...setup, seed: 20260615 });
+    const counts = new Map<string, number>();
+    let decisions = 0;
+    let proposals = 0;
+    let periods = 0;
+
+    for (let step = 0; step < 520 && save.history.length < 1; step += 1) {
+      save = generateNextEvents(save);
+      if (save.currentEvent) periods += 1;
+      let guard = 0;
+      while (save.currentEvent && guard < 90) {
+        const type = save.currentEvent.type;
+        counts.set(type, (counts.get(type) ?? 0) + 1);
+        if (save.currentEvent.requiresDecision) decisions += 1;
+        if (type === "contract_offer" || type === "incoming_bid") proposals += 1;
+        save = resolveBalancedEvent(save);
+        guard += 1;
+      }
+      expect(guard).toBeLessThan(90);
+    }
+
+    expect(save.history.length).toBeGreaterThanOrEqual(1);
+    expect(counts.get("match_preview")).toBeGreaterThanOrEqual(38);
+    expect(counts.get("financial_report")).toBeGreaterThanOrEqual(36);
+    expect(decisions).toBeGreaterThanOrEqual(45);
+    expect(proposals).toBeGreaterThanOrEqual(6);
+    expect(proposals).toBeLessThanOrEqual(15);
+    expect(periods).toBeGreaterThanOrEqual(38);
+    expect(periods).toBeLessThanOrEqual(48);
+  }, 30_000);
+
   it("runs many direct engine seasons with stable balances and squads", () => {
     let save = createNewGame({ ...setup, seed: 20260601 });
     for (let i = 0; i < 260; i += 1) {

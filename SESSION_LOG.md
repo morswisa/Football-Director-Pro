@@ -125,3 +125,7 @@
 - Added focused V1 edge-case tests for debt-limit career failure, facility upgrade/downgrade economics, manager-action lock behavior after firing/hiring, and relegation movement to a lower division.
 - Verified the new edge-case coverage with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright MCP mobile dashboard smoke check, and the develop-web-game Playwright client workaround run from the project directory.
 - Deployed the edge-case coverage pass to Vercel preview: `https://football-director-45ihrz36e-mor-swisas-projects.vercel.app`.
+- Tuned manager-led proposal cadence: transfer-window weeks remain active, while non-window proposal generation is limited to six-week contract review periods rather than every other week.
+- Added regression coverage for Continue-loop event cadence across a full season, checking that match previews and financial reports remain regular while manager proposal volume stays within a bounded range.
+- Verified the cadence tuning with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright MCP mobile dashboard smoke check, and the develop-web-game Playwright client workaround run from the project directory.
+- Deployed the Continue cadence tuning pass to Vercel preview: `https://football-director-1kkyewuc3-mor-swisas-projects.vercel.app`.

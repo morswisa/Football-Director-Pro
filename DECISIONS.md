@@ -15,6 +15,7 @@
 - V1 has one chairman-decision path only: manager-led transfer, loan, sale, and contract proposals must be generated into `eventQueue/currentEvent`; the legacy `activeProposal` side path is retired.
 - A resolved event immediately advances to the next queued event; only when the queue is empty does the next Continue generate the next period's events.
 - Buy/sell transfer proposals are gated to transfer-window months; contract-renewal proposals may occur outside transfer windows.
+- Non-window manager proposals are limited to periodic review weeks, not every other week, so the main loop preserves the "one more Continue" rhythm without overwhelming every match period.
 - Loan proposals are gated to transfer-window months and expire into the same decision queue as other manager-led transfer actions.
 - Transfer-window starts require a budget choice before the manager can operate with a clear budget.
 - Manager trust is a club-level relationship metric affected by chairman decisions.
