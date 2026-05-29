@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Award, CalendarDays, ListOrdered, Play, Settings, Trophy } from "lucide-react";
 import { AppFrame } from "./app-frame";
@@ -98,6 +98,33 @@ function uniqueMoneyOptions(base: number, multipliers: number[], nearest = 50) {
 
 function contractYearOptions(requestedYears: number) {
   return Array.from(new Set([1, 2, 3, 4, 5, requestedYears].filter((years) => years >= 1 && years <= 5))).sort((a, b) => a - b);
+}
+
+function formatSignedMoney(value: number) {
+  if (value > 0) return `+${formatMoney(value)}`;
+  if (value < 0) return `-${formatMoney(Math.abs(value))}`;
+  return formatMoney(0);
+}
+
+function formatSignedPoints(value: number) {
+  if (value > 0) return `+${value}`;
+  if (value < 0) return `${value}`;
+  return "0";
+}
+
+function transferBudgetTrustDelta(mode: TransferBudgetMode) {
+  if (mode === "max" || mode === "generous") return 4;
+  if (mode === "strict") return -5;
+  if (mode === "zero") return -8;
+  return 0;
+}
+
+function ImpactBox({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-950", className)}>
+      {children}
+    </div>
+  );
 }
 
 function avatarSeed(value: string) {
@@ -743,11 +770,13 @@ function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   );
 }
 
-function ContractOfferControls({ player, requestedWage, requestedYears, approve }: { player: Player; requestedWage: number; requestedYears: number; approve: (terms: ContractTerms) => void }) {
+function ContractOfferControls({ player, requestedWage, requestedYears, currentWageBill, approve }: { player: Player; requestedWage: number; requestedYears: number; currentWageBill: number; approve: (terms: ContractTerms) => void }) {
   const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 0.95, 1, 1.1, 1.2], 50);
   const yearOptions = contractYearOptions(requestedYears);
   const [wage, setWage] = useState(requestedWage);
   const [years, setYears] = useState(requestedYears);
+  const likelyAccepted = wage >= requestedWage * 0.95 && years >= Math.max(1, requestedYears - 1);
+  const wageBillDelta = wage - player.wage;
 
   return (
     <div className="mt-4 space-y-4">
@@ -774,6 +803,12 @@ function ContractOfferControls({ player, requestedWage, requestedYears, approve 
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
         {player.name} wants {formatWeeklyWage(requestedWage)} for {requestedYears} years.
       </p>
+      <ImpactBox>
+        <b className="block">Selected offer impact</b>
+        <span>Likely response: {likelyAccepted ? "accept" : "reject"}.</span>
+        <span className="block">Weekly wage bill: {formatSignedMoney(wageBillDelta)}/w, from {formatMoney(currentWageBill)}/w to {formatMoney(currentWageBill + wageBillDelta)}/w.</span>
+        <span className="block">{likelyAccepted ? "Manager trust +3; player morale improves." : "Manager trust -3; player morale -8 if the offer is turned down."}</span>
+      </ImpactBox>
       <Button className="sticky bottom-0 w-full shadow-card" onClick={() => approve({ wage, years })}>Submit Offer</Button>
     </div>
   );
@@ -953,6 +988,9 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
     if (factor === "generous") return balance + overdraft * 0.25;
     return balance * factor;
   }
+  const selectedMode = modes.find((item) => item.mode === mode) ?? modes[2];
+  const selectedBudgetAmount = amountFor(selectedMode.factor);
+  const selectedTrustDelta = transferBudgetTrustDelta(mode);
   return (
     <div className="mt-4 space-y-3">
       {modes.map((item) => (
@@ -962,12 +1000,19 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
             <b>{formatMoney(amountFor(item.factor))}</b>
           </div>
           <p className="text-xs text-neutral-500">{item.detail}</p>
+          <p className={cn("mt-1 text-xs font-bold", transferBudgetTrustDelta(item.mode) > 0 ? "text-primary" : transferBudgetTrustDelta(item.mode) < 0 ? "text-danger" : "text-neutral-500")}>
+            Manager trust {formatSignedPoints(transferBudgetTrustDelta(item.mode))}
+          </p>
         </button>
       ))}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <p className="rounded-lg bg-surface-muted px-3 py-2">Money <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Wage bill <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
       </div>
+      <ImpactBox>
+        <b className="block">Selected budget impact</b>
+        Transfer budget {formatMoney(selectedBudgetAmount)}; manager trust {formatSignedPoints(selectedTrustDelta)}.
+      </ImpactBox>
       <Button className="sticky bottom-0 w-full shadow-card" onClick={() => resolve({ mode })}>Set Transfer Budget</Button>
     </div>
   );
@@ -986,6 +1031,7 @@ function ManagerContractControls({ save }: { save: GameSave }) {
   if (!manager) return null;
   const currentWageBill = current.club.finances.weeklyWages;
   const newWageBill = currentWageBill - manager.wage + wage;
+  const wageBillDelta = newWageBill - currentWageBill;
   return (
     <div className="mt-4 space-y-4">
       <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1014,6 +1060,11 @@ function ManagerContractControls({ save }: { save: GameSave }) {
           ))}
         </div>
       </div>
+      <ImpactBox>
+        <b className="block">Decision impact</b>
+        <span>Extend: manager trust +4; weekly wage bill {formatSignedMoney(wageBillDelta)}/w.</span>
+        <span className="block">Let him leave: manager trust resets to 50, board confidence -4, and the club must hire a replacement before continuing.</span>
+      </ImpactBox>
       <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
         <Button onClick={() => resolve({ action: "extend", terms: { wage, years } })}>Extend Contract</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Let Him Leave</Button>
@@ -1035,6 +1086,7 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
   const [wage, setWage] = useState(requestedWage);
   const [years, setYears] = useState(requestedYears);
   const sellingClub = proposal?.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
+  const selectedWageBill = current.club.finances.weeklyWages + wage;
 
   return (
     <div className="mt-4 space-y-4">
@@ -1049,6 +1101,10 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
         Trust impact: walk away -4, low fee rejected -2, player rejects -2, deal blocked -5, completed signing +4.
       </p>
+      <ImpactBox>
+        <b className="block">Selected offer impact</b>
+        Upfront fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the signing is completed.
+      </ImpactBox>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Fee to club</p>
         <div className="grid grid-cols-5 gap-2">
@@ -1093,6 +1149,7 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
   const [wage, setWage] = useState(requestedWage);
   const sourceClub = proposal?.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
   const destinationClub = proposal?.toClubId ? save.clubs[proposal.toClubId] : undefined;
+  const selectedWageBill = current.club.finances.weeklyWages + wage;
 
   if (!loanIn) {
     return (
@@ -1104,6 +1161,10 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
           <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly wage covered <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
         </div>
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept loan +1, reject loan -1. The player returns at season end.</p>
+        <ImpactBox>
+          <b className="block">Accept loan impact</b>
+          Fee income {formatMoney(expectedFee)}; weekly wage bill drops by {formatMoney(requestedWage)}/w while the player is away.
+        </ImpactBox>
         <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
           <Button onClick={() => resolve({ action: "offer", terms: { fee: expectedFee, wage: requestedWage, years: 1 } })}>Accept Loan</Button>
           <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject</Button>
@@ -1123,6 +1184,10 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
         <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
       </div>
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: completed loan +2, weak terms refused -1, blocked by budget -3, walk away -2.</p>
+      <ImpactBox>
+        <b className="block">Selected loan impact</b>
+        Upfront loan fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the loan is completed.
+      </ImpactBox>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Loan fee</p>
         <div className="grid grid-cols-5 gap-2">
@@ -1275,7 +1340,7 @@ function EventModal({ save }: { save: GameSave }) {
               <p className="rounded-lg bg-surface-muted px-3 py-2">Wage bill <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
               <p className="rounded-lg bg-surface-muted px-3 py-2">Recommended <b className="block">{formatMoney(Math.round(current.club.finances.balance * 0.08))}</b></p>
             </div>
-            <ContractOfferControls player={player} requestedWage={requestedWage} requestedYears={requestedYears} approve={(terms) => resolve({ action: "offer", terms })} />
+            <ContractOfferControls player={player} requestedWage={requestedWage} requestedYears={requestedYears} currentWageBill={current.club.finances.weeklyWages} approve={(terms) => resolve({ action: "offer", terms })} />
             <Button variant="secondary" className="mt-3 w-full" onClick={() => resolve({ action: "reject" })}>Reject</Button>
           </>
         ) : null}
@@ -1307,17 +1372,33 @@ function EventModal({ save }: { save: GameSave }) {
         ) : null}
 
         {event.type === "sale_ready" ? (
-          <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
-            <Button onClick={() => resolve({ action: "confirm" })}>Confirm Sale</Button>
-            <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Cancel</Button>
-          </div>
+          <>
+            {event.pendingDeal && player ? (
+              <ImpactBox className="mt-4">
+                <b className="block">Confirm sale impact</b>
+                Balance {formatSignedMoney(event.pendingDeal.fee)}; weekly wage bill drops by {formatMoney(player.wage)}/w. Manager trust already changed when the bid was accepted; cancelling makes no immediate finance change.
+              </ImpactBox>
+            ) : null}
+            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+              <Button onClick={() => resolve({ action: "confirm" })}>Confirm Sale</Button>
+              <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Cancel</Button>
+            </div>
+          </>
         ) : null}
 
         {event.type === "youth_contract" ? (
-          <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
-            <Button onClick={() => resolve({ action: "offer" })}>Offer Contract</Button>
-            <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Release</Button>
-          </div>
+          <>
+            {player ? (
+              <ImpactBox className="mt-4">
+                <b className="block">Youth decision impact</b>
+                Offer contract: weekly wage bill rises by about {formatWeeklyWage(Math.max(player.wage, Math.round(player.rating * 95)))} and player morale improves. Release: no wage cost, player leaves the club.
+              </ImpactBox>
+            ) : null}
+            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+              <Button onClick={() => resolve({ action: "offer" })}>Offer Contract</Button>
+              <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Release</Button>
+            </div>
+          </>
         ) : null}
 
         {event.type === "match_preview" ? (

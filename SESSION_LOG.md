@@ -155,3 +155,7 @@
 - Added regression coverage proving a stale strict transfer budget is cleared in September and does not queue an unrelated manager frustration event while finances are positive.
 - Verified the transfer-budget expiry pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check of `/game`, and the `develop-web-game` Playwright client workaround run from the project directory.
 - Deployed the transfer-budget expiry pass to Vercel preview: `https://football-director-r1j0vlon8-mor-swisas-projects.vercel.app`.
+- Reviewed what remains for the game after the latest transfer-budget expiry pass. Remaining work is now concentrated on final web-V1 acceptance, explicit per-decision trust/fan/finance impact feedback, final balance tuning, a full mobile surface QA pass, and Capacitor native platform generation only after the web V1 is accepted.
+- Added visible impact summaries to the main chairman decision cards: transfer budgets, player contract offers, manager contract expiry, buy negotiations, loan-in/loan-out decisions, sale confirmation, and youth contract decisions now show selected trust/morale/finance/wage-bill consequences before the chairman commits.
+- Verified the decision-impact pass with `npm test`, `npm run lint`, `npm run build`, `npm run e2e`, a Playwright mobile browser smoke check, and the `develop-web-game` Playwright client workaround run from the project directory.
+- Deployed the decision-impact pass to Vercel preview: `https://football-director-1pyz8autq-mor-swisas-projects.vercel.app`.

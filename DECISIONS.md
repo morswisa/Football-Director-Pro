@@ -78,6 +78,7 @@
 - Header period labels include both month and period number so repeated same-month decisions are clearly part of the same in-game period.
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
 - Walking away from an external transfer target must not use squad-contract rejection language.
+- Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.
 - Live match playback is a blocking full-screen state: club navigation resumes after the match result is completed.
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.

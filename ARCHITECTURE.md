@@ -41,6 +41,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Live match playback renders as a fixed overlay and advances one minute per tick, preventing background dashboard controls from being mistaken for match controls.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
+- Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
 - Training and Youth facility management is launched from their dashboard metric cards only.
@@ -69,6 +70,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
 - Engine function `normalizeGameState` is used by the store to normalize older or generated saves before UI hydration.
 - Paid buy proposals are resolved inside `resolveEvent` with fee, wage, and years terms. Selling clubs may reject low fees, and players may reject weak contracts.
+- UI impact summaries for transfer, loan, contract, sale, youth, and manager-contract decisions are previews only; the engine remains authoritative and applies the final deltas through `resolveEvent`.
 - Buy-proposal rejection resolves to a target-specific response event, while squad contract rejection uses squad-specific language.
 - Sale proposals carry `toClubId` and staged `PendingDeal.buyerClubId` so bid, sale-ready, and sale-confirmed events can attribute the bidding club.
 - `GameSave.liveMatch` stores transient live-playback metadata so the fixture is not simulated twice when the user chooses `Play Match`.
