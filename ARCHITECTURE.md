@@ -70,6 +70,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Secondary pages share `PageBack`, a compact accessible Dashboard chip. This keeps return navigation consistent without consuming the vertical space of a full card.
 - Store status messages render inside the scrollable content area, before the active tab content, so feedback remains visible without covering lower-page action buttons.
 - Status banners are suppressed while event or facility modals are active, keeping the blocking decision layer visually focused.
+- `GameClient` wraps tab changes with status-message clearing. This keeps transient save/action messages scoped to the current surface and prevents stale banners from following quick navigation into secondary sections.
 
 ## Portraits
 

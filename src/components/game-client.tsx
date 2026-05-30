@@ -1667,6 +1667,10 @@ export function GameClient() {
   const clearMessage = useGameStore((state) => state.clearMessage);
   const [tab, setTab] = useState<Tab>("home");
   const [facilityModal, setFacilityModal] = useState<FacilityKind | undefined>();
+  const setActiveTab = (nextTab: Tab) => {
+    clearMessage();
+    setTab(nextTab);
+  };
 
   useEffect(() => {
     if (!hydrated) void load();
@@ -1722,21 +1726,21 @@ export function GameClient() {
   return (
     <AppFrame>
       <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
-      <Header save={save} tab={tab} setTab={setTab} />
+      <Header save={save} tab={tab} setTab={setActiveTab} />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
         {showMessage ? <div role="status" className="mb-3 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
-        {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setTab} />}
-        {tab === "standings" && <StandingsTab save={save} setTab={setTab} />}
-        {tab === "squad" && <SquadTab save={save} setTab={setTab} />}
-        {tab === "manager" && <ManagerTab save={save} setTab={setTab} />}
-        {tab === "finances" && <FinancesTab save={save} setTab={setTab} />}
-        {tab === "stadium" && <StadiumTab save={save} setTab={setTab} />}
-        {tab === "history" && <HistoryTab save={save} setTab={setTab} />}
-        {tab === "settings" && <SettingsTab save={save} setTab={setTab} />}
+        {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setActiveTab} />}
+        {tab === "standings" && <StandingsTab save={save} setTab={setActiveTab} />}
+        {tab === "squad" && <SquadTab save={save} setTab={setActiveTab} />}
+        {tab === "manager" && <ManagerTab save={save} setTab={setActiveTab} />}
+        {tab === "finances" && <FinancesTab save={save} setTab={setActiveTab} />}
+        {tab === "stadium" && <StadiumTab save={save} setTab={setActiveTab} />}
+        {tab === "history" && <HistoryTab save={save} setTab={setActiveTab} />}
+        {tab === "settings" && <SettingsTab save={save} setTab={setActiveTab} />}
       </div>
       <FacilityModal save={save} facility={facilityModal} close={() => setFacilityModal(undefined)} />
       <EventModal save={save} />
-      <DecisionModal save={save} setTab={setTab} suppressed={Boolean(save.currentEvent) || tab === "manager"} />
+      <DecisionModal save={save} setTab={setActiveTab} suppressed={Boolean(save.currentEvent) || tab === "manager"} />
       </div>
     </AppFrame>
   );

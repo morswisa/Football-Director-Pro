@@ -268,11 +268,13 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await page.getByRole("button", { name: /League/i }).click();
   await expect(page.getByText("Standings")).toBeVisible();
   await expect(page.getByText("Pts")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
   await page.getByRole("button", { name: /Roster/i }).click();
   await expect(page.getByText("ROSTER")).toBeVisible();
   await expect(page.getByText(/players/)).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
   await page.getByRole("button", { name: "Rate" }).click();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
