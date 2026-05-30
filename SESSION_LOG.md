@@ -51,6 +51,8 @@
 
 ## 2026-05-29
 
+- Reviewed the remaining game scope for the user's status request. Current state: planned Web V1 gameplay is implemented and heavily verified; remaining work is to finish the in-progress design polish verification/deployment/commit, complete final manual playtest fixes within the original V1 scope, run final mobile/balance QA, and produce native iOS/Android binaries once Java/JDK and full Xcode are available locally.
+- Continued the design polish pass. Upgraded the app frame/background, main menu hero/menu buttons, create-club header/cards, base Card/Button primitives, game header, Dashboard chairman summary, Dashboard metric cards, and next-match action card. Moved the core `Continue` action above secondary metrics so the one-more-period loop is visible immediately on mobile. Fixed the new Last 10 layout after e2e caught a few pixels of horizontal overflow. Verified with mobile screenshots, `npm run lint`, `npm test` (46 tests), `npm run build`, focused failing e2e reruns, full `npm run e2e` (16 tests), `npm run mobile:sync`, and the develop-web-game screenshot client.
 - Restarted the local development server on port 3000 for playtesting.
 - Implemented the Live Match + Manager Contracts + Wage Economy plan.
 - Changed match preview so it no longer shows player grids before a choice; `See Match` resolves instantly, while `Play Match` uses the already-simulated result as fast live playback with minute progression, score, stat bars, event feed, and final whistle before continuing.

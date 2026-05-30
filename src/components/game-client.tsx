@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Award, CalendarDays, ListOrdered, Play, Settings, Trophy } from "lucide-react";
+import { Award, CalendarDays, Dumbbell, Landmark, ListOrdered, Play, Settings, ShieldCheck, Sprout, Trophy, UserCog, UsersRound, Wallet } from "lucide-react";
 import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
@@ -43,17 +43,18 @@ function cupStatus(save: GameSave) {
 function Header({ save, tab, setTab }: { save: GameSave; tab: Tab; setTab: (tab: Tab) => void }) {
   const current = useCurrent(save)!;
   return (
-    <header className="border-b border-line bg-white px-4 py-4">
-      <div className="flex items-center gap-3">
-        <BrandMark className="h-12 w-12 rounded-2xl" />
+    <header className="relative overflow-hidden border-b border-emerald-950/10 bg-[linear-gradient(135deg,_#10241b,_#0f8139_56%,_#1aa24f)] px-4 py-4 text-white">
+      <div className="pointer-events-none absolute inset-0 opacity-18 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.26)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.18)_58%_60%,transparent_60%)]" />
+      <div className="relative flex items-center gap-3">
+        <BrandMark className="h-12 w-12 rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.2)]" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-bold">{current.club.name}</p>
-          <p className="text-xs text-neutral-500">{seasonLabel(save.season)} Season · {monthForWeek(save.week)} · Period {save.week}</p>
+          <p className="truncate text-base font-black">{current.club.name}</p>
+          <p className="text-xs text-white/75">{seasonLabel(save.season)} Season · {monthForWeek(save.week)} · Period {save.week}</p>
         </div>
-        <button aria-label="History" onClick={() => setTab(tab === "history" ? "home" : "history")} className="rounded-full p-2 hover:bg-surface-muted">
+        <button aria-label="History" onClick={() => setTab(tab === "history" ? "home" : "history")} className="rounded-full bg-white/12 p-2 text-white ring-1 ring-white/15 hover:bg-white/20">
           <Trophy size={20} />
         </button>
-        <button aria-label="Settings" onClick={() => setTab(tab === "settings" ? "home" : "settings")} className="rounded-full p-2 hover:bg-surface-muted">
+        <button aria-label="Settings" onClick={() => setTab(tab === "settings" ? "home" : "settings")} className="rounded-full bg-white/12 p-2 text-white ring-1 ring-white/15 hover:bg-white/20">
           <Settings size={20} />
         </button>
       </div>
@@ -226,6 +227,7 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
   const squadRating = Math.round(current.players.slice(0, 11).reduce((sum, player) => sum + player.rating, 0) / Math.max(1, current.players.slice(0, 11).length));
   const currentManagerRating = current.manager ? managerRating(current.manager) : 0;
   const latestFinance = latestFinancialSnapshot(save);
+  const divisionName = save.divisions.find((division) => division.id === current.club.divisionId)?.name;
   const lastTen = save.fixtures
     .filter((fixture) => fixture.result && (fixture.homeClubId === current.club.id || fixture.awayClubId === current.club.id))
     .slice(-10)
@@ -238,35 +240,38 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
     });
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="League position" value={current.position ? ordinal(current.position) : "-"} detail={save.divisions.find((division) => division.id === current.club.divisionId)?.name} />
-        <Card className="space-y-1">
-          <p className="text-xs font-medium text-neutral-500">Balance</p>
-          <p data-testid="dashboard-balance" className="text-2xl font-bold tracking-normal text-foreground">{formatMoney(current.club.finances.balance)}</p>
-          <p data-testid="dashboard-latest-report" className="text-xs text-neutral-500">Latest report {formatMoney(latestFinance.profit)}</p>
-        </Card>
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <MiniMetric label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} />
-        <MiniMetric label="Roster" value={squadRating || "-"} onClick={() => setTab("squad")} />
-        <MiniMetric label="Manager" value={currentManagerRating || "-"} onClick={() => setTab("manager")} />
-        <MiniMetric label="Training" value={current.club.trainingLevel} onClick={() => openFacility("training")} />
-        <MiniMetric label="Youth" value={current.club.youthLevel} onClick={() => openFacility("youth")} />
-        <MiniMetric label="Finances" value={formatMoney(current.club.finances.balance)} onClick={() => setTab("finances")} />
-        <MiniMetric label="Board" value={`${current.club.boardConfidence}%`} />
-        <MiniMetric label="Stadium" value={current.club.stadium.condition} onClick={() => setTab("stadium")} />
-        <MiniMetric label="Record" value={`${current.club.record.won}-${current.club.record.drawn}-${current.club.record.lost}`} onClick={() => setTab("history")} />
-        <MiniMetric label="Cup" value={cupStatus(save)} onClick={() => setTab("history")} />
-      </div>
-      <Card className="flex items-center justify-between gap-2 p-3">
-        <span className="text-xs font-bold uppercase text-neutral-500">Last 10</span>
-        <div className="flex flex-1 justify-end gap-1">
-          {(lastTen.length ? lastTen : ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]).map((result, index) => (
-            <span key={`${result}_${index}`} className={cn("grid h-7 w-7 place-items-center rounded-md text-xs font-black text-white", result === "W" ? "bg-primary" : result === "D" ? "bg-warning" : result === "L" ? "bg-danger" : "bg-neutral-300")}>{result}</span>
-          ))}
+      <Card className="relative overflow-hidden border-emerald-900/10 bg-[linear-gradient(135deg,_#ffffff_0%,_#f5fbf6_52%,_#edf4ff_100%)] p-0">
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,_#159947,_#2563eb,_#dba827)]" />
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase text-primary">Chairman&apos;s desk</p>
+              <h2 className="mt-1 text-2xl font-black">{current.position ? ordinal(current.position) : "-"}</h2>
+              <p className="mt-0.5 truncate text-sm font-bold text-neutral-700">{divisionName}</p>
+              <p className="mt-1 text-xs text-neutral-500">Board {current.club.boardConfidence}% · Trust {current.club.managerTrust}% · Cup {cupStatus(save)}</p>
+            </div>
+            <div className="rounded-xl bg-club-navy px-3 py-2 text-right text-white shadow-[0_12px_24px_rgba(16,36,27,0.18)]">
+              <p className="text-[10px] font-bold uppercase text-white/65">Balance</p>
+              <p data-testid="dashboard-balance" className="text-lg font-black">{formatMoney(current.club.finances.balance)}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+            <div className="rounded-lg bg-white/80 px-3 py-2 ring-1 ring-emerald-950/5">
+              <span className="text-neutral-500">Roster</span>
+              <b className="block text-base">{squadRating || "-"}</b>
+            </div>
+            <div className="rounded-lg bg-white/80 px-3 py-2 ring-1 ring-emerald-950/5">
+              <span className="text-neutral-500">Manager</span>
+              <b className="block text-base">{currentManagerRating || "-"}</b>
+            </div>
+            <div className="rounded-lg bg-white/80 px-3 py-2 ring-1 ring-emerald-950/5">
+              <span className="text-neutral-500">Latest</span>
+              <b data-testid="dashboard-latest-report" className={cn("block text-base", latestFinance.profit >= 0 ? "text-primary" : "text-danger")}>{formatMoney(latestFinance.profit)}</b>
+            </div>
+          </div>
         </div>
       </Card>
-      <Card className="space-y-3">
+      <Card className="space-y-3 border-emerald-100 bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase text-neutral-500">Next match</p>
@@ -284,6 +289,26 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
         }} disabled={Boolean(save.gameOver)}>
           {save.currentEvent ? "Open Decision" : !current.manager ? "Hire Manager" : "Continue"}
         </Button>
+      </Card>
+      <div className="grid grid-cols-3 gap-2">
+        <MiniMetric icon={<ListOrdered size={15} />} label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} accent="emerald" />
+        <MiniMetric icon={<UsersRound size={15} />} label="Roster" value={squadRating || "-"} onClick={() => setTab("squad")} accent="blue" />
+        <MiniMetric icon={<UserCog size={15} />} label="Manager" value={currentManagerRating || "-"} onClick={() => setTab("manager")} accent="emerald" />
+        <MiniMetric icon={<Dumbbell size={15} />} label="Training" value={current.club.trainingLevel} onClick={() => openFacility("training")} accent="amber" />
+        <MiniMetric icon={<Sprout size={15} />} label="Youth" value={current.club.youthLevel} onClick={() => openFacility("youth")} accent="emerald" />
+        <MiniMetric icon={<Wallet size={15} />} label="Finances" value={formatMoney(current.club.finances.balance)} onClick={() => setTab("finances")} accent="blue" />
+        <MiniMetric icon={<ShieldCheck size={15} />} label="Board" value={`${current.club.boardConfidence}%`} accent="amber" />
+        <MiniMetric icon={<Landmark size={15} />} label="Stadium" value={current.club.stadium.condition} onClick={() => setTab("stadium")} accent="emerald" />
+        <MiniMetric icon={<Trophy size={15} />} label="Record" value={`${current.club.record.won}-${current.club.record.drawn}-${current.club.record.lost}`} onClick={() => setTab("history")} accent="blue" />
+        <MiniMetric icon={<Award size={15} />} label="Cup" value={cupStatus(save)} onClick={() => setTab("history")} accent="amber" />
+      </div>
+      <Card className="flex items-center justify-between gap-2 p-3">
+        <span className="shrink-0 whitespace-nowrap text-xs font-bold uppercase text-neutral-500">Last 10</span>
+        <div className="grid min-w-0 flex-1 grid-cols-10 gap-1">
+          {(lastTen.length ? lastTen : ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]).map((result, index) => (
+            <span key={`${result}_${index}`} className={cn("grid h-6 min-w-0 place-items-center rounded-md text-[10px] font-black text-white", result === "W" ? "bg-primary" : result === "D" ? "bg-warning" : result === "L" ? "bg-danger" : "bg-neutral-300")}>{result}</span>
+          ))}
+        </div>
       </Card>
       {save.lastMatch?.result ? (
         <Card>
@@ -308,10 +333,12 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
   );
 }
 
-function MiniMetric({ label, value, onClick }: { label: string; value: string | number; onClick?: () => void }) {
+function MiniMetric({ icon, label, value, onClick, accent = "emerald" }: { icon?: ReactNode; label: string; value: string | number; onClick?: () => void; accent?: "emerald" | "blue" | "amber" }) {
+  const accentClass = accent === "blue" ? "text-club-blue bg-blue-50" : accent === "amber" ? "text-amber-700 bg-amber-50" : "text-primary bg-emerald-50";
   return (
-    <button onClick={onClick} className={cn("rounded-lg border border-line bg-white px-2 py-3 text-left shadow-card", onClick && "transition hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary")}>
-      <p className="truncate text-[10px] font-bold uppercase text-neutral-500">{label}</p>
+    <button onClick={onClick} className={cn("min-h-[70px] rounded-lg border border-line/90 bg-[linear-gradient(180deg,_#ffffff,_#f9fbf9)] px-2 py-3 text-left shadow-[0_8px_18px_rgba(23,33,27,0.05)]", onClick && "transition hover:-translate-y-0.5 hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary")}>
+      <span className={cn("mb-2 grid h-6 w-6 place-items-center rounded-md", accentClass)}>{icon}</span>
+      <p className="truncate text-[10px] font-black uppercase text-neutral-500">{label}</p>
       <p className="mt-1 truncate text-lg font-black">{value}</p>
     </button>
   );

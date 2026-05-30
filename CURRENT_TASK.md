@@ -104,6 +104,8 @@ Playable V1 includes:
 
 ## Next Steps
 
+- Current design polish pass: the main menu, create-club screen, app frame, cards, buttons, header, and Dashboard have been visually upgraded with a cleaner green/white/blue-accent style. The Dashboard now puts the chairman summary first, the core `Continue`/next-match action immediately after it, and secondary section metrics below. The `Last 10` row was compacted to avoid mobile overflow. Verified locally with mobile screenshots, `npm run lint`, `npm test` (46 tests), `npm run build`, `npm run e2e` (16 tests), `npm run mobile:sync`, and the develop-web-game screenshot client.
+- Latest status answer: the remaining work is finalization-focused. Web V1 gameplay systems are implemented; current open work is deploying/committing the design polish pass, then final manual acceptance fixes, final balance/mobile QA, and native binary builds after Java/JDK and full Xcode are available.
 - Latest long-run balance pass: several human-style careers now have three-season playable-band coverage, and Training/Youth facility investments now reconcile with financial reports. Remaining work is final clean-save web acceptance, fixing only original-scope defects found during acceptance, and Capacitor native packaging after the web V1 is accepted.
 - Latest long-run balance pass is deployed to preview.
 - Latest mobile acceptance pass is deployed to preview.

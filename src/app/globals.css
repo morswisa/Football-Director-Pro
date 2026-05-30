@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f7f2;
+  --background: #f5f7f3;
   --foreground: #17211b;
   --surface: #ffffff;
   --surface-muted: #edf3ee;
@@ -10,6 +10,8 @@
   --line: #dfe8df;
   --danger: #dc3d43;
   --warning: #dba827;
+  --club-navy: #10241b;
+  --club-blue: #2563eb;
 }
 
 @theme inline {
@@ -22,14 +24,23 @@
   --color-line: var(--line);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-club-navy: var(--club-navy);
+  --color-club-blue: var(--club-blue);
   --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
+  background:
+    linear-gradient(135deg, rgba(21, 153, 71, 0.08) 0 25%, transparent 25% 50%, rgba(37, 99, 235, 0.05) 50% 75%, transparent 75%),
+    var(--background);
+  background-size: 28px 28px;
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(21, 153, 71, 0.18);
 }
 
 button,

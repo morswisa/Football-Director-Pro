@@ -88,6 +88,8 @@
 - Match results must explain the relationship/facility consequences applied by the engine, so board confidence, manager trust, and stadium condition movement does not feel arbitrary.
 - Relationship metrics must be explainable through repeated outcomes: wins and stable finances help board confidence/trust, losses and negative balances hurt them.
 - Dashboard should not show duplicate controls for the same feature; Training and Youth are opened from their metric cards only.
+- Dashboard hierarchy should keep the chairman summary and primary Continue/next-match action above secondary inspection metrics, so the core "one more period" loop remains visible in the first mobile viewport.
+- The visual system should stay clean green/white with restrained navy, blue, and amber accents. Accent color is used for hierarchy and section distinction, not as a full one-note palette.
 - Generated portrait avatars are part of V1 identity. They use one shared procedural SVG template, seeded by player/manager IDs where possible, so faces stay consistent across the career without storing image assets.
 - Facilities use 1-99 ratings; upgrades increase by one rating point and display both one-time cost and weekly upkeep impact.
 - Youth Academy and Training Ground are managed through dashboard popups, not a dedicated page.
