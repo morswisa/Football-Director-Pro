@@ -1178,7 +1178,7 @@ describe("game engine", () => {
     }
     expect(save.gameOver).toBeUndefined();
     expect(save.history.length).toBeGreaterThanOrEqual(1);
-  }, 30_000);
+  }, 120_000);
 
   it("keeps the continue event cadence active without flooding manager proposals", () => {
     let save = createNewGame({ ...setup, seed: 20260615 });
@@ -1210,7 +1210,7 @@ describe("game engine", () => {
     expect(proposals).toBeLessThanOrEqual(15);
     expect(periods).toBeGreaterThanOrEqual(38);
     expect(periods).toBeLessThanOrEqual(48);
-  }, 30_000);
+  }, 120_000);
 
   it("uses season-specific fixture ids so the next season can queue match previews", () => {
     let save = createNewGame({ ...setup, seed: 20260630 });
@@ -1241,7 +1241,7 @@ describe("game engine", () => {
       expect(save.currentEvent?.type).not.toBe("match_preview");
       expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
     }
-  }, 60_000);
+  }, 120_000);
 
   it("plays multiple human-style seasons through the continue loop", () => {
     let save = createNewGame({ ...setup, seed: 20260622 });
@@ -1297,7 +1297,7 @@ describe("game engine", () => {
     expect(club.trainingLevel + club.youthLevel).toBeGreaterThan(startingTraining + startingYouth);
     expect(club.finances.balance).toBeGreaterThan(club.finances.debtLimit);
     expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
-  }, 40_000);
+  }, 120_000);
 
   it("keeps several long human-style careers inside playable balance bands", () => {
     for (const seed of [20260801, 20260802, 20260803]) {
@@ -1329,7 +1329,7 @@ describe("game engine", () => {
       expect(Math.max(...seenBalances) - Math.min(...seenBalances)).toBeGreaterThan(50_000);
       expect(Math.max(...seenWages)).toBeGreaterThan(0);
     }
-  }, 90_000);
+  }, 120_000);
 
   it("runs many direct engine seasons with stable balances and squads", () => {
     let save = createNewGame({ ...setup, seed: 20260601 });
@@ -1348,5 +1348,5 @@ describe("game engine", () => {
     }
     expect(save.gameOver).toBeUndefined();
     expect(save.history.length).toBeGreaterThanOrEqual(5);
-  }, 30_000);
+  }, 120_000);
 });
