@@ -1678,16 +1678,27 @@ function EventEntityHeader({ save }: { save: GameSave }) {
           ? "Current squad player"
           : `External player from ${sourceClub?.name ?? "another club"}`;
     return (
-      <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
-        <div className="flex items-center gap-3 p-3">
-          <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-24 w-20 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-black uppercase text-primary">{context}</p>
-            <p className="truncate text-lg font-black leading-tight">{player.name}</p>
-            <p className="mt-1 text-xs text-neutral-500">Wage {formatWeeklyWage(player.wage)} · Contract {player.contractYears}y</p>
+      <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-emerald-950 text-white shadow-[0_18px_36px_rgba(16,36,27,0.18)]">
+        <div className="relative p-3">
+          <div className="pointer-events-none absolute inset-0 opacity-16 [background:linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.35)_38%_41%,transparent_41%_62%,rgba(255,255,255,0.16)_62%_64%,transparent_64%)]" />
+          <div className="relative grid grid-cols-[7rem_1fr] items-stretch gap-3">
+            <div className="relative overflow-hidden rounded-2xl bg-emerald-900/60 shadow-[0_14px_28px_rgba(0,0,0,0.22)] ring-1 ring-white/20">
+              <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-36 w-full rounded-none border-0 text-base shadow-none" />
+              <span className={cn("absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-sm font-black text-white shadow-[0_8px_14px_rgba(0,0,0,0.22)]", positionClass(player.position))}>{displayPosition(player.position)}</span>
+              <span className="absolute bottom-2 right-2 rounded-xl bg-white px-2.5 py-1 text-base font-black text-emerald-950 shadow-[0_8px_14px_rgba(0,0,0,0.18)]">{player.rating}</span>
+            </div>
+            <div className="min-w-0 py-1">
+              <p className="text-[10px] font-black uppercase tracking-wide text-white/58">{context}</p>
+              <p className="mt-1 text-2xl font-black leading-none">{player.name}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Age</span><b>{player.age}</b></p>
+                <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Contract</span><b>{player.contractYears}y</b></p>
+              </div>
+              <p className="mt-2 rounded-xl bg-white/10 px-2.5 py-2 text-xs ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Weekly wage</span><b>{formatWeeklyWage(player.wage)}</b></p>
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+        <div className="grid grid-cols-3 border-t border-white/10 bg-white text-center text-xs text-neutral-900">
           <span className={cn("px-2 py-2 font-black text-white", positionClass(player.position))}><small className="block text-[9px] opacity-80">Pos</small>{displayPosition(player.position)}</span>
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{player.rating}/100</span>
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Age</small>{player.age}</span>
@@ -1697,16 +1708,29 @@ function EventEntityHeader({ save }: { save: GameSave }) {
   }
   if (manager) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
-        <div className="flex items-center gap-3 p-3">
-          <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-24 w-20 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-black uppercase text-primary">Manager office</p>
-            <p className="truncate text-lg font-black leading-tight">{manager.name}</p>
-            <p className="mt-1 text-xs text-neutral-500">Age {manager.age} · {manager.style} · {manager.personality}</p>
+      <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-emerald-950 text-white shadow-[0_18px_36px_rgba(16,36,27,0.18)]">
+        <div className="relative p-3">
+          <div className="pointer-events-none absolute inset-0 opacity-16 [background:linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.35)_38%_41%,transparent_41%_62%,rgba(255,255,255,0.16)_62%_64%,transparent_64%)]" />
+          <div className="relative grid grid-cols-[7rem_1fr] items-stretch gap-3">
+            <div className="relative overflow-hidden rounded-2xl bg-emerald-900/60 shadow-[0_14px_28px_rgba(0,0,0,0.22)] ring-1 ring-white/20">
+              <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-36 w-full rounded-none border-0 text-base shadow-none" />
+              <span className="absolute bottom-2 right-2 rounded-xl bg-white px-2.5 py-1 text-base font-black text-emerald-950 shadow-[0_8px_14px_rgba(0,0,0,0.18)]">{managerRating(manager)}</span>
+            </div>
+            <div className="min-w-0 py-1">
+              <p className="text-[10px] font-black uppercase tracking-wide text-white/58">Manager office</p>
+              <p className="mt-1 text-2xl font-black leading-none">{manager.name}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-white/12 px-2 py-1 text-[10px] font-black uppercase text-white/82 ring-1 ring-white/10">{manager.style}</span>
+                <span className="rounded-full bg-white/12 px-2 py-1 text-[10px] font-black uppercase text-white/82 ring-1 ring-white/10">{manager.personality}</span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Age</span><b>{manager.age}</b></p>
+                <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Trust</span><b>{current.club.managerTrust ?? 66}%</b></p>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+        <div className="grid grid-cols-3 border-t border-white/10 bg-white text-center text-xs text-neutral-900">
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{managerRating(manager)}</span>
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Trust</small>{current.club.managerTrust ?? 66}%</span>
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Wage</small>{formatWeeklyWage(manager.wage)}</span>
