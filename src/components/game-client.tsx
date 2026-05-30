@@ -1679,9 +1679,9 @@ export function GameClient() {
   if (!hydrated) {
     return (
       <AppFrame>
-        <div className="grid flex-1 place-items-center p-6 text-center">
+        <div className="grid flex-1 place-items-center bg-[linear-gradient(180deg,_#ffffff,_#f4f8f4)] p-6 text-center">
           <div>
-            <BrandMark className="mx-auto h-24 w-24" />
+            <BrandMark className="mx-auto h-24 w-24 shadow-[0_16px_34px_rgba(16,36,27,0.14)]" />
             <p className="mt-4 font-bold">Loading career...</p>
           </div>
         </div>
@@ -1692,17 +1692,20 @@ export function GameClient() {
   if (!save) {
     return (
       <AppFrame>
-        <div className="grid flex-1 place-items-center p-6 text-center">
-          <div>
-            <BrandMark className="mx-auto h-24 w-24" />
-            <h1 className="mt-4 text-xl font-bold">No career found</h1>
-            <p className="mt-2 text-sm text-neutral-500">Create a club to begin.</p>
+        <div className="flex flex-1 flex-col justify-center bg-[linear-gradient(180deg,_#ffffff,_#f4f8f4)] p-6 text-center">
+          <div className="relative mx-auto w-full max-w-xs rounded-[1.5rem] border border-emerald-100 bg-white p-6 shadow-[0_18px_46px_rgba(16,36,27,0.08)]">
+            <div className="pointer-events-none absolute inset-x-8 top-5 h-16 rounded-[1.5rem] bg-[linear-gradient(135deg,_#edf8ef,_#edf4ff)]" />
+            <BrandMark className="relative mx-auto h-24 w-24 shadow-[0_16px_34px_rgba(16,36,27,0.16)]" />
+            <h1 className="mt-5 text-xl font-black">No career found</h1>
+            <p className="mt-2 text-sm leading-6 text-neutral-500">Create a club and start the chairman loop.</p>
             <Button className="mt-5 w-full" onClick={() => router.push("/new-game")}>New Game</Button>
           </div>
         </div>
       </AppFrame>
     );
   }
+
+  const showMessage = Boolean(message && !save.currentEvent && !facilityModal);
 
   if (save.liveMatch && save.lastMatch?.result && !save.liveMatch.finished) {
     return (
@@ -1719,7 +1722,7 @@ export function GameClient() {
       <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
       <Header save={save} tab={tab} setTab={setTab} />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
-        {message ? <div role="status" className="mb-3 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
+        {showMessage ? <div role="status" className="mb-3 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
         {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setTab} />}
         {tab === "standings" && <StandingsTab save={save} setTab={setTab} />}
         {tab === "squad" && <SquadTab save={save} setTab={setTab} />}
