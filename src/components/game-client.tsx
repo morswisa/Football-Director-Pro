@@ -1334,6 +1334,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
 
 function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: FinancialSnapshot; testIdPrefix?: string }) {
   if (!snapshot) return null;
+  const positive = snapshot.profit >= 0;
   const expenses = [
     ["Player and manager wages", snapshot.expenses.wages],
     ["Stadium running costs", snapshot.expenses.stadiumRunning],
@@ -1353,10 +1354,17 @@ function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: Fi
     ["TV", snapshot.income.tv],
   ];
   return (
-    <div className="mt-4 space-y-3 text-sm">
-      <div className="flex justify-between rounded-lg bg-surface-muted px-3 py-2 text-xs">
-        <span className="font-bold uppercase text-neutral-500">Report period</span>
-        <b data-testid={`${testIdPrefix}-period`}>{snapshot.month} · Period {snapshot.week}</b>
+    <div className="mt-4 space-y-4 text-sm">
+      <div className={cn("overflow-hidden rounded-2xl border shadow-[0_10px_24px_rgba(16,36,27,0.06)]", positive ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50")}>
+        <div className="flex items-center justify-between gap-3 border-b border-white/70 px-4 py-3">
+          <span className="text-xs font-black uppercase text-neutral-500">Report period</span>
+          <b data-testid={`${testIdPrefix}-period`} className="text-xs">{snapshot.month} · Period {snapshot.week}</b>
+        </div>
+        <div className="px-4 py-4">
+          <p className="text-xs font-black uppercase text-neutral-500">{positive ? "Period profit" : "Period loss"}</p>
+          <b data-testid={`${testIdPrefix}-result`} className={cn("mt-1 block text-4xl font-black", positive ? "text-primary" : "text-danger")}>{formatMoney(snapshot.profit)}</b>
+          <p className="mt-1 text-xs text-neutral-600">Balance moved from {formatMoney(snapshot.balanceBefore)} to {formatMoney(snapshot.balanceAfter)}.</p>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs">
         <p className="rounded-lg bg-surface-muted px-3 py-2">Opening balance <b data-testid={`${testIdPrefix}-opening`} className="block">{formatMoney(snapshot.balanceBefore)}</b></p>
@@ -1364,27 +1372,27 @@ function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: Fi
         <p className="rounded-lg bg-surface-muted px-3 py-2">Total income <b data-testid={`${testIdPrefix}-income`} className="block text-primary">{formatMoney(snapshot.totalIncome)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Total expenses <b data-testid={`${testIdPrefix}-expenses`} className="block text-danger">{formatMoney(snapshot.totalExpenses)}</b></p>
       </div>
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Expenses</p>
-        {expenses.map(([label, amount]) => (
-          <div key={label} className="flex justify-between border-t border-line py-1.5 first:border-t-0">
-            <span>{label}</span>
-            <b className="text-danger">-{formatMoney(amount as number)}</b>
-          </div>
-        ))}
+      <div className="rounded-2xl border border-line bg-white p-3">
+        <p className="mb-2 text-xs font-black uppercase text-neutral-500">Expenses</p>
+        <div className="space-y-1.5">
+          {expenses.map(([label, amount]) => (
+            <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2">
+              <span className="text-xs text-neutral-600">{label}</span>
+              <b className="shrink-0 text-sm text-danger">-{formatMoney(amount as number)}</b>
+            </div>
+          ))}
+        </div>
       </div>
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Income</p>
-        {income.map(([label, amount]) => (
-          <div key={label} className="flex justify-between border-t border-line py-1.5 first:border-t-0">
-            <span>{label}</span>
-            <b className="text-primary">{formatMoney(amount as number)}</b>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between rounded-lg bg-surface-muted px-3 py-3">
-        <span className="font-bold">{snapshot.profit >= 0 ? "Profit" : "Loss"}</span>
-        <b data-testid={`${testIdPrefix}-result`} className={snapshot.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(snapshot.profit)}</b>
+      <div className="rounded-2xl border border-line bg-white p-3">
+        <p className="mb-2 text-xs font-black uppercase text-neutral-500">Income</p>
+        <div className="space-y-1.5">
+          {income.map(([label, amount]) => (
+            <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2">
+              <span className="text-xs text-neutral-600">{label}</span>
+              <b className="shrink-0 text-sm text-primary">{formatMoney(amount as number)}</b>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1880,29 +1888,54 @@ function EventModal({ save }: { save: GameSave }) {
                 {save.cup.name} · {cupRoundName(nextFixture.cupRound ?? save.cup.round)}
               </p>
             ) : null}
-            <div className="mt-4 grid grid-cols-2 gap-3 text-center">
-              <div className="rounded-xl bg-surface-muted px-3 py-4">
-                <p className="text-xs font-bold uppercase text-neutral-500">Home</p>
-                <p className="mt-1 text-base font-black">{nextFixture ? save.clubs[nextFixture.homeClubId].name : current.club.name}</p>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-stretch text-center">
+                <div className="p-4">
+                  <p className="text-[10px] font-black uppercase text-neutral-500">Home</p>
+                  <p className="mt-2 text-base font-black leading-tight">{nextFixture ? save.clubs[nextFixture.homeClubId].name : current.club.name}</p>
+                </div>
+                <div className="grid place-items-center border-x border-line px-3">
+                  <span className="rounded-full bg-emerald-950 px-3 py-1 text-xs font-black uppercase text-white">vs</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[10px] font-black uppercase text-neutral-500">Away</p>
+                  <p className="mt-2 text-base font-black leading-tight">{nextFixture ? save.clubs[nextFixture.awayClubId].name : "Opponent"}</p>
+                </div>
               </div>
-              <div className="rounded-xl bg-surface-muted px-3 py-4">
-                <p className="text-xs font-bold uppercase text-neutral-500">Away</p>
-                <p className="mt-1 text-base font-black">{nextFixture ? save.clubs[nextFixture.awayClubId].name : "Opponent"}</p>
+              <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+                <p className="px-2 py-2"><span className="block font-black text-neutral-500">Venue</span><b>{nextFixture?.homeClubId === current.club.id ? "Home" : "Away"}</b></p>
+                <p className="px-2 py-2"><span className="block font-black text-neutral-500">Month</span><b>{monthForWeek(event.createdWeek || save.week)}</b></p>
+                <p className="px-2 py-2"><span className="block font-black text-neutral-500">Mode</span><b>No tactics</b></p>
               </div>
             </div>
-            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+            <DecisionActionRow className="mt-5">
               <Button variant="secondary" onClick={() => resolve({ action: "see" })}>See Match</Button>
               <Button onClick={() => resolve({ action: "play" })}><Play size={16} /> Play Match</Button>
-            </div>
+            </DecisionActionRow>
           </>
         ) : null}
 
         {result && save.lastMatch ? (
           <>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-              <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{result.possessionHome}%</b><span className="block text-xs text-neutral-500">Possession</span></p>
-              <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{result.homeShots}-{result.awayShots}</b><span className="block text-xs text-neutral-500">Shots</span></p>
-              <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{result.homeOnTarget}-{result.awayOnTarget}</b><span className="block text-xs text-neutral-500">On target</span></p>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center text-center">
+                <div className="p-4">
+                  <p className="text-[10px] font-black uppercase text-neutral-500">Home</p>
+                  <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.homeClubId].name}</p>
+                </div>
+                <div className="px-3 py-4">
+                  <p className="rounded-2xl bg-emerald-950 px-4 py-3 text-3xl font-black text-white">{result.homeGoals}-{result.awayGoals}</p>
+                </div>
+                <div className="p-4">
+                  <p className="text-[10px] font-black uppercase text-neutral-500">Away</p>
+                  <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.awayClubId].name}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+                <p className="px-2 py-2"><b className="block text-sm">{result.possessionHome}%</b><span className="text-neutral-500">Possession</span></p>
+                <p className="px-2 py-2"><b className="block text-sm">{result.homeShots}-{result.awayShots}</b><span className="text-neutral-500">Shots</span></p>
+                <p className="px-2 py-2"><b className="block text-sm">{result.homeOnTarget}-{result.awayOnTarget}</b><span className="text-neutral-500">On target</span></p>
+              </div>
             </div>
             <div className="mt-4 space-y-2">
               {result.events.length === 0 ? (
