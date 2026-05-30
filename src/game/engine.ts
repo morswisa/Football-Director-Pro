@@ -1196,12 +1196,15 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
   if (event.type === "transfer_budget") {
     const mode = decision?.mode ?? "normal";
     save.transferBudget = { mode, amount: transferBudgetAmount(save, mode) };
-    club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + (mode === "max" || mode === "generous" ? 4 : mode === "zero" ? -8 : mode === "strict" ? -5 : 0)));
+    const trustBefore = club.managerTrust;
+    const trustDelta = mode === "max" || mode === "generous" ? 4 : mode === "zero" ? -8 : mode === "strict" ? -5 : 0;
+    club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + trustDelta));
     save.currentEvent = {
       id: `transfer_budget_confirmed_${save.season}_${save.week}_${mode}`,
       type: "club_update",
       title: "Transfer budget confirmed",
       body: `${manager?.name ?? "The manager"} now has a ${mode} transfer budget of ${save.transferBudget.amount.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} for ${monthForWeek(save.week)}.`,
+      note: `Manager trust ${signedDelta(club.managerTrust - trustBefore)} (${trustBefore}% -> ${club.managerTrust}%).`,
       requiresDecision: false,
       createdSeason: save.season,
       createdWeek: save.week,

@@ -1313,3 +1313,72 @@ test("stadium upgrades and repairs show clear financial impact", async ({ page }
   await expect(stadiumAchievement).toContainText("Unlocked");
   await expect(page.getByTestId("achievement-progress-stadium_upgrade")).toHaveAttribute("style", /width:\s*100%/);
 });
+
+test("clean career coherence audit keeps events readable and explainable", async ({ page }) => {
+  test.setTimeout(90_000);
+  await createAcceptanceCareer(page, "Coherence FC");
+
+  const seen = {
+    financialReports: 0,
+    matchResults: 0,
+    transferBudgetConfirmation: false,
+    relationshipExplanation: false,
+  };
+
+  for (let step = 0; step < 90; step += 1) {
+    const dialog = page.getByRole("dialog");
+    if (!(await dialog.count())) {
+      await page.getByRole("button", { name: /Continue|Open Decision/ }).click();
+      await expect(dialog).toBeVisible();
+    }
+
+    const text = await dialog.innerText();
+    expect(text, `event ${step} should not expose broken values`).not.toMatch(/\bNaN\b|\bundefined\b/);
+    await expectMobileSurfaceHealthy(page, `Coherence event ${step}`);
+
+    if (await dialog.getByTestId("event-finance-result").count()) {
+      seen.financialReports += 1;
+      await expect(dialog).toContainText("Balance moved from");
+      await expect(dialog).toContainText("Balance movement");
+      await expect(dialog.getByTestId("event-finance-opening")).toBeVisible();
+      await expect(dialog.getByTestId("event-finance-closing")).toBeVisible();
+      await expect(dialog.getByTestId("event-finance-income")).toBeVisible();
+      await expect(dialog.getByTestId("event-finance-expenses")).toBeVisible();
+    }
+
+    if (/Match result/i.test(text)) {
+      seen.matchResults += 1;
+      await expect(dialog).toContainText("Impact: board confidence");
+      await expect(dialog).toContainText("manager trust");
+      await expect(dialog).toContainText("stadium condition");
+      seen.relationshipExplanation = true;
+    }
+
+    if (/Transfer budget confirmed/i.test(text)) {
+      seen.transferBudgetConfirmation = true;
+      expect(text).toMatch(/manager trust/i);
+    }
+
+    await resolveConservativeDialog(page);
+
+    if (seen.financialReports >= 2 && seen.matchResults >= 2 && seen.transferBudgetConfirmation && seen.relationshipExplanation) {
+      break;
+    }
+  }
+
+  expect(seen.financialReports).toBeGreaterThanOrEqual(2);
+  expect(seen.matchResults).toBeGreaterThanOrEqual(2);
+  expect(seen.transferBudgetConfirmation).toBe(true);
+  expect(seen.relationshipExplanation).toBe(true);
+
+  await clearCurrentDialog(page);
+  await expect(page.getByText("Last result")).toBeVisible();
+  await expect(page.getByTestId("dashboard-latest-report")).toBeVisible();
+  await expectMobileSurfaceHealthy(page, "Coherence dashboard after audit");
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText("Report period").first()).toBeVisible();
+  await expect(page.getByText("Opening balance").first()).toBeVisible();
+  await expect(page.getByText("Closing balance").first()).toBeVisible();
+  await expectMobileSurfaceHealthy(page, "Coherence finances after audit");
+});

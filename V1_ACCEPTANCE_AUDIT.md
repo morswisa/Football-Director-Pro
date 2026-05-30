@@ -10,12 +10,9 @@ Native iOS/Android binary output is not counted as Web V1 gameplay completeness.
 
 ## Current Verdict
 
-Web V1 gameplay systems are implemented and covered by browser and engine evidence. The remaining work is finalization, not broad feature construction:
+Web V1 gameplay systems are implemented and covered by browser and engine evidence. The final coherence audit found and fixed the remaining observed relationship-feedback issue.
 
-- Continue one final clean-save playtest/audit pass.
-- Fix only original-scope defects found by that pass.
-- Run one last mobile readability and long-balance verification pass.
-- Build native binaries once the local native toolchains are available.
+The remaining work is outside browser-gameplay completeness: build native binaries once the local native toolchains are available.
 
 ## Requirement Evidence
 
@@ -43,18 +40,23 @@ Web V1 gameplay systems are implemented and covered by browser and engine eviden
 
 ## Latest Verification
 
+- Final coherence browser audit added: `e2e/game.spec.ts` `clean career coherence audit keeps events readable and explainable`.
+- The audit found and fixed one original-scope clarity defect: `Transfer budget confirmed` now shows manager-trust movement with before/after values.
+- Focused coherence audit rerun: passed, 1/1.
+- `npm run e2e`: passed, 16/16 after adding the coherence audit.
+- `npm test`: passed, 46/46 after adding the transfer-budget trust regression.
+- `npm run lint`: passed after the coherence-audit fix.
+- `npm run mobile:sync`: passed after the coherence-audit fix.
+- `develop-web-game` screenshot smoke check: passed after the coherence-audit fix.
 - `npx playwright test e2e/game.spec.ts -g "clean save reaches repeated season reviews and history in browser"`: passed, 1/1, 44.5s.
-- `npm run lint`: passed.
-- `npm test`: passed, 46/46.
-- `npm run e2e`: passed, 15/15.
+- Prior audit gate: `npm run lint`, `npm test` (46/46), and `npm run e2e` (15/15) passed.
 - `npm run mobile:sync`: passed.
 - `develop-web-game` screenshot smoke check: passed.
 - Previous full slice verification from the current code line: `npm run mobile:sync`, `npm run mobile:doctor`, `npm run lint`, `npm test` (46 tests), `npm run e2e` (15 tests), and `develop-web-game` screenshot smoke check passed.
-- Latest Vercel preview: `https://football-director-285kwpxkv-mor-swisas-projects.vercel.app`.
+- Latest Vercel preview: `https://football-director-252qb9959-mor-swisas-projects.vercel.app`.
 
 ## Remaining Work
 
-1. Run one final full verification gate after this audit artifact is committed.
-2. Perform a last manual/browser clean-save playtest looking specifically for unclear numbers, trust/fan/board deltas, and modal readability.
-3. If no original-scope issues are found, treat Web V1 as accepted and move to native binary builds.
-4. Install or provide Java Runtime/JDK and full Xcode before attempting `npm run mobile:build:android` and `npm run mobile:build:ios`.
+1. Commit and push the coherence-audit fix.
+2. Treat Web V1 gameplay as accepted unless a new manual playtest reveals a concrete original-scope defect.
+3. Install or provide Java Runtime/JDK and full Xcode before attempting `npm run mobile:build:android` and `npm run mobile:build:ios`.

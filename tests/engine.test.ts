@@ -352,6 +352,7 @@ describe("game engine", () => {
     expect(save.transferBudget?.mode).toBe("strict");
     expect(save.transferBudget?.amount).toBeGreaterThanOrEqual(0);
     expect(save.currentEvent?.title).toBe("Transfer budget confirmed");
+    expect(save.currentEvent?.note).toContain("Manager trust -5");
   });
 
   it("expires transfer budgets outside transfer windows", () => {

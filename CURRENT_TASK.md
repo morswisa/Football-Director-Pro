@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-285kwpxkv-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-252qb9959-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - Native packaging has started: Capacitor iOS/Android project shells exist, native orientation is locked to portrait, and `MOBILE_BUILD.md` documents local mobile build commands.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
@@ -152,9 +152,11 @@ Playable V1 includes:
 - Latest manager-contract acceptance pass is deployed to preview: `https://football-director-619ieocp4-mor-swisas-projects.vercel.app`.
 - Current packaging/finalization slice: `npm run mobile:sync`, `npm run mobile:doctor`, `npm run lint`, `npm test` (46 tests), `npm run e2e` (15 tests), the `develop-web-game` screenshot client, and Vercel preview deployment have passed for the mobile build workflow and portrait-orientation updates.
 - Current V1 audit slice: `V1_ACCEPTANCE_AUDIT.md` maps the planned Web V1 requirements to engine/browser evidence. The focused clean-save two-season browser audit, `npm run lint`, `npm test` (46 tests), `npm run e2e` (15 tests), `npm run mobile:sync`, and the `develop-web-game` screenshot client passed locally.
-- Current remaining-scope status: the planned Web V1 gameplay systems are broadly implemented. Remaining work is final clean-save acceptance, targeted fixes for any original-scope defects found there, final mobile/balance verification, and native binary builds after Java Runtime/JDK and full Xcode are available.
+- Current coherence-audit slice: a browser playtest now verifies that clean-career Continue events stay readable, financial reports expose opening/closing totals, match results explain relationship/facility impact, and transfer-budget confirmation shows manager-trust movement. The full gate passed after this fix: `npm run lint`, `npm test` (46 tests), `npm run e2e` (16 tests), `npm run mobile:sync`, and the `develop-web-game` screenshot client.
+- Current remaining-scope status: planned Web V1 gameplay is accepted by automated browser/engine evidence after the coherence-audit fix. Remaining work is native binary builds after Java Runtime/JDK and full Xcode are available, plus any future concrete original-scope defect found by manual playtesting.
 - Latest preview after the mobile workflow/orientation pass: `https://football-director-gv0ddzuuw-mor-swisas-projects.vercel.app`.
 - Latest preview after the V1 acceptance-audit pass: `https://football-director-285kwpxkv-mor-swisas-projects.vercel.app`.
+- Latest preview after the coherence-audit fix: `https://football-director-252qb9959-mor-swisas-projects.vercel.app`.
 - Current acceptance pass: added browser coverage for the domestic Chairman's Cup flow. The test imports a deterministic cup tie, verifies the draw, cup match preview, instant cup result, prize-money financial report, unchanged league record, History cup run, and `Cup prize` transaction in Finances. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (14 tests), and the develop-web-game screenshot client.
 - Latest cup acceptance pass is deployed to preview: `https://football-director-303bx100u-mor-swisas-projects.vercel.app`.
 - Current acceptance pass: added browser coverage for debt warning and bankruptcy stop states. The test verifies balance/debt-limit/headroom copy before failure and a blocking `Career stopped` Board Decision dialog after the club exceeds the debt limit. The game-over overlay now has `role="dialog"` and accessible labelling. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (15 tests), and the develop-web-game screenshot client.

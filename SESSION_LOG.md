@@ -302,3 +302,6 @@
 - Started the final Web V1 completion audit. Added `V1_ACCEPTANCE_AUDIT.md`, mapping the original gameplay requirements to browser and engine evidence, and reran the focused clean-save repeated-season browser audit successfully: `npx playwright test e2e/game.spec.ts -g "clean save reaches repeated season reviews and history in browser"`.
 - Verified the audit slice with the full local gate: `npm run lint`, `npm test` (46 tests), `npm run e2e` (15 tests), `npm run mobile:sync`, and the `develop-web-game` screenshot client. No original-scope defect was found in this pass.
 - Deployed the V1 acceptance-audit pass to Vercel preview: `https://football-director-285kwpxkv-mor-swisas-projects.vercel.app`.
+- Added a final clean-career coherence browser audit. It found one original-scope clarity issue: the `Transfer budget confirmed` follow-up did not show manager-trust impact. Fixed the event note to show `Manager trust` delta with before/after values and added unit/e2e regression coverage.
+- Verified the coherence-audit fix with `npm run lint`, `npm test` (46 tests), focused coherence e2e, full `npm run e2e` (16 tests), `npm run mobile:sync`, and the `develop-web-game` screenshot client.
+- Deployed the coherence-audit fix to Vercel preview: `https://football-director-252qb9959-mor-swisas-projects.vercel.app`.
