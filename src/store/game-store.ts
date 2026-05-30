@@ -29,6 +29,7 @@ interface GameStore {
   persist: () => Promise<void>;
   advance: () => Promise<void>;
   continueGame: () => Promise<void>;
+  finishLiveMatch: () => Promise<void>;
   resolveCurrentEvent: (decision?: { action?: string; terms?: ContractTerms; mode?: TransferBudgetMode }) => Promise<void>;
   hire: (managerId: string, terms: ContractTerms) => Promise<void>;
   fire: () => Promise<void>;
@@ -75,6 +76,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().save;
     if (!current) return;
     const save = generateNextEvents(current);
+    await persistSave(save);
+    set({ save });
+  },
+  async finishLiveMatch() {
+    const current = get().save;
+    if (!current?.liveMatch) return;
+    const save: GameSave = {
+      ...current,
+      liveMatch: { ...current.liveMatch, currentMinute: 90, finished: true },
+      updatedAt: new Date().toISOString(),
+    };
     await persistSave(save);
     set({ save });
   },

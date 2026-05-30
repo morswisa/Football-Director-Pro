@@ -71,6 +71,8 @@
 - Dashboard player navigation must say `Roster`, not `Squad`, so the main surface matches the agreed V1 wording.
 - The main play experience should run from Dashboard `Continue`, with secondary pages used for inspection and upgrades.
 - Match preview is decision-only: `See Match` jumps to the result, and `Play Match` shows a fast no-control live playback before the same result summary.
+- `Play Match` must not skip the normal result summary. Final whistle only finishes the live playback; the player still sees the `Match result` event before returning to the dashboard or next queued event.
+- Interrupted live playback should load into the result summary rather than replaying or simulating the fixture again.
 - Cup match previews use the same `See Match` / `Play Match` controls as league fixtures to preserve one consistent match flow.
 - Match results must explain the relationship/facility consequences applied by the engine, so board confidence, manager trust, and stadium condition movement does not feel arbitrary.
 - Relationship metrics must be explainable through repeated outcomes: wins and stable finances help board confidence/trust, losses and negative balances hurt them.

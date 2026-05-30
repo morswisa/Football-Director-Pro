@@ -22,6 +22,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 
 ## 2026-05-30
 
+- Closed a final-acceptance gap in `Play Match`: the e2e audit found final-whistle Continue skipped the normal match-result summary. Added `finishLiveMatch`, normalized interrupted live playback back to a finished result summary, and added e2e/unit coverage. Verified with `npm run e2e`, `npm run lint`, `npm test` (43 tests), `npm run build`, the `develop-web-game` screenshot client, and a focused mobile live-match screenshot. Deployed preview: `https://football-director-gq92lvz0s-mor-swisas-projects.vercel.app`.
 - Added season-end impact tracking and display: season summaries now show balance, board confidence, manager trust, and reputation deltas, and History retains those season impact values.
 - Added financial opening/closing balance context so reports reconcile period profit/loss with the displayed club balance.
 - Added debt headroom context to bank warnings and exact over-limit context to bankruptcy game-over messages.
@@ -56,6 +57,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Settings import/export acceptance coverage is now implemented, locally verified, deployed, committed, and pushed to `main`: `npm run e2e`, `npm run lint`, `npm test` (42 tests), `npm run build`, and the `develop-web-game` screenshot pass all completed. Latest preview for this slice: `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`. Commit: `ae566e0`.
 - Current status response: broad V1 feature implementation is mostly complete; remaining work is final acceptance, balance/mobile polish, and native packaging after web acceptance.
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
+- Continue final acceptance from other high-touch V1 flows, now that `Play Match` has browser coverage: manager hire/fire, stadium repair/upgrade, and longer finance-heavy periods.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
 - Continue final mobile acceptance checks across all V1 surfaces and longer balance runs.
 - Continue longer balance tuning after the ticket/prize pass, especially transfer-sale windfalls, wages, manager compensation, facility upkeep, sponsorship, debt pressure, and transfer/loan frequency.
@@ -66,3 +68,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Latest preview after sale-chain coverage: `https://football-director-prnruhqdb-mor-swisas-projects.vercel.app`.
 - Latest preview after season-boundary coverage: `https://football-director-98cyzjg07-mor-swisas-projects.vercel.app`.
 - Latest preview after Settings import/export acceptance coverage: `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`.
+- Latest preview after live-match acceptance coverage: `https://football-director-gq92lvz0s-mor-swisas-projects.vercel.app`.

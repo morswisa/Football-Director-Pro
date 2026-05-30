@@ -532,6 +532,24 @@ describe("game engine", () => {
     expect(save.currentRound).toBe(roundBefore + 1);
   });
 
+  it("normalizes interrupted live playback back to the match result", () => {
+    let save = createNewGame(setup);
+    save = generateNextEvents(save);
+    let guard = 0;
+    while (save.currentEvent && save.currentEvent.type !== "match_preview" && guard < 12) {
+      save = resolveEvent(save, save.currentEvent.id, save.currentEvent.type === "transfer_budget" ? { mode: "normal" } : undefined);
+      guard += 1;
+    }
+    save = resolveEvent(save, save.currentEvent!.id, { action: "play" });
+    save.liveMatch = { ...save.liveMatch!, currentMinute: 37, finished: false };
+
+    const normalized = normalizeGameState(save);
+
+    expect(normalized.currentEvent?.type).toBe("match_result");
+    expect(normalized.liveMatch?.currentMinute).toBe(90);
+    expect(normalized.liveMatch?.finished).toBe(true);
+  });
+
   it("plays domestic cup ties without changing league points", () => {
     let save = createNewGame(setup);
     const clubId = save.userClubId;

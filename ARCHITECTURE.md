@@ -43,6 +43,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Match-result event creation captures the user club's relationship/facility snapshot before simulation and compares it with the post-simulation state, then writes the actual board confidence, manager trust, and stadium condition deltas into the event note.
 - Live match playback renders as the only active career surface while it is running and advances one minute per tick, preventing background dashboard controls or final-result data from being visible before final whistle.
+- Live match completion is a two-step UI flow: `finishLiveMatch` marks the saved live playback as finished at 90 minutes, then the still-current `match_result` event renders its normal summary before `resolveEvent` clears the result.
+- `normalizeGameState` converts an unfinished `liveMatch` with an existing `match_result` event into a finished live state, so a refresh during playback returns to the result summary instead of replaying or resimulating the fixture.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
 - Event entity headers are subject-driven: `playerId` renders player context, manager headers render only for manager-subject events, and all other club updates render the club header even if an older queued event still carries incidental manager metadata.
@@ -160,3 +162,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Expanded clean-save Playwright acceptance path covering the main V1 surfaces and early Continue queue.
 - Deep clean-save Playwright acceptance also covers reaching the first match result, checking the match impact note, and returning to Dashboard with Last Result visible.
 - Settings acceptance coverage verifies the local save lifecycle from the browser: export produces usable JSON, invalid import input is rejected, valid imported JSON replaces Slot 1, and the imported save can continue through the event queue.
+- Live-match acceptance coverage verifies the `Play Match` route: live state, one-minute progression, no Continue before final whistle, normal match-result summary after final whistle, and Dashboard Last Result after dismissal.

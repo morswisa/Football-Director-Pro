@@ -375,6 +375,9 @@ export function normalizeGameState(input: GameSave) {
   const save = clone(input);
   ensureEventState(save);
   ensureManagerState(save);
+  if (save.liveMatch && save.currentEvent?.type === "match_result") {
+    save.liveMatch = { ...save.liveMatch, currentMinute: 90, finished: true };
+  }
   ensureUniqueDisplayNames(save);
   ensureAllSquadDepth(save);
   return withUpdate(save);

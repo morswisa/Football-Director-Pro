@@ -165,6 +165,12 @@
 
 ## 2026-05-30
 
+- Continued final acceptance with the `Play Match` path. The new browser test exposed a real bug: clicking Continue after final whistle resolved the `match_result` event immediately instead of showing the match-result summary.
+- Fixed live-match completion by adding a store-level `finishLiveMatch` step. Final whistle now marks live playback finished and then renders the normal `Match result` event; the following Continue returns to the dashboard or next event.
+- Hardened interrupted live-match loads by normalizing unfinished `liveMatch` state with an existing `match_result` event back to a finished result summary, avoiding replay/double-simulation after refresh.
+- Added e2e coverage that `Play Match` enters live mode, advances minutes one-by-one, hides Continue until final whistle, shows `Match result`, and returns to Last Result. Added unit coverage for interrupted live playback normalization.
+- Verified the live-match acceptance pass with `npm run e2e`, `npm run lint`, `npm test` (43 tests), `npm run build`, the `develop-web-game` screenshot client, and a focused mobile live-match screenshot.
+- Deployed the live-match acceptance pass to Vercel preview: `https://football-director-gq92lvz0s-mor-swisas-projects.vercel.app`.
 - Reviewed what remains in the game for the user. The current answer is that the original planned V1 systems are broadly implemented, and the remaining work is to finish the in-progress save import/export acceptance coverage, perform final clean-save web acceptance, fix only original-scope defects found during that pass, complete final mobile/balance QA, then add Capacitor native platforms after web acceptance.
 - Completed the in-progress Settings import/export acceptance coverage in Playwright: the clean-save e2e now exports a save, rejects invalid import JSON, imports a modified valid save into Slot 1, verifies the imported club name, and confirms the Continue queue uses the imported save.
 - Verified the Settings import/export acceptance slice with `npm run e2e`, `npm run lint`, `npm test` (42 tests), `npm run build`, and the `develop-web-game` Playwright client screenshot pass. Temporary screenshot/test artifacts were removed afterward.

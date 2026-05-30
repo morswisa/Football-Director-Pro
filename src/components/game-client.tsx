@@ -1260,7 +1260,7 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
 }
 
 function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult }) {
-  const resolve = useGameStore((state) => state.resolveCurrentEvent);
+  const finishLiveMatch = useGameStore((state) => state.finishLiveMatch);
   const fixture = save.lastMatch!;
   const home = save.clubs[fixture.homeClubId];
   const away = save.clubs[fixture.awayClubId];
@@ -1281,7 +1281,7 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
         <h2 id="live-match-title" className="mt-1 text-xl font-black">{home.name} {homeGoals} - {awayGoals} {away.name}</h2>
         <p className="mt-1 text-xs text-neutral-500">Match is in progress. Finish the match to return to club controls.</p>
         <div className="mt-4 rounded-xl bg-surface-muted p-4 text-center">
-          <p className="text-4xl font-black">{minute}&apos;</p>
+          <p data-testid="live-minute" className="text-4xl font-black">{minute}&apos;</p>
           <div className="mt-3 h-2 rounded-full bg-white">
             <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} />
           </div>
@@ -1300,7 +1300,7 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
           ))}
           {minute >= 90 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm font-bold">90&apos; Final whistle.</p> : null}
         </div>
-        {minute >= 90 ? <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button> : null}
+        {minute >= 90 ? <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => finishLiveMatch()}>Continue</Button> : null}
       </div>
     </div>
   );

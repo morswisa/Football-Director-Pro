@@ -1,5 +1,64 @@
 import { expect, test } from "@playwright/test";
 
+async function createAcceptanceCareer(page: import("@playwright/test").Page, clubName = "Testford FC") {
+  await page.goto("/");
+  await page.getByRole("link", { name: /Create Club/ }).click();
+  await page.getByLabel("Club name").fill(clubName);
+  await page.getByLabel("Chairman").fill("Acceptance Chair");
+  await page.getByLabel("Stadium").fill("Acceptance Park");
+  const createButton = page.getByRole("button", { name: "Continue" });
+  await createButton.scrollIntoViewIfNeeded();
+  await createButton.click({ force: true });
+  await page.waitForURL(/\/game\/?$/);
+  await expect(page.getByText(clubName)).toBeVisible();
+}
+
+async function resolveEventsUntilMatchPreview(page: import("@playwright/test").Page) {
+  for (let step = 0; step < 40; step += 1) {
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    if (await dialog.getByRole("button", { name: "Play Match" }).count()) {
+      return;
+    }
+
+    if (await dialog.getByRole("heading", { name: "Set transfer budget" }).count()) {
+      await dialog.getByRole("button", { name: /^Normal/ }).click();
+      await page.getByRole("button", { name: "Set Transfer Budget" }).click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Walk Away" }).count()) {
+      await dialog.getByRole("button", { name: "Walk Away" }).first().click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Reject Bid" }).count()) {
+      await dialog.getByRole("button", { name: "Reject Bid" }).click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Reject" }).count()) {
+      await dialog.getByRole("button", { name: "Reject" }).first().click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Release" }).count()) {
+      await dialog.getByRole("button", { name: "Release" }).click();
+      continue;
+    }
+
+    if (await dialog.getByRole("button", { name: "Continue" }).count()) {
+      await dialog.getByRole("button", { name: "Continue" }).click();
+      continue;
+    }
+
+    throw new Error(`Unhandled event dialog at step ${step}: ${await dialog.innerText()}`);
+  }
+
+  throw new Error("Did not reach a match preview within 40 event steps.");
+}
+
 async function resolveEventsUntilFirstMatchResult(page: import("@playwright/test").Page) {
   for (let step = 0; step < 40; step += 1) {
     const dialog = page.getByRole("dialog");
@@ -54,16 +113,7 @@ async function resolveEventsUntilFirstMatchResult(page: import("@playwright/test
 }
 
 test("new career reaches playable dashboard", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("link", { name: /Create Club/ }).click();
-  await page.getByLabel("Club name").fill("Testford FC");
-  await page.getByLabel("Chairman").fill("Acceptance Chair");
-  await page.getByLabel("Stadium").fill("Acceptance Park");
-  const createButton = page.getByRole("button", { name: "Continue" });
-  await createButton.scrollIntoViewIfNeeded();
-  await createButton.click({ force: true });
-  await page.waitForURL(/\/game\/?$/);
-  await expect(page.getByText("Testford FC")).toBeVisible();
+  await createAcceptanceCareer(page);
 
   await page.getByRole("button", { name: /League/i }).click();
   await expect(page.getByText("Standings")).toBeVisible();
@@ -138,4 +188,44 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await expect(page.getByText("Transfer budget confirmed")).toBeVisible();
 
   await resolveEventsUntilFirstMatchResult(page);
+});
+
+test("play match runs live before returning to the result", async ({ page }) => {
+  await createAcceptanceCareer(page, "Liveford FC");
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  await resolveEventsUntilMatchPreview(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Play Match" }).click();
+
+  const liveDialog = page.getByRole("dialog");
+  await expect(liveDialog).toContainText("Live match");
+  await expect(liveDialog).toContainText("Match is in progress");
+  await expect(page.getByTestId("live-minute")).toContainText("0'");
+  await expect(liveDialog.getByRole("button", { name: "Continue" })).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const text = await page.getByTestId("live-minute").innerText();
+    return Number.parseInt(text, 10);
+  }, { timeout: 2_000 }).toBeGreaterThanOrEqual(5);
+
+  const sampledMinutes = await page.evaluate(async () => {
+    const element = document.querySelector('[data-testid="live-minute"]');
+    const values: number[] = [];
+    const started = Date.now();
+    while (Date.now() - started < 1_200) {
+      const value = Number.parseInt(element?.textContent ?? "", 10);
+      if (Number.isFinite(value) && values.at(-1) !== value) values.push(value);
+      await new Promise((resolve) => window.setTimeout(resolve, 20));
+    }
+    return values;
+  });
+  expect(sampledMinutes.length).toBeGreaterThan(3);
+  expect(sampledMinutes.slice(1).every((minute, index) => minute - sampledMinutes[index] === 1)).toBe(true);
+
+  await expect(page.getByTestId("live-minute")).toContainText("90'", { timeout: 12_000 });
+  await expect(liveDialog).toContainText("Final whistle");
+  await liveDialog.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Match result");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Last result")).toBeVisible();
 });

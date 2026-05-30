@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-gq92lvz0s-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -54,6 +54,7 @@ Playable V1 includes:
 - Manager model now uses Training, Tactics, Transfers, Youth, Reputation, style, personality, wage, contract years, and status; `Man Management` and `Wage Discipline` are removed from V1.
 - Match preview offers `See Match` for an instant result and `Play Match` for a fast live minute-by-minute playback with score, stats, events, and final whistle before continuing.
 - Live match playback now advances one minute at a time and temporarily replaces the dashboard surface so the final result cannot leak before final whistle.
+- Live match final whistle now returns to the normal `Match result` event summary before the dashboard continues, and interrupted live playback normalizes back to that result summary on load.
 - Match-result events now explain the actual post-match relationship/facility movement, including board confidence, manager trust, and stadium condition deltas.
 - Player and manager wage recommendations are formula-driven by division, rating/reputation, age/role/potential, and personality where relevant.
 - Long-run balancing now updates sponsorship, debt limit, stadium upkeep, board confidence, manager trust, and stadium condition across match and season progression.
@@ -99,4 +100,6 @@ Playable V1 includes:
 - Verify every planned V1 surface one last time on mobile: Dashboard Continue loop, Roster, League, Manager, Finances, Stadium, Training/Youth popups, History, Settings, match playback, and save/import/export.
 - Keep the expanded clean-save Playwright acceptance path in place as the default browser smoke gate for planned V1 surfaces and the early Continue chain.
 - The expanded clean-save Playwright acceptance path now reaches the first match result, verifies the post-match impact explanation, and confirms the Dashboard shows Last Result after dismissing the result.
+- Live-match browser acceptance now verifies `Play Match` enters the live state, advances minutes one-by-one, withholds the result Continue button until final whistle, then shows the `Match result` summary and returns to Dashboard.
+- Latest live-match acceptance pass is deployed to preview.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.
