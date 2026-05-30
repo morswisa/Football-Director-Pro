@@ -1043,6 +1043,39 @@ describe("game engine", () => {
     expect(snapshot.balanceAfter - snapshot.balanceBefore).toBe(actualBalanceDelta);
   });
 
+  it("keeps several continue financial reports reconciled with the latest snapshot", () => {
+    let save = createNewGame({ ...setup, seed: 20260630 });
+    const reports: NonNullable<typeof save.currentEvent>["financialSnapshot"][] = [];
+
+    for (let step = 0; step < 320 && reports.length < 6; step += 1) {
+      save = generateNextEvents(save);
+      let guard = 0;
+      while (save.currentEvent && guard < 80 && reports.length < 6) {
+        if (save.currentEvent.type === "financial_report") {
+          const snapshot = save.currentEvent.financialSnapshot!;
+          const latest = latestFinancialSnapshot(save);
+          expect(snapshot.totalIncome - snapshot.totalExpenses).toBe(snapshot.profit);
+          expect(snapshot.balanceAfter - snapshot.balanceBefore).toBe(snapshot.profit);
+          expect(snapshot.balanceAfter).toBe(save.clubs[save.userClubId].finances.balance);
+          expect(latest.week).toBe(snapshot.week);
+          expect(latest.totalIncome).toBe(snapshot.totalIncome);
+          expect(latest.totalExpenses).toBe(snapshot.totalExpenses);
+          expect(latest.profit).toBe(snapshot.profit);
+          expect(Number.isFinite(snapshot.totalIncome)).toBe(true);
+          expect(Number.isFinite(snapshot.totalExpenses)).toBe(true);
+          expect(Number.isFinite(snapshot.profit)).toBe(true);
+          reports.push(snapshot);
+        }
+        save = resolveHumanStyleEvent(save);
+        guard += 1;
+      }
+      expect(guard).toBeLessThan(80);
+    }
+
+    expect(reports).toHaveLength(6);
+    expect(new Set(reports.map((report) => `${report?.week}_${report?.month}`)).size).toBeGreaterThan(1);
+  });
+
   it("scales matchday ticket income by division level", () => {
     const save = createNewGame(setup);
     const homeFixture = save.fixtures.find((fixture) => fixture.homeClubId === save.userClubId)!;

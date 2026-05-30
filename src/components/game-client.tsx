@@ -240,7 +240,11 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="League position" value={current.position ? ordinal(current.position) : "-"} detail={save.divisions.find((division) => division.id === current.club.divisionId)?.name} />
-        <StatCard label="Balance" value={formatMoney(current.club.finances.balance)} detail={`Latest report ${formatMoney(latestFinance.profit)}`} />
+        <Card className="space-y-1">
+          <p className="text-xs font-medium text-neutral-500">Balance</p>
+          <p data-testid="dashboard-balance" className="text-2xl font-bold tracking-normal text-foreground">{formatMoney(current.club.finances.balance)}</p>
+          <p data-testid="dashboard-latest-report" className="text-xs text-neutral-500">Latest report {formatMoney(latestFinance.profit)}</p>
+        </Card>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <MiniMetric label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} />
@@ -577,12 +581,12 @@ function FinancesTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
       <StatCard label="Balance" value={formatMoney(finance.balance)} detail={`Debt limit ${formatMoney(finance.debtLimit)}`} />
       <Card>
         <div className="grid grid-cols-[110px_1fr] gap-y-3 text-sm">
-          <span className="text-neutral-500">Report period</span><b>{latestFinance.month} · Period {latestFinance.week}</b>
-          <span className="text-neutral-500">Report income</span><b className="text-primary">{formatMoney(latestFinance.totalIncome)}</b>
-          <span className="text-neutral-500">Report expenses</span><b className="text-danger">{formatMoney(latestFinance.totalExpenses)}</b>
-          <span className="text-neutral-500">Report result</span><b className={latestFinance.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(latestFinance.profit)}</b>
-          <span className="text-neutral-500">Opening balance</span><b>{formatMoney(latestFinance.balanceBefore)}</b>
-          <span className="text-neutral-500">Closing balance</span><b>{formatMoney(latestFinance.balanceAfter)}</b>
+          <span className="text-neutral-500">Report period</span><b data-testid="finance-summary-period">{latestFinance.month} · Period {latestFinance.week}</b>
+          <span className="text-neutral-500">Report income</span><b data-testid="finance-summary-income" className="text-primary">{formatMoney(latestFinance.totalIncome)}</b>
+          <span className="text-neutral-500">Report expenses</span><b data-testid="finance-summary-expenses" className="text-danger">{formatMoney(latestFinance.totalExpenses)}</b>
+          <span className="text-neutral-500">Report result</span><b data-testid="finance-summary-result" className={latestFinance.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(latestFinance.profit)}</b>
+          <span className="text-neutral-500">Opening balance</span><b data-testid="finance-summary-opening">{formatMoney(latestFinance.balanceBefore)}</b>
+          <span className="text-neutral-500">Closing balance</span><b data-testid="finance-summary-closing">{formatMoney(latestFinance.balanceAfter)}</b>
           <span className="text-neutral-500">Weekly wages</span><b>{formatMoney(finance.weeklyWages)}</b>
           <span className="text-neutral-500">Annual sponsorship</span><b>{formatMoney(finance.sponsorship)}</b>
           <span className="text-neutral-500">Board confidence</span><b>{pct(current.club.boardConfidence)}</b>
@@ -590,7 +594,7 @@ function FinancesTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
       </Card>
       <Card>
         <h3 className="mb-3 text-sm font-bold">Latest report breakdown</h3>
-        <FinancialRows snapshot={latestFinance} />
+        <FinancialRows snapshot={latestFinance} testIdPrefix="finance-breakdown" />
       </Card>
       <Card>
         <h3 className="mb-3 text-sm font-bold">Recent transactions</h3>
@@ -966,7 +970,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
   );
 }
 
-function FinancialRows({ snapshot }: { snapshot?: FinancialSnapshot }) {
+function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: FinancialSnapshot; testIdPrefix?: string }) {
   if (!snapshot) return null;
   const expenses = [
     ["Player and manager wages", snapshot.expenses.wages],
@@ -990,11 +994,13 @@ function FinancialRows({ snapshot }: { snapshot?: FinancialSnapshot }) {
     <div className="mt-4 space-y-3 text-sm">
       <div className="flex justify-between rounded-lg bg-surface-muted px-3 py-2 text-xs">
         <span className="font-bold uppercase text-neutral-500">Report period</span>
-        <b>{snapshot.month} · Period {snapshot.week}</b>
+        <b data-testid={`${testIdPrefix}-period`}>{snapshot.month} · Period {snapshot.week}</b>
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Opening balance <b className="block">{formatMoney(snapshot.balanceBefore)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Closing balance <b className="block">{formatMoney(snapshot.balanceAfter)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Opening balance <b data-testid={`${testIdPrefix}-opening`} className="block">{formatMoney(snapshot.balanceBefore)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Closing balance <b data-testid={`${testIdPrefix}-closing`} className="block">{formatMoney(snapshot.balanceAfter)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Total income <b data-testid={`${testIdPrefix}-income`} className="block text-primary">{formatMoney(snapshot.totalIncome)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Total expenses <b data-testid={`${testIdPrefix}-expenses`} className="block text-danger">{formatMoney(snapshot.totalExpenses)}</b></p>
       </div>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Expenses</p>
@@ -1016,7 +1022,7 @@ function FinancialRows({ snapshot }: { snapshot?: FinancialSnapshot }) {
       </div>
       <div className="flex justify-between rounded-lg bg-surface-muted px-3 py-3">
         <span className="font-bold">{snapshot.profit >= 0 ? "Profit" : "Loss"}</span>
-        <b className={snapshot.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(snapshot.profit)}</b>
+        <b data-testid={`${testIdPrefix}-result`} className={snapshot.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(snapshot.profit)}</b>
       </div>
     </div>
   );
@@ -1391,7 +1397,7 @@ function EventModal({ save }: { save: GameSave }) {
           <SeasonSummaryPanel history={event.seasonHistory} />
         ) : null}
 
-        {event.type === "financial_report" ? <FinancialRows snapshot={event.financialSnapshot} /> : null}
+        {event.type === "financial_report" ? <FinancialRows snapshot={event.financialSnapshot} testIdPrefix="event-finance" /> : null}
         {event.type === "transfer_budget" ? <TransferBudgetControls save={save} /> : null}
         {event.type === "manager_contract_decision" ? <ManagerContractControls save={save} /> : null}
 

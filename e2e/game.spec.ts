@@ -112,6 +112,101 @@ async function resolveEventsUntilFirstMatchResult(page: import("@playwright/test
   throw new Error("Did not reach a match result within 40 event steps.");
 }
 
+async function readEventFinancialSnapshot(page: import("@playwright/test").Page) {
+  const dialog = page.getByRole("dialog");
+  return {
+    period: await dialog.getByTestId("event-finance-period").innerText(),
+    opening: await dialog.getByTestId("event-finance-opening").innerText(),
+    closing: await dialog.getByTestId("event-finance-closing").innerText(),
+    income: await dialog.getByTestId("event-finance-income").innerText(),
+    expenses: await dialog.getByTestId("event-finance-expenses").innerText(),
+    result: await dialog.getByTestId("event-finance-result").innerText(),
+  };
+}
+
+async function resolveConservativeDialog(page: import("@playwright/test").Page) {
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+
+  if (await dialog.getByRole("button", { name: "See Match" }).count()) {
+    await dialog.getByRole("button", { name: "See Match" }).click();
+    return;
+  }
+
+  if (await dialog.getByRole("heading", { name: "Set transfer budget" }).count()) {
+    await dialog.getByRole("button", { name: /^Normal/ }).click();
+    await dialog.getByRole("button", { name: "Set Transfer Budget" }).click();
+    return;
+  }
+
+  if (await dialog.getByRole("button", { name: "Walk Away" }).count()) {
+    await dialog.getByRole("button", { name: "Walk Away" }).first().click();
+    return;
+  }
+
+  if (await dialog.getByRole("button", { name: "Reject Bid" }).count()) {
+    await dialog.getByRole("button", { name: "Reject Bid" }).click();
+    return;
+  }
+
+  if (await dialog.getByRole("button", { name: "Reject" }).count()) {
+    await dialog.getByRole("button", { name: "Reject" }).first().click();
+    return;
+  }
+
+  if (await dialog.getByRole("button", { name: "Release" }).count()) {
+    await dialog.getByRole("button", { name: "Release" }).click();
+    return;
+  }
+
+  if (await dialog.getByRole("button", { name: "Extend Contract" }).count()) {
+    await dialog.getByRole("button", { name: "Extend Contract" }).click();
+    return;
+  }
+
+  if (await dialog.getByRole("button", { name: "Continue" }).count()) {
+    await dialog.getByRole("button", { name: "Continue" }).click();
+    return;
+  }
+
+  throw new Error(`Unhandled event dialog: ${await dialog.innerText()}`);
+}
+
+async function collectFinancialReports(page: import("@playwright/test").Page, targetCount: number) {
+  const reports: Awaited<ReturnType<typeof readEventFinancialSnapshot>>[] = [];
+  for (let step = 0; step < 160 && reports.length < targetCount; step += 1) {
+    const dialog = page.getByRole("dialog");
+    if (!(await dialog.count())) {
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(dialog).toBeVisible();
+    }
+
+    if (await dialog.getByTestId("event-finance-result").count()) {
+      await expect(dialog).toContainText("Balance moved from");
+      await expect(dialog).toContainText("Balance movement");
+      const dialogText = await dialog.innerText();
+      expect(dialogText).not.toContain("NaN");
+      reports.push(await readEventFinancialSnapshot(page));
+      await dialog.getByRole("button", { name: "Continue" }).click();
+      continue;
+    }
+
+    await resolveConservativeDialog(page);
+  }
+
+  expect(reports.length).toBe(targetCount);
+  return reports;
+}
+
+async function clearCurrentDialog(page: import("@playwright/test").Page) {
+  for (let step = 0; step < 40; step += 1) {
+    const dialog = page.getByRole("dialog");
+    if (!(await dialog.count())) return;
+    await resolveConservativeDialog(page);
+  }
+  throw new Error("Could not clear the visible event dialog.");
+}
+
 test("new career reaches playable dashboard", async ({ page }) => {
   await createAcceptanceCareer(page);
 
@@ -188,6 +283,28 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await expect(page.getByText("Transfer budget confirmed")).toBeVisible();
 
   await resolveEventsUntilFirstMatchResult(page);
+});
+
+test("financial reports stay consistent across several continue periods", async ({ page }) => {
+  await createAcceptanceCareer(page, "Ledgerford FC");
+
+  const reports = await collectFinancialReports(page, 3);
+  const latestReport = reports.at(-1)!;
+  expect(new Set(reports.map((report) => report.period)).size).toBeGreaterThan(1);
+
+  await clearCurrentDialog(page);
+  await expect(page.getByTestId("dashboard-latest-report")).toContainText(latestReport.result);
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByTestId("finance-summary-period")).toHaveText(latestReport.period);
+  await expect(page.getByTestId("finance-summary-income")).toHaveText(latestReport.income);
+  await expect(page.getByTestId("finance-summary-expenses")).toHaveText(latestReport.expenses);
+  await expect(page.getByTestId("finance-summary-result")).toHaveText(latestReport.result);
+  await expect(page.getByTestId("finance-summary-opening")).toHaveText(latestReport.opening);
+  await expect(page.getByTestId("finance-summary-closing")).toHaveText(latestReport.closing);
+  await expect(page.getByTestId("finance-breakdown-income")).toHaveText(latestReport.income);
+  await expect(page.getByTestId("finance-breakdown-expenses")).toHaveText(latestReport.expenses);
+  await expect(page.getByTestId("finance-breakdown-result")).toHaveText(latestReport.result);
 });
 
 test("play match runs live before returning to the result", async ({ page }) => {

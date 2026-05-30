@@ -90,6 +90,7 @@
 - Direct infrastructure actions, including stadium upgrade and repair, must leave a finance trail through transactions and current-period infrastructure spending so balance changes are explainable.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
 - Financial surfaces must also show opening balance and closing balance so the player can reconcile report profit/loss with the displayed club balance.
+- Financial reports should expose total income, total expenses, and result directly in the card, not only through line-item rows or note copy, because the player needs a quick period-level reconciliation before continuing.
 - Weekly finance updates and financial report line items must share the same income/expense breakdown; reports must not invent display-only lines that were not reflected in the balance movement.
 - Debt warnings and bankruptcy stops must show exact balance/debt-limit context because debt-limit failure is a career-ending state.
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.

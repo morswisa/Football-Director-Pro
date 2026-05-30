@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-ek6obj76p-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-aym845hi2-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -71,6 +71,7 @@ Playable V1 includes:
 - Financial reports include same-week transfer fees paid and received.
 - Dashboard, Finances screen, and financial report modals now use the same latest financial snapshot source for period income, expenses, and profit/loss.
 - Financial snapshots include opening balance and closing balance, and financial report copy explains the period balance movement alongside income, expenses, and profit/loss.
+- Financial report modals now show period total income, total expenses, and result in the same compact summary style as the Finances screen. Browser acceptance now verifies several Continue-period reports and confirms the latest report matches Dashboard and Finances.
 - Weekly finance processing and financial report line items now share one breakdown model, so displayed income/expenses reconcile with the actual balance movement and ticket sales remain visible even in loss-making home periods.
 - Bank warnings and debt-limit career stops now show the current balance, debt limit, and remaining headroom or over-limit amount.
 - Mandatory decision modals for event-queue decisions and missing-manager states; the season cannot continue until the user answers.
@@ -90,6 +91,8 @@ Playable V1 includes:
 
 ## Next Steps
 
+- Latest finance acceptance pass: multi-period financial report consistency is now covered in engine and browser tests. Remaining work is final clean-save web acceptance, longer balance tuning, final mobile QA across all planned surfaces, fixing only original-scope defects found during acceptance, and Capacitor native packaging after the web V1 is accepted.
+- Latest finance acceptance pass is deployed to preview.
 - Latest status answer: the remaining game work is finalization-focused. The planned V1 systems are in place; outstanding work is acceptance, cleanup of any original-scope defects found during acceptance, final mobile QA, final balance tuning, and Capacitor native packaging only after the web V1 is accepted.
 - Settings import/export acceptance coverage has passed locally with the full verification gate, is deployed to preview, and has been pushed to `main` in commit `ae566e0`.
 - Latest status review: no broad new V1 feature areas are currently planned; remaining work is acceptance, balance, mobile QA, and native packaging after web approval.
