@@ -111,11 +111,21 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await expect(page.getByText("Reset Career")).toBeVisible();
   await page.getByRole("button", { name: "Large Text" }).click();
   await expect(page.getByRole("button", { name: "Sound On" })).toBeVisible();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  importedSave.clubs[importedSave.userClubId].name = "Imported FC";
+  await page.getByPlaceholder("Paste exported save JSON here").fill("{ invalid save");
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await expect(page.getByText("Import failed. Paste a valid Football Director Pro save.")).toBeVisible();
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await expect(page.getByText("Imported into Slot 1.")).toBeVisible();
+  await expect(page.getByText("Imported FC", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("dialog")).toContainText("League Path");
-  await expect(page.getByRole("dialog")).toContainText("Testford FC");
+  await expect(page.getByRole("dialog")).toContainText("Imported FC");
   await expect(page.getByRole("dialog")).not.toContainText("Trust");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Crowd outlook")).toBeVisible();

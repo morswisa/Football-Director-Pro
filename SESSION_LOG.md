@@ -165,6 +165,10 @@
 
 ## 2026-05-30
 
+- Reviewed what remains in the game for the user. The current answer is that the original planned V1 systems are broadly implemented, and the remaining work is to finish the in-progress save import/export acceptance coverage, perform final clean-save web acceptance, fix only original-scope defects found during that pass, complete final mobile/balance QA, then add Capacitor native platforms after web acceptance.
+- Completed the in-progress Settings import/export acceptance coverage in Playwright: the clean-save e2e now exports a save, rejects invalid import JSON, imports a modified valid save into Slot 1, verifies the imported club name, and confirms the Continue queue uses the imported save.
+- Verified the Settings import/export acceptance slice with `npm run e2e`, `npm run lint`, `npm test` (42 tests), `npm run build`, and the `develop-web-game` Playwright client screenshot pass. Temporary screenshot/test artifacts were removed afterward.
+- Deployed the Settings import/export acceptance slice to Vercel preview: `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`.
 - Reviewed the current remaining game scope for the user. The remaining work is finalization-focused: complete the clean-save acceptance pass, verify all original V1 surfaces on mobile, tune long-run economy/relationships, close only original-scope issues found during that pass, then package with Capacitor after the web build is accepted.
 - Expanded the Playwright clean-save acceptance path to cover club creation, League, Roster sorting, Manager, Finances, Stadium, Training/Youth popups, History, Settings, and the first required Continue events through transfer-budget confirmation.
 - The expanded acceptance path exposed an event-header attribution bug: the opening League Path club update could render the current manager header when the event carried a `managerId`. Fixed the UI gate so manager headers render only for manager-subject events, and added e2e coverage that the opening club update shows the club rather than manager trust context.

@@ -37,6 +37,7 @@
 - V1 uses fictional clubs, players, competitions, badges, and copy only.
 - V1 is local/offline only.
 - Settings covers the local-only V1 save lifecycle directly in the app: manual save, export, import, reset, sound toggle, and text size. Import replaces Slot 1 only after schema validation/migration succeeds.
+- Save import/export is not considered V1-complete unless browser acceptance proves invalid import rejection, valid Slot 1 replacement, immediate imported identity display, and continued event-queue play from the imported save.
 - The V1 domestic cup is modeled as the fictional Chairman's Cup. It is a single-player seasonal knockout run for the user's club, integrated into Continue events, and cup ties do not affect league points.
 - Long-run balance should prefer self-correcting season systems over manual cleanup: sponsorship/debt scale by level, relationships react to results and finances, stadium condition decays, and clubs receive generated depth players if squads become unplayable.
 - Matchday ticket income must scale by division level. Lower-league clubs should not receive top-flight ticket pricing from the same attendance model.

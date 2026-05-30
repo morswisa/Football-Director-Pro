@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-98cyzjg07-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -82,10 +82,13 @@ Playable V1 includes:
 - History now surfaces current-season record context before season-end history exists.
 - Capacitor config and mobile scripts.
 - Settings covers the original local/offline V1 needs: manual save, export copy/download, validated import into Slot 1, reset local career with confirmation, sound toggle, and normal/large text size.
+- Settings import/export now has browser acceptance coverage: invalid pasted JSON is rejected, a valid exported save can be modified and imported into Slot 1, the imported club identity appears immediately, and the Continue queue proceeds from that imported save.
 - Manager-led transfer and contract proposals no longer have a legacy side path; they are generated, displayed, resolved, and persisted through `GameEvent` records only.
 
 ## Next Steps
 
+- Latest status answer: the remaining game work is finalization-focused. The planned V1 systems are in place; outstanding work is acceptance, cleanup of any original-scope defects found during acceptance, final mobile QA, final balance tuning, and Capacitor native packaging only after the web V1 is accepted.
+- Settings import/export acceptance coverage has passed locally with the full verification gate and is deployed to preview; commit and push are the remaining release steps for this slice.
 - Latest status review: no broad new V1 feature areas are currently planned; remaining work is acceptance, balance, mobile QA, and native packaging after web approval.
 - Current status review: remaining work is finalization, not broad feature discovery. The playable V1 systems are implemented; the next work should focus on final acceptance, balance tuning, mobile QA, and then Capacitor packaging after the web build is accepted.
 - Final web-V1 acceptance pass: play through several careers from a clean save and fix only issues that break the original planned loop or make existing planned systems unclear.

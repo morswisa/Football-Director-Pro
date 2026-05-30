@@ -159,3 +159,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Manual mobile browser smoke test at `430x932`
 - Expanded clean-save Playwright acceptance path covering the main V1 surfaces and early Continue queue.
 - Deep clean-save Playwright acceptance also covers reaching the first match result, checking the match impact note, and returning to Dashboard with Last Result visible.
+- Settings acceptance coverage verifies the local save lifecycle from the browser: export produces usable JSON, invalid import input is rejected, valid imported JSON replaces Slot 1, and the imported save can continue through the event queue.
