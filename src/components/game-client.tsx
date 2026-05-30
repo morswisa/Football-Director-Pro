@@ -460,41 +460,71 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const fireCost = current.manager ? calculateManagerCompensation(current.manager) : 0;
   const balanceAfterFire = current.club.finances.balance - fireCost;
   const hireOffer = hireId ? generateManagerHireOffer(save, hireId) : undefined;
+  const managerAttributes = current.manager
+    ? [
+        ["Training", current.manager.training],
+        ["Tactics", current.manager.tactics],
+        ["Transfers", current.manager.transferTaste],
+        ["Youth", current.manager.youthPreference],
+        ["Reputation", current.manager.reputation],
+      ] as const
+    : [];
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
       {current.manager ? (
-        <Card className="space-y-3">
-          <div className="flex items-center gap-3">
-            <PersonAvatar name={current.manager.name} seedKey={current.manager.id} kind="manager" className="h-20 w-20 text-xl" />
-            <div>
-              <h2 className="text-lg font-bold">{current.manager.name}</h2>
-              <p className="text-sm text-neutral-500">{current.manager.style} · {current.manager.personality}</p>
-              <p className="text-sm text-neutral-500">{formatWeeklyWage(current.manager.wage)} · {current.manager.contractYears} years left</p>
-            </div>
-          </div>
-          {[
-            ["Training", current.manager.training],
-            ["Tactics", current.manager.tactics],
-            ["Transfers", current.manager.transferTaste],
-            ["Youth", current.manager.youthPreference],
-            ["Reputation", current.manager.reputation],
-          ].map(([label, value]) => (
-            <div key={label} className="flex items-center gap-3">
-              <span className="w-32 text-sm text-neutral-600">{label}</span>
-              <div className="h-2 flex-1 rounded-full bg-surface-muted">
-                <div className="h-2 rounded-full bg-primary" style={{ width: `${value}%` }} />
+        <Card className="overflow-hidden p-0">
+          <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
+            <div className="flex items-center gap-3">
+              <PersonAvatar name={current.manager.name} seedKey={current.manager.id} kind="manager" className="h-20 w-20 rounded-2xl text-xl shadow-[0_12px_24px_rgba(0,0,0,0.22)]" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-normal text-white/65">Current manager</p>
+                <h2 className="truncate text-xl font-black">{current.manager.name}</h2>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-white/13 px-2 py-1 text-[10px] font-bold text-white ring-1 ring-white/15">{current.manager.style}</span>
+                  <span className="rounded-full bg-white/13 px-2 py-1 text-[10px] font-bold text-white ring-1 ring-white/15">{current.manager.personality}</span>
+                </div>
               </div>
-              <span className="w-8 text-right text-sm font-bold">{value}</span>
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-center text-primary shadow-[0_12px_24px_rgba(0,0,0,0.16)]">
+                <span className="text-lg font-black leading-none">{managerRating(current.manager)}</span>
+                <span className="text-[9px] font-black uppercase leading-none text-neutral-500">Rate</span>
+              </div>
             </div>
-          ))}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <p className="rounded-lg bg-surface-muted px-3 py-2">Rating <b className="block">{managerRating(current.manager)}</b></p>
-            <p className="rounded-lg bg-surface-muted px-3 py-2">Fire cost <b className="block">{formatMoney(fireCost)}</b></p>
           </div>
-          <p className="rounded-md bg-surface-muted px-3 py-2 text-sm">{evaluateManager(save)}</p>
-          {lockMessage ? <p className="rounded-md bg-surface-muted px-3 py-2 text-xs text-neutral-500">{lockMessage}</p> : null}
-          <Button variant="danger" className="w-full" disabled={locked} onClick={() => setFireOpen(true)}>Fire Manager</Button>
+          <div className="space-y-3 p-4">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-xl bg-surface-muted px-3 py-3">
+                <p className="font-black uppercase text-neutral-500">Wage</p>
+                <b className="mt-1 block text-sm text-foreground">{formatWeeklyWage(current.manager.wage)}</b>
+              </div>
+              <div className="rounded-xl bg-surface-muted px-3 py-3">
+                <p className="font-black uppercase text-neutral-500">Contract</p>
+                <b className="mt-1 block text-sm text-foreground">{current.manager.contractYears} years left</b>
+              </div>
+              <div className="rounded-xl bg-surface-muted px-3 py-3">
+                <p className="font-black uppercase text-neutral-500">Fire cost</p>
+                <b className="mt-1 block text-sm text-danger">{formatMoney(fireCost)}</b>
+              </div>
+              <div className="rounded-xl bg-surface-muted px-3 py-3">
+                <p className="font-black uppercase text-neutral-500">Status</p>
+                <b className="mt-1 block text-sm text-foreground">Appointed</b>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {managerAttributes.map(([label, value]) => (
+                <div key={label} className="grid grid-cols-[74px_1fr_30px] items-center gap-2">
+                  <span className="text-xs font-bold text-neutral-600">{label}</span>
+                  <div className="h-2 rounded-full bg-surface-muted">
+                    <div className="h-2 rounded-full bg-primary" style={{ width: `${value}%` }} />
+                  </div>
+                  <span className="text-right text-xs font-black">{value}</span>
+                </div>
+              ))}
+            </div>
+            <p className="rounded-xl bg-emerald-50 px-3 py-3 text-sm leading-5 text-emerald-950">{evaluateManager(save)}</p>
+            {lockMessage ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-500">{lockMessage}</p> : null}
+            <Button variant="danger" className="w-full" disabled={locked} onClick={() => setFireOpen(true)}>Fire Manager</Button>
+          </div>
         </Card>
       ) : (
         <Card className="space-y-3">
@@ -505,23 +535,57 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       )}
       <div className="space-y-3">
         <h3 className="text-sm font-bold">Available Managers</h3>
-        {save.managerCandidates.map((manager) => (
-          <Card key={manager.id} className="space-y-3 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-12 w-12 shrink-0 text-sm" />
-                <div className="min-w-0">
-                <p className="font-bold">{manager.name}</p>
-                <p className="text-xs text-neutral-500">{manager.style} · {manager.personality}</p>
-                <p className="text-xs text-neutral-500">{manager.status === "contracted" ? "Under Contract" : "Free Agent"} · Expected {formatWeeklyWage(calculateRecommendedManagerWage(manager, divisionLevel))}</p>
+        {save.managerCandidates.map((manager) => {
+          const expectedWage = calculateRecommendedManagerWage(manager, divisionLevel);
+          const compensation = manager.status === "contracted" ? manager.compensationFee ?? calculateManagerCompensation(manager) : 0;
+          return (
+            <Card key={manager.id} className="space-y-3 p-3">
+              <div className="flex items-start gap-3">
+                <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-14 w-14 shrink-0 rounded-xl text-sm" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-black">{manager.name}</p>
+                      <p className="truncate text-xs text-neutral-500">{manager.style} · {manager.personality}</p>
+                    </div>
+                    <span className="shrink-0 rounded-xl bg-primary px-2.5 py-1.5 text-xs font-black text-white">{managerRating(manager)}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase", manager.status === "contracted" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")}>
+                      {manager.status === "contracted" ? "Under Contract" : "Free Agent"}
+                    </span>
+                    <span className="rounded-full bg-surface-muted px-2 py-1 text-[10px] font-black uppercase text-neutral-600">Expected {formatWeeklyWage(expectedWage)}</span>
+                  </div>
                 </div>
               </div>
-              <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{managerRating(manager)}</p>
-            </div>
-            {manager.status === "contracted" ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Club compensation: <b>{formatMoney(manager.compensationFee ?? calculateManagerCompensation(manager))}</b></p> : null}
-            <Button className="w-full" disabled={!canNegotiate} onClick={() => setHireId(manager.id)}>Negotiate</Button>
-          </Card>
-        ))}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-xl bg-surface-muted px-3 py-2">
+                  <p className="font-black uppercase text-neutral-500">Training</p>
+                  <b className="mt-0.5 block">{manager.training}</b>
+                </div>
+                <div className="rounded-xl bg-surface-muted px-3 py-2">
+                  <p className="font-black uppercase text-neutral-500">Tactics</p>
+                  <b className="mt-0.5 block">{manager.tactics}</b>
+                </div>
+                <div className="rounded-xl bg-surface-muted px-3 py-2">
+                  <p className="font-black uppercase text-neutral-500">Transfers</p>
+                  <b className="mt-0.5 block">{manager.transferTaste}</b>
+                </div>
+                <div className="rounded-xl bg-surface-muted px-3 py-2">
+                  <p className="font-black uppercase text-neutral-500">Youth</p>
+                  <b className="mt-0.5 block">{manager.youthPreference}</b>
+                </div>
+              </div>
+              {manager.status === "contracted" ? (
+                <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  <p className="font-black uppercase">Club compensation</p>
+                  <b className="mt-1 block text-sm">{formatMoney(compensation)}</b>
+                </div>
+              ) : null}
+              <Button className="w-full" disabled={!canNegotiate} onClick={() => setHireId(manager.id)}>Negotiate</Button>
+            </Card>
+          );
+        })}
       </div>
       {fireOpen && current.manager ? (
         <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
