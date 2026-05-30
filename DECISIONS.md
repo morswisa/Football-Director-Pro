@@ -48,6 +48,7 @@
 - Lower-league season awards should be modest for poor finishes, with the stronger upside reserved for promotion and top finishes.
 - Season transition clarity is part of V1: after a season ends, the player must see the prior season summary before the next season intro, including prize money, promotion/relegation/stay status, next division, record, cup run, and trophies.
 - Season summaries must also explain season-level impact on balance, board confidence, manager trust, and club reputation because those values are core feedback loops for chairman performance.
+- Season-summary events should feel like a season review, not a compact data grid: lead with finish/outcome, then show record, money, next league, cup run, trophies, and relationship/economy impact as scannable cards.
 - Completed-season History must preserve that feedback with explicit `Season impact` wording and point units for board confidence, manager trust, and reputation.
 - Achievements are a V1 meta-progression surface and should be verified from real gameplay actions, not only rendered as a static list.
 - V1 balance must be backed by edge-case tests for systems that can end or derail a career: debt limits, manager churn, facility economics, and promotion/relegation movement.

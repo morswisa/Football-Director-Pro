@@ -1719,37 +1719,75 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
 function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
   const goalDifference = (history.goalsFor ?? 0) - (history.goalsAgainst ?? 0);
   const outcomeLabel = history.outcome === "promoted" ? "Promoted" : history.outcome === "relegated" ? "Relegated" : "Stayed";
+  const outcomeTone = history.outcome === "promoted" ? "positive" : history.outcome === "relegated" ? "negative" : "neutral";
   const impact = history.seasonImpact;
   return (
-    <div className="mt-4 space-y-3">
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Finish <b className="block">{ordinal(history.position)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Points <b className="block">{history.points}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Record <b className="block">{history.won ?? 0}-{history.drawn ?? 0}-{history.lost ?? 0}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Goal diff <b className="block">{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Season award <b className="block">{formatMoney(history.prizeMoney ?? 0)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Balance <b className="block">{formatMoney(history.balance)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Outcome <b className={cn("block", history.outcome === "promoted" ? "text-primary" : history.outcome === "relegated" ? "text-danger" : "")}>{outcomeLabel}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Next league <b className="block truncate">{history.nextDivisionName ?? history.divisionName}</b></p>
+    <div className="mt-4 space-y-4">
+      <div className={cn(
+        "overflow-hidden rounded-2xl border shadow-[0_14px_30px_rgba(16,36,27,0.08)]",
+        outcomeTone === "positive" && "border-emerald-100 bg-[linear-gradient(135deg,_#ecfdf5,_#ffffff)]",
+        outcomeTone === "negative" && "border-red-100 bg-[linear-gradient(135deg,_#fff1f2,_#ffffff)]",
+        outcomeTone === "neutral" && "border-line bg-[linear-gradient(135deg,_#f5faf6,_#ffffff)]",
+      )}>
+        <div className={cn(
+          "flex items-center gap-3 px-4 py-4",
+          outcomeTone === "positive" && "bg-emerald-950 text-white",
+          outcomeTone === "negative" && "bg-red-950 text-white",
+          outcomeTone === "neutral" && "bg-[linear-gradient(135deg,_#10241b,_#155f3a)] text-white",
+        )}>
+          <span className={cn(
+            "grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-2xl font-black shadow-[0_10px_24px_rgba(0,0,0,0.18)]",
+            outcomeTone === "positive" && "text-primary",
+            outcomeTone === "negative" && "text-danger",
+            outcomeTone === "neutral" && "text-emerald-950",
+          )}>{ordinal(history.position)}</span>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase text-white/70">{history.divisionName}</p>
+            <p className="text-xl font-black leading-tight">{outcomeLabel}</p>
+            <p className="mt-1 text-xs text-white/70">Next league: {history.nextDivisionName ?? history.divisionName}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 border-t border-white/40 bg-white text-center text-xs">
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Pts</small>{history.points}</span>
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">W-D-L</small>{history.won ?? 0}-{history.drawn ?? 0}-{history.lost ?? 0}</span>
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">GD</small>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</span>
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Played</small>{history.played ?? 0}</span>
+        </div>
       </div>
-      <div className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
-        <b className="block text-neutral-800">Cup</b>
-        {history.cupSummary ?? "No cup record."}
+
+      <div className="grid grid-cols-2 gap-2">
+        <EventMetricTile label="Season award" value={formatMoney(history.prizeMoney ?? 0)} tone={(history.prizeMoney ?? 0) > 0 ? "positive" : "neutral"} />
+        <EventMetricTile label="Closing balance" value={formatMoney(history.balance)} tone={history.balance < 0 ? "negative" : "neutral"} />
+        <EventMetricTile label="Outcome" value={outcomeLabel} tone={outcomeTone} />
+        <EventMetricTile label="Next league" value={history.nextDivisionName ?? history.divisionName} />
       </div>
+
+      <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)]">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-950 text-white"><Trophy size={19} /></span>
+          <div>
+            <p className="text-xs font-black uppercase text-primary">Cup run</p>
+            <p className="text-sm font-bold text-neutral-700">{history.cupSummary ?? "No cup record."}</p>
+          </div>
+        </div>
+        {history.trophies.length > 0 ? (
+          <div className="flex flex-wrap gap-2 px-4 py-3">
+            {history.trophies.map((trophy) => (
+              <span key={trophy} className="rounded-full bg-primary px-3 py-1.5 text-xs font-black text-white">{trophy}</span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
       {impact ? (
-        <ImpactBox>
-          <b className="block">Season impact</b>
-          <span>Balance {formatSignedMoney(impact.balanceAfter - impact.balanceBefore)}</span>
-          <span className="block">Board {formatSignedPoints(impact.boardConfidenceAfter - impact.boardConfidenceBefore)} ({impact.boardConfidenceBefore}% to {impact.boardConfidenceAfter}%)</span>
-          <span className="block">Manager trust {formatSignedPoints(impact.managerTrustAfter - impact.managerTrustBefore)} ({impact.managerTrustBefore}% to {impact.managerTrustAfter}%)</span>
-          <span className="block">Club reputation {formatSignedPoints(impact.reputationAfter - impact.reputationBefore)} ({impact.reputationBefore} to {impact.reputationAfter})</span>
-        </ImpactBox>
-      ) : null}
-      {history.trophies.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {history.trophies.map((trophy) => (
-            <span key={trophy} className="rounded-md bg-primary px-2 py-1 text-xs font-black text-white">{trophy}</span>
-          ))}
+        <div className="rounded-2xl border border-line bg-white p-3">
+          <p className="mb-2 text-xs font-black uppercase text-neutral-500">Season impact</p>
+          <div className="grid grid-cols-2 gap-2">
+            <EventMetricTile label="Balance" value={formatSignedMoney(impact.balanceAfter - impact.balanceBefore)} tone={impact.balanceAfter >= impact.balanceBefore ? "positive" : "negative"} />
+            <EventMetricTile label="Board" value={`${formatSignedPoints(impact.boardConfidenceAfter - impact.boardConfidenceBefore)} (${impact.boardConfidenceBefore}% to ${impact.boardConfidenceAfter}%)`} tone={impact.boardConfidenceAfter >= impact.boardConfidenceBefore ? "positive" : "negative"} />
+            <EventMetricTile label="Trust" value={`${formatSignedPoints(impact.managerTrustAfter - impact.managerTrustBefore)} (${impact.managerTrustBefore}% to ${impact.managerTrustAfter}%)`} tone={impact.managerTrustAfter >= impact.managerTrustBefore ? "positive" : "negative"} />
+            <EventMetricTile label="Reputation" value={`${formatSignedPoints(impact.reputationAfter - impact.reputationBefore)} (${impact.reputationBefore} to ${impact.reputationAfter})`} tone={impact.reputationAfter >= impact.reputationBefore ? "positive" : "negative"} />
+          </div>
         </div>
       ) : null}
     </div>
@@ -1910,6 +1948,7 @@ function EventModal({ save }: { save: GameSave }) {
   const statusLabel = event.requiresDecision ? "Decision required" : event.type === "match_preview" ? "Match choice" : "Club update";
   const periodLabel = `${seasonLabel(save.season)} · ${monthForWeek(event.createdWeek || save.week)} · Period ${event.createdWeek || save.week}`;
   const queueLabel = save.eventQueue.length > 0 ? `${save.eventQueue.length} queued` : "Current item";
+  const showEventNote = Boolean(event.note && event.type !== "season_summary");
 
   if (result && save.liveMatch && !save.liveMatch.finished) return <LiveMatchModal save={save} result={result} />;
 
@@ -1932,7 +1971,7 @@ function EventModal({ save }: { save: GameSave }) {
           <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm leading-6 ring-1", tone.accent)}>
             {event.body}
           </div>
-          {event.note ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
+          {showEventNote ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
           <SpecialEventPanel save={save} />
 
         {event.type === "season_intro" ? (
