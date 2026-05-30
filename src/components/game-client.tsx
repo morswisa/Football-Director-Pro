@@ -10,7 +10,7 @@ import { Card, StatCard } from "./ui/card";
 import { calculateSaleImpact, evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
 import { cupRoundName, monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
-import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
+import type { ContractTerms, FinancialSnapshot, GameEventType, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
 import { cn, formatMoney, ordinal, pct } from "@/lib/utils";
 import { useGameStore } from "@/store/game-store";
 
@@ -87,6 +87,39 @@ function positionOrder(position: Position | string) {
 
 function formatWeeklyWage(value: number) {
   return `${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(Math.round(value))}/w`;
+}
+
+function eventCategory(type: GameEventType) {
+  if (["match_preview", "match_result"].includes(type)) return "Match day";
+  if (["financial_report", "bank_warning", "transfer_budget"].includes(type)) return "Club finance";
+  if (["contract_offer", "contract_response", "incoming_bid", "sale_ready", "sale_confirmed"].includes(type)) return "Squad business";
+  if (["manager_frustrated", "manager_retirement_hint", "manager_contract_decision"].includes(type)) return "Manager office";
+  if (["youth_contract", "youth_promoted"].includes(type)) return "Academy";
+  if (["season_intro", "season_summary", "transfer_window_open", "average_crowd_report"].includes(type)) return "Season desk";
+  if (type === "hall_of_fame") return "Club legacy";
+  return "Club update";
+}
+
+function eventToneClasses(variant?: "positive" | "negative" | "neutral") {
+  if (variant === "negative") {
+    return {
+      header: "bg-[linear-gradient(135deg,_#331116,_#9f1d32)] text-white",
+      chip: "bg-white/14 text-white ring-white/20",
+      accent: "bg-red-50 text-danger ring-red-100",
+    };
+  }
+  if (variant === "positive") {
+    return {
+      header: "bg-[linear-gradient(135deg,_#10241b,_#108842_60%,_#2bbf64)] text-white",
+      chip: "bg-white/14 text-white ring-white/20",
+      accent: "bg-emerald-50 text-primary ring-emerald-100",
+    };
+  }
+  return {
+    header: "bg-[linear-gradient(135deg,_#10241b,_#155f3a_58%,_#295e9c)] text-white",
+    chip: "bg-white/14 text-white ring-white/20",
+    accent: "bg-surface-muted text-neutral-700 ring-line",
+  };
 }
 
 function uniqueMoneyOptions(base: number, multipliers: number[], nearest = 50) {
@@ -1236,37 +1269,56 @@ function EventEntityHeader({ save }: { save: GameSave }) {
           ? "Current squad player"
           : `External player from ${sourceClub?.name ?? "another club"}`;
     return (
-      <div className="flex items-center gap-3 rounded-lg bg-surface-muted p-3">
-        <PersonAvatar name={player.name} seedKey={player.id} className="h-16 w-16 text-base" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-black">{player.name}</p>
-          <p className="truncate text-[11px] font-semibold uppercase text-neutral-500">{context}</p>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
-            <span className={cn("rounded-md px-2 py-1 font-black text-white", positionClass(player.position))}><small className="block text-[9px] opacity-80">Pos</small>{displayPosition(player.position)}</span>
-            <span className="rounded-md bg-white px-2 py-1 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{player.rating}/100</span>
-            <span className="rounded-md bg-white px-2 py-1 font-black"><small className="block text-[9px] text-neutral-500">Age</small>{player.age}</span>
+      <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+        <div className="flex items-center gap-3 p-3">
+          <PersonAvatar name={player.name} seedKey={player.id} className="h-16 w-16 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11px] font-black uppercase text-primary">{context}</p>
+            <p className="truncate text-lg font-black leading-tight">{player.name}</p>
+            <p className="mt-1 text-xs text-neutral-500">Wage {formatWeeklyWage(player.wage)} · Contract {player.contractYears}y</p>
           </div>
+        </div>
+        <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+          <span className={cn("px-2 py-2 font-black text-white", positionClass(player.position))}><small className="block text-[9px] opacity-80">Pos</small>{displayPosition(player.position)}</span>
+          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{player.rating}/100</span>
+          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Age</small>{player.age}</span>
         </div>
       </div>
     );
   }
   if (manager) {
     return (
-      <div className="flex items-center gap-3 rounded-lg bg-surface-muted p-3">
-        <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-16 w-16 text-base" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-black">{manager.name}</p>
-          <p className="text-xs text-neutral-500">Age {manager.age} · Rating {managerRating(manager)} · Trust {current.club.managerTrust ?? 66}%</p>
+      <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+        <div className="flex items-center gap-3 p-3">
+          <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-16 w-16 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-black uppercase text-primary">Manager office</p>
+            <p className="truncate text-lg font-black leading-tight">{manager.name}</p>
+            <p className="mt-1 text-xs text-neutral-500">Age {manager.age} · {manager.style} · {manager.personality}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{managerRating(manager)}</span>
+          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Trust</small>{current.club.managerTrust ?? 66}%</span>
+          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Wage</small>{formatWeeklyWage(manager.wage)}</span>
         </div>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-surface-muted p-3">
-      <BrandMark className="h-16 w-16 shrink-0 rounded-lg" />
-      <div>
-        <p className="text-base font-black">{current.club.name}</p>
-        <p className="text-xs text-neutral-500">Balance {formatMoney(current.club.finances.balance)}</p>
+    <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+      <div className="flex items-center gap-3 p-3">
+        <BrandMark className="h-16 w-16 shrink-0 rounded-2xl shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-black uppercase text-primary">Chairman desk</p>
+          <p className="truncate text-lg font-black leading-tight">{current.club.name}</p>
+          <p className="mt-1 text-xs text-neutral-500">{seasonLabel(save.season)} · {monthForWeek(save.week)} · Period {save.week}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
+        <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Balance</small>{formatMoney(current.club.finances.balance)}</span>
+        <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Board</small>{current.club.boardConfidence}%</span>
+        <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Rep</small>{current.club.reputation}</span>
       </div>
     </div>
   );
@@ -1671,19 +1723,33 @@ function EventModal({ save }: { save: GameSave }) {
   const requestedYears = proposal?.requestedYears ?? 3;
   const result = event.type === "match_result" && save.lastMatch?.result ? save.lastMatch.result : undefined;
   const nextFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
+  const tone = eventToneClasses(event.variant);
+  const statusLabel = event.requiresDecision ? "Decision required" : event.type === "match_preview" ? "Match choice" : "Club update";
+  const periodLabel = `${seasonLabel(save.season)} · ${monthForWeek(event.createdWeek || save.week)} · Period ${event.createdWeek || save.week}`;
+  const queueLabel = save.eventQueue.length > 0 ? `${save.eventQueue.length} queued` : "Current item";
 
   if (result && save.liveMatch && !save.liveMatch.finished) return <LiveMatchModal save={save} result={result} />;
 
   return (
-    <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-5">
-      <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="max-h-[calc(100svh-2rem)] w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
-        <p className={cn("text-xs font-semibold uppercase", event.variant === "negative" ? "text-danger" : "text-primary")}>{event.requiresDecision ? "Decision required" : "Club update"}</p>
-        <h2 id="event-title" className="mt-1 text-xl font-black">{event.title}</h2>
-        <div className="mt-4">
-          <EventEntityHeader save={save} />
+    <div className="absolute inset-0 z-30 grid place-items-center bg-[radial-gradient(circle_at_top,_rgba(15,129,57,0.24),_rgba(16,36,27,0.7))] p-4 backdrop-blur-[2px]">
+      <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="max-h-[calc(100svh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[1.35rem] border border-white/40 bg-white shadow-[0_28px_70px_rgba(16,36,27,0.32)]">
+        <div className={cn("relative overflow-hidden px-5 py-4", tone.header)}>
+          <div className="pointer-events-none absolute inset-0 opacity-20 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.35)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.18)_58%_60%,transparent_60%)]" />
+          <div className="relative flex flex-wrap items-center gap-2">
+            <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", tone.chip)}>{statusLabel}</span>
+            <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", tone.chip)}>{eventCategory(event.type)}</span>
+            <span className="ml-auto rounded-full bg-black/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white/85 ring-1 ring-white/15">{queueLabel}</span>
+          </div>
+          <h2 id="event-title" className="relative mt-3 text-2xl font-black leading-tight">{event.title}</h2>
+          <p className="relative mt-1 text-xs font-semibold text-white/75">{periodLabel}</p>
         </div>
-        <p className="mt-4 text-sm leading-6 text-neutral-700">{event.body}</p>
-        {event.note ? <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-5 text-neutral-600">{event.note}</p> : null}
+
+        <div className="p-5">
+          <EventEntityHeader save={save} />
+          <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm leading-6 ring-1", tone.accent)}>
+            {event.body}
+          </div>
+          {event.note ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
 
         {event.type === "season_intro" ? (
           <div className="mt-4 space-y-2">
@@ -1836,9 +1902,12 @@ function EventModal({ save }: { save: GameSave }) {
         ) : null}
 
         {!["transfer_budget", "manager_contract_decision", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type) ? (
-          <Button className="mt-5 w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
+          <div className="mt-5 border-t border-line pt-3">
+            <Button className="w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
+          </div>
         ) : null}
         {nextFixture && event.type === "match_preview" ? <p className="mt-3 text-center text-xs text-neutral-500">{save.clubs[nextFixture.homeClubId].name} vs {save.clubs[nextFixture.awayClubId].name}</p> : null}
+        </div>
       </div>
     </div>
   );
