@@ -89,6 +89,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `GameSave.pendingDeals` stores staged sale flows between incoming bid, sale ready, and sale confirmed.
 - `GameSave.financialSnapshot` stores the latest generated financial breakdown for display and persistence.
 - `latestFinancialSnapshot(save)` is the shared read model for Dashboard, Finance, and financial event cards, including opening balance, closing balance, income, expenses, and period profit/loss.
+- The Finances tab presents the latest snapshot through mobile metric tiles rather than a narrow label/value table, while preserving stable `finance-summary-*` test IDs for reconciliation tests.
 - Financial report cards show period total income, total expenses, and report result beside opening/closing balance. Browser acceptance compares those values against Dashboard and the Finances screen after several Continue periods.
 - `buildFinancialLines` is the shared weekly finance line-item model for both balance mutation and financial snapshots. Weekly operations use the operating subset, while report snapshots also fold in same-week transfer, loan, manager, prize, and cup transactions that already changed the balance.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.

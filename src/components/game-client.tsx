@@ -614,21 +614,42 @@ function FinancesTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   const current = useCurrent(save)!;
   const finance = current.club.finances;
   const latestFinance = latestFinancialSnapshot(save);
+  const summaryItems = [
+    { label: "Report income", value: formatMoney(latestFinance.totalIncome), testId: "finance-summary-income", tone: "positive" },
+    { label: "Report expenses", value: formatMoney(latestFinance.totalExpenses), testId: "finance-summary-expenses", tone: "negative" },
+    { label: "Report result", value: formatMoney(latestFinance.profit), testId: "finance-summary-result", tone: latestFinance.profit >= 0 ? "positive" : "negative" },
+    { label: "Weekly wages", value: formatMoney(finance.weeklyWages) },
+    { label: "Opening balance", value: formatMoney(latestFinance.balanceBefore), testId: "finance-summary-opening" },
+    { label: "Closing balance", value: formatMoney(latestFinance.balanceAfter), testId: "finance-summary-closing" },
+    { label: "Sponsorship", value: formatMoney(finance.sponsorship), detail: "annual" },
+    { label: "Board", value: pct(current.club.boardConfidence), detail: "confidence" },
+  ];
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
       <StatCard label="Balance" value={formatMoney(finance.balance)} detail={`Debt limit ${formatMoney(finance.debtLimit)}`} />
-      <Card>
-        <div className="grid grid-cols-[110px_1fr] gap-y-3 text-sm">
-          <span className="text-neutral-500">Report period</span><b data-testid="finance-summary-period">{latestFinance.month} · Period {latestFinance.week}</b>
-          <span className="text-neutral-500">Report income</span><b data-testid="finance-summary-income" className="text-primary">{formatMoney(latestFinance.totalIncome)}</b>
-          <span className="text-neutral-500">Report expenses</span><b data-testid="finance-summary-expenses" className="text-danger">{formatMoney(latestFinance.totalExpenses)}</b>
-          <span className="text-neutral-500">Report result</span><b data-testid="finance-summary-result" className={latestFinance.profit >= 0 ? "text-primary" : "text-danger"}>{formatMoney(latestFinance.profit)}</b>
-          <span className="text-neutral-500">Opening balance</span><b data-testid="finance-summary-opening">{formatMoney(latestFinance.balanceBefore)}</b>
-          <span className="text-neutral-500">Closing balance</span><b data-testid="finance-summary-closing">{formatMoney(latestFinance.balanceAfter)}</b>
-          <span className="text-neutral-500">Weekly wages</span><b>{formatMoney(finance.weeklyWages)}</b>
-          <span className="text-neutral-500">Annual sponsorship</span><b>{formatMoney(finance.sponsorship)}</b>
-          <span className="text-neutral-500">Board confidence</span><b>{pct(current.club.boardConfidence)}</b>
+      <Card className="space-y-3">
+        <div className="rounded-xl bg-surface-muted px-3 py-3">
+          <p className="text-[10px] font-black uppercase text-neutral-500">Report period</p>
+          <b data-testid="finance-summary-period" className="mt-1 block text-base">{latestFinance.month} · Period {latestFinance.week}</b>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {summaryItems.map((item) => (
+            <div key={item.label} className="min-h-[74px] rounded-xl border border-line/80 bg-white px-3 py-3 shadow-[0_8px_18px_rgba(23,33,27,0.04)]">
+              <p className="text-[10px] font-black uppercase text-neutral-500">{item.label}</p>
+              <b
+                data-testid={item.testId}
+                className={cn(
+                  "mt-1 block text-base",
+                  item.tone === "positive" && "text-primary",
+                  item.tone === "negative" && "text-danger",
+                )}
+              >
+                {item.value}
+              </b>
+              {item.detail ? <p className="mt-1 text-[10px] font-semibold uppercase text-neutral-400">{item.detail}</p> : null}
+            </div>
+          ))}
         </div>
       </Card>
       <Card>
