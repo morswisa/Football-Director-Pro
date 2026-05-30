@@ -49,6 +49,7 @@
 - Season transition clarity is part of V1: after a season ends, the player must see the prior season summary before the next season intro, including prize money, promotion/relegation/stay status, next division, record, cup run, and trophies.
 - Season summaries must also explain season-level impact on balance, board confidence, manager trust, and club reputation because those values are core feedback loops for chairman performance.
 - Completed-season History must preserve that feedback with explicit `Season impact` wording and point units for board confidence, manager trust, and reputation.
+- Achievements are a V1 meta-progression surface and should be verified from real gameplay actions, not only rendered as a static list.
 - V1 balance must be backed by edge-case tests for systems that can end or derail a career: debt limits, manager churn, facility economics, and promotion/relegation movement.
 - Fixture generation must preserve one user-club league match per round; promotion/relegation must keep division sizes stable so the Continue loop cannot stall after a season transition.
 - Fixture IDs must be season-scoped because event dedupe keys are persisted across weeks and seasons.

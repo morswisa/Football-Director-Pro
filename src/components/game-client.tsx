@@ -731,7 +731,7 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
         <h3 className="mb-3 text-sm font-bold">Achievements</h3>
         <div className="space-y-2">
           {save.achievements.map((achievement) => (
-            <div key={achievement.id} className="flex items-center gap-3 rounded-md bg-surface-muted px-3 py-2 text-sm">
+            <div key={achievement.id} data-testid={`achievement-${achievement.id}`} className="flex items-center gap-3 rounded-md bg-surface-muted px-3 py-2 text-sm">
               <Award size={16} className={achievement.unlockedAt ? "text-primary" : "text-neutral-400"} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -740,7 +740,7 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
                 </div>
                 <p className="text-xs text-neutral-500">{achievement.description}</p>
                 <div className="mt-2 h-1.5 rounded-full bg-white">
-                  <div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
+                  <div data-testid={`achievement-progress-${achievement.id}`} className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
                 </div>
               </div>
             </div>

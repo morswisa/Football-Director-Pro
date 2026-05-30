@@ -1305,4 +1305,11 @@ test("stadium upgrades and repairs show clear financial impact", async ({ page }
   await expect(page.getByText("Infrastructure spending")).toBeVisible();
   await expect(page.getByText("Stadium repair", { exact: true })).toBeVisible();
   await expect(page.getByText(/Stadium upgrade:/)).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Record/i }).click();
+  const stadiumAchievement = page.getByTestId("achievement-stadium_upgrade");
+  await expect(stadiumAchievement).toContainText("Concrete Plans");
+  await expect(stadiumAchievement).toContainText("Unlocked");
+  await expect(page.getByTestId("achievement-progress-stadium_upgrade")).toHaveAttribute("style", /width:\s*100%/);
 });
