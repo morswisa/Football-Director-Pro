@@ -216,9 +216,19 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
   const noseX = avatarRange(seed, 54, 59, 14);
   const mouthY = avatarRange(seed, 64, 67, 15);
   const headTilt = avatarRange(seed, -4, 4, 16);
+  const eyeStyle = avatarPick(seed, ["focused", "narrow", "round", "heavy", "wide"], 17);
+  const browStyle = avatarPick(seed, ["straight", "arched", "low", "split", "severe"], 18);
+  const noseStyle = avatarPick(seed, ["straight", "hook", "wide", "sharp", "flat"], 19);
+  const mouthStyle = avatarPick(seed, ["flat", "pressed", "smirk", "downturn", "soft"], 20);
+  const cheekStyle = avatarPick(seed, ["blade", "soft", "hollow", "high"], 21);
+  const hairlineStyle = avatarPick(seed, ["low", "widow", "receding", "broken", "straight"], 22);
+  const facialHairStyle = kind === "manager"
+    ? avatarPick(seed, ["stubble", "beard", "moustache", "goatee", "clean"], 23)
+    : avatarPick(seed, ["clean", "stubble", "moustache", "goatee"], 23);
   const mirror = seed % 2 === 0;
-  const hasStubble = kind === "manager" || seed % 3 === 0;
-  const hasBeard = kind === "manager" && seed % 4 === 0;
+  const hasStubble = facialHairStyle === "stubble" || facialHairStyle === "beard" || facialHairStyle === "goatee";
+  const hasBeard = facialHairStyle === "beard";
+  const hasMoustache = facialHairStyle === "moustache" || facialHairStyle === "goatee" || facialHairStyle === "beard";
   const hasGlasses = kind === "manager" && seed % 6 === 0;
   const hasScar = seed % 17 === 0;
   const facePath = faceShape === "square"
@@ -241,6 +251,82 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
             : "M30 42 C32 26 39 20 46 22 L50 13 L57 25 L66 17 L75 32 C61 28 47 35 30 42 Z";
   const eyeLeft = 46;
   const eyeRight = 64;
+  const leftEyePath = eyeStyle === "round"
+    ? `M${eyeLeft - 5} ${eyeY} Q${eyeLeft - 1} ${eyeY - 4} ${eyeLeft + 6} ${eyeY} Q${eyeLeft - 1} ${eyeY + 2} ${eyeLeft - 5} ${eyeY}`
+    : eyeStyle === "wide"
+      ? `M${eyeLeft - 7} ${eyeY} Q${eyeLeft - 1} ${eyeY - 3} ${eyeLeft + 7} ${eyeY - 0.5}`
+      : eyeStyle === "heavy"
+        ? `M${eyeLeft - 6} ${eyeY - 1} Q${eyeLeft - 1} ${eyeY + 2} ${eyeLeft + 6} ${eyeY - 1}`
+        : eyeStyle === "narrow"
+          ? `M${eyeLeft - 6} ${eyeY + 1} Q${eyeLeft - 1} ${eyeY - 1} ${eyeLeft + 6} ${eyeY + 0.5}`
+          : `M${eyeLeft - 5} ${eyeY} Q${eyeLeft - 1} ${eyeY - 2.5} ${eyeLeft + 5} ${eyeY}`;
+  const rightEyePath = eyeStyle === "round"
+    ? `M${eyeRight - 5} ${eyeY + 1} Q${eyeRight} ${eyeY - 3} ${eyeRight + 6} ${eyeY + 1} Q${eyeRight} ${eyeY + 3} ${eyeRight - 5} ${eyeY + 1}`
+    : eyeStyle === "wide"
+      ? `M${eyeRight - 7} ${eyeY + 1} Q${eyeRight} ${eyeY - 2} ${eyeRight + 7} ${eyeY + 0.5}`
+      : eyeStyle === "heavy"
+        ? `M${eyeRight - 6} ${eyeY} Q${eyeRight} ${eyeY + 3} ${eyeRight + 6} ${eyeY}`
+        : eyeStyle === "narrow"
+          ? `M${eyeRight - 6} ${eyeY + 2} Q${eyeRight} ${eyeY} ${eyeRight + 6} ${eyeY + 1.5}`
+          : `M${eyeRight - 5} ${eyeY + 1} Q${eyeRight} ${eyeY - 1.5} ${eyeRight + 5} ${eyeY + 1}`;
+  const leftBrowPath = browStyle === "arched"
+    ? `M${eyeLeft - 8} ${eyeY - 7 + browTilt} Q${eyeLeft - 1} ${eyeY - 13} ${eyeLeft + 8} ${eyeY - 8}`
+    : browStyle === "low"
+      ? `M${eyeLeft - 8} ${eyeY - 5 + browTilt} Q${eyeLeft - 1} ${eyeY - 7} ${eyeLeft + 8} ${eyeY - 5}`
+      : browStyle === "split"
+        ? `M${eyeLeft - 8} ${eyeY - 8 + browTilt} L${eyeLeft - 1} ${eyeY - 10} M${eyeLeft + 2} ${eyeY - 9} L${eyeLeft + 8} ${eyeY - 7}`
+        : browStyle === "severe"
+          ? `M${eyeLeft - 8} ${eyeY - 9 + browTilt} L${eyeLeft + 8} ${eyeY - 5}`
+          : `M${eyeLeft - 7} ${eyeY - 7 + browTilt} Q${eyeLeft - 1} ${eyeY - 10} ${eyeLeft + 6} ${eyeY - 7}`;
+  const rightBrowPath = browStyle === "arched"
+    ? `M${eyeRight - 8} ${eyeY - 6 - browTilt} Q${eyeRight} ${eyeY - 12} ${eyeRight + 8} ${eyeY - 6}`
+    : browStyle === "low"
+      ? `M${eyeRight - 8} ${eyeY - 4 - browTilt} Q${eyeRight} ${eyeY - 6} ${eyeRight + 8} ${eyeY - 4}`
+      : browStyle === "split"
+        ? `M${eyeRight - 8} ${eyeY - 7 - browTilt} L${eyeRight - 1} ${eyeY - 9} M${eyeRight + 2} ${eyeY - 8} L${eyeRight + 8} ${eyeY - 6}`
+        : browStyle === "severe"
+          ? `M${eyeRight - 8} ${eyeY - 5 - browTilt} L${eyeRight + 8} ${eyeY - 9}`
+          : `M${eyeRight - 6} ${eyeY - 6 - browTilt} Q${eyeRight} ${eyeY - 9} ${eyeRight + 6} ${eyeY - 5}`;
+  const nosePath = noseStyle === "hook"
+    ? `M${noseX - 1} 43 C${noseX + 5} 50 ${noseX + 2} 57 ${noseX + 8} 61`
+    : noseStyle === "wide"
+      ? `M${noseX - 2} 43 C${noseX + 1} 51 ${noseX - 5} 57 ${noseX + 3} 61`
+      : noseStyle === "sharp"
+        ? `M${noseX + 1} 43 L${noseX - 3} 58 L${noseX + 5} 60`
+        : noseStyle === "flat"
+          ? `M${noseX - 2} 44 C${noseX + 1} 51 ${noseX - 1} 56 ${noseX + 4} 59`
+          : `M${noseX} 43 C${noseX + 3} 50 ${noseX - 3} 56 ${noseX + 4} 60`;
+  const nostrilPath = noseStyle === "wide"
+    ? `M${noseX - 4} 61 C${noseX - 1} 63 ${noseX + 5} 63 ${noseX + 9} 60`
+    : `M${noseX - 1} 60 C${noseX + 2} 62 ${noseX + 5} 62 ${noseX + 7} 60`;
+  const mouthPath = mouthStyle === "smirk"
+    ? `M43 ${mouthY + 1} C50 ${mouthY + 4} 59 ${mouthY + 1} 66 ${mouthY - 3}`
+    : mouthStyle === "downturn"
+      ? `M44 ${mouthY - 1} C51 ${mouthY - 3} 59 ${mouthY - 2} 65 ${mouthY + 2}`
+      : mouthStyle === "pressed"
+        ? `M44 ${mouthY} L64 ${mouthY - 1}`
+        : mouthStyle === "soft"
+          ? `M45 ${mouthY} C51 ${mouthY + 3} 59 ${mouthY + 3} 65 ${mouthY - 1}`
+          : `M44 ${mouthY} C50 ${mouthY + 2} 58 ${mouthY + 1} 64 ${mouthY - 2}`;
+  const lowerLipPath = mouthStyle === "pressed"
+    ? `M48 ${mouthY + 3} C53 ${mouthY + 4} 59 ${mouthY + 4} 63 ${mouthY + 2}`
+    : `M48 ${mouthY + 4} C53 ${mouthY + 6} 59 ${mouthY + 5} 63 ${mouthY + 2}`;
+  const cheekPath = cheekStyle === "high"
+    ? "M39 55 C45 50 51 50 58 54"
+    : cheekStyle === "hollow"
+      ? "M38 58 C45 64 56 63 64 56"
+      : cheekStyle === "soft"
+        ? "M40 57 C47 60 56 59 63 56"
+        : "M38 56 L58 53 L67 59";
+  const hairlinePath = hairlineStyle === "widow"
+    ? "M38 37 C45 29 50 39 56 31 C62 28 68 31 74 38"
+    : hairlineStyle === "receding"
+      ? "M36 36 C43 28 49 33 56 28 C64 27 70 32 75 39"
+      : hairlineStyle === "broken"
+        ? "M34 38 C39 31 45 35 49 30 C53 36 58 29 64 31 C69 33 72 36 75 41"
+        : hairlineStyle === "straight"
+          ? "M34 37 C45 31 62 31 75 38"
+          : "M34 39 C44 26 62 26 75 39";
   const jerseyStripe = seed % 3 === 0;
   const portraitTransform = mirror ? "translate(100 0) scale(-1 1)" : undefined;
   const shoulderPath = isPortrait ? "M-5 130 C8 103 32 91 51 93 C70 90 96 104 106 130 Z" : "M10 100 C15 78 86 77 92 100 Z";
@@ -303,6 +389,7 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
             <path d="M42 58 C47 61 54 61 60 58 C58 64 47 65 42 58 Z" fill={skinMid} opacity="0.18" />
             <path d={hairPath} fill={`url(#${id}-hair)`} />
             <path d="M35 33 C44 18 63 17 75 32 C59 27 49 29 35 38 Z" fill={hairLight} opacity="0.38" />
+            <path d={hairlinePath} stroke={hairLight} strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.42" />
             {hairStyle === "spikes" || hairStyle === "textured" || hairStyle === "fringe" ? (
               <>
                 <path d="M42 26 L48 12 L52 29 Z" fill={hair} />
@@ -311,12 +398,12 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
                 <path d="M67 28 L78 24 L72 38 Z" fill={hair} />
               </>
             ) : null}
-            <path d={`M${eyeLeft - 7} ${eyeY - 7 + browTilt} Q${eyeLeft - 1} ${eyeY - 10} ${eyeLeft + 6} ${eyeY - 7}`} stroke={hair} strokeWidth="3.2" strokeLinecap="round" fill="none" />
-            <path d={`M${eyeRight - 6} ${eyeY - 6 - browTilt} Q${eyeRight} ${eyeY - 9} ${eyeRight + 6} ${eyeY - 5}`} stroke={hair} strokeWidth="3.2" strokeLinecap="round" fill="none" />
-            <path d={`M${eyeLeft - 5} ${eyeY} Q${eyeLeft - 1} ${eyeY - 2.5} ${eyeLeft + 5} ${eyeY}`} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            <path d={`M${eyeRight - 5} ${eyeY + 1} Q${eyeRight} ${eyeY - 1.5} ${eyeRight + 5} ${eyeY + 1}`} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            <circle cx={eyeLeft + 2} cy={eyeY} r="1.15" fill="#111827" />
-            <circle cx={eyeRight + 2} cy={eyeY + 1} r="1.1" fill="#111827" />
+            <path d={leftBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.7" : "3.2"} strokeLinecap="round" fill="none" />
+            <path d={rightBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.7" : "3.2"} strokeLinecap="round" fill="none" />
+            <path d={leftEyePath} stroke="#0f172a" strokeWidth={eyeStyle === "round" ? "2" : "2.5"} strokeLinecap="round" fill="none" />
+            <path d={rightEyePath} stroke="#0f172a" strokeWidth={eyeStyle === "round" ? "2" : "2.5"} strokeLinecap="round" fill="none" />
+            <circle cx={eyeLeft + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 1 : 0)} r={eyeStyle === "round" ? "1.35" : "1.1"} fill="#111827" />
+            <circle cx={eyeRight + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 2 : 1)} r={eyeStyle === "round" ? "1.3" : "1.05"} fill="#111827" />
             {hasGlasses ? (
               <>
                 <path d={`M${eyeLeft - 8} ${eyeY - 7} h16 v13 h-16 Z`} fill="none" stroke="#111827" strokeWidth="1.8" />
@@ -325,14 +412,16 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
               </>
             ) : null}
             {hasScar ? <path d={`M${eyeRight + 5} ${eyeY + 4} L${eyeRight + 12} ${eyeY + 13}`} stroke="#f3d0ba" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" /> : null}
-            <path d={`M${noseX} 43 C${noseX + 3} 50 ${noseX - 3} 56 ${noseX + 4} 60`} stroke={skinShadow} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.58" />
-            <path d={`M${noseX - 1} 60 C${noseX + 2} 62 ${noseX + 5} 62 ${noseX + 7} 60`} stroke={skinShadow} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.42" />
-            <path d={`M44 ${mouthY} C50 ${mouthY + 2} 58 ${mouthY + 1} 64 ${mouthY - 2}`} stroke="#5f271f" strokeWidth="2.4" strokeLinecap="round" fill="none" />
-            <path d={`M48 ${mouthY + 3} C53 ${mouthY + 5} 59 ${mouthY + 4} 63 ${mouthY + 1}`} stroke={skinShadow} strokeWidth="1.4" strokeLinecap="round" fill="none" opacity="0.35" />
+            <path d={cheekPath} stroke={skinLight} strokeWidth="1.7" strokeLinecap="round" fill="none" opacity={cheekStyle === "hollow" ? "0.26" : "0.34"} />
+            <path d={nosePath} stroke={skinShadow} strokeWidth={noseStyle === "sharp" ? "2" : "2.5"} strokeLinecap="round" fill="none" opacity="0.6" />
+            <path d={nostrilPath} stroke={skinShadow} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.42" />
+            {hasMoustache ? <path d={`M43 ${mouthY - 3} C49 ${mouthY - 7} 57 ${mouthY - 6} 66 ${mouthY - 4}`} stroke={hair} strokeWidth={facialHairStyle === "moustache" ? "3" : "2.4"} strokeLinecap="round" fill="none" opacity="0.5" /> : null}
+            <path d={mouthPath} stroke="#5f271f" strokeWidth={mouthStyle === "pressed" ? "2" : "2.4"} strokeLinecap="round" fill="none" />
+            <path d={lowerLipPath} stroke={skinShadow} strokeWidth="1.4" strokeLinecap="round" fill="none" opacity="0.35" />
             {hasStubble ? (
               <>
-                <path d="M39 59 C45 75 62 77 69 61 C66 80 44 82 37 66 Z" fill={hair} opacity={hasBeard ? "0.42" : "0.22"} />
-                <path d="M43 66 C50 70 59 70 66 64" stroke={hair} strokeWidth="1.6" strokeLinecap="round" opacity="0.26" />
+                <path d={facialHairStyle === "goatee" ? "M49 67 C53 76 61 76 65 66 C63 80 50 81 46 69 Z" : "M39 59 C45 75 62 77 69 61 C66 80 44 82 37 66 Z"} fill={hair} opacity={hasBeard ? "0.42" : "0.22"} />
+                <path d={facialHairStyle === "goatee" ? "M49 72 C54 75 60 75 64 70" : "M43 66 C50 70 59 70 66 64"} stroke={hair} strokeWidth="1.6" strokeLinecap="round" opacity="0.26" />
               </>
             ) : null}
             <path d="M37 68 C44 78 59 80 67 65" stroke={skinShadow} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.34" />
