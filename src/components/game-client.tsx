@@ -239,13 +239,22 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
   const hasAgeLines = kind === "manager" || portraitArchetype === "veteran" || seed % 11 === 0;
   const hasSideburns = hairStyle === "undercut" || hairStyle === "tight" || seed % 5 === 0;
   const faceInk = "#2d1712";
-  const facePath = faceShape === "square"
+  const baseFacePath = faceShape === "square"
     ? "M34 38 C36 25 50 18 65 24 C75 29 78 43 74 57 L69 68 L59 77 L45 76 L36 66 C31 57 30 45 34 38 Z"
     : faceShape === "narrow"
       ? "M39 36 C41 22 55 18 67 27 C77 35 75 51 69 65 C63 79 48 80 40 68 C34 59 34 45 39 36 Z"
       : faceShape === "heavy"
         ? "M33 39 C34 25 52 17 68 26 C78 34 78 52 70 66 L60 78 L43 75 L34 64 C29 54 29 44 33 39 Z"
         : "M36 37 C39 24 53 18 66 25 C76 32 76 50 69 64 C63 76 49 80 39 69 C32 58 32 45 36 37 Z";
+  const archetypeFacePath = portraitArchetype === "angular"
+    ? "M38 34 C42 22 56 17 68 24 L76 37 L72 56 L64 71 L51 80 L39 68 L34 52 Z"
+    : portraitArchetype === "veteran"
+      ? "M34 38 C35 25 51 18 67 25 C79 34 78 53 70 67 L60 78 L45 77 L35 65 C30 55 30 45 34 38 Z"
+      : portraitArchetype === "lean"
+        ? "M40 34 C43 21 56 18 67 28 C76 37 74 53 68 66 C62 80 49 82 41 68 C35 58 35 44 40 34 Z"
+        : portraitArchetype === "broad"
+          ? "M32 39 C34 25 52 17 69 25 C79 33 80 51 72 66 L61 78 L43 76 L34 65 C29 55 28 45 32 39 Z"
+          : baseFacePath;
   const jawPlanePath = jawStyle === "wide"
     ? "M37 61 C45 73 59 75 70 61 L65 74 L52 81 L39 73 Z"
     : jawStyle === "pointed"
@@ -274,6 +283,15 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
           : hairStyle === "fringe"
             ? "M31 39 C33 23 49 16 66 22 C74 26 78 33 75 42 C63 34 55 45 43 39 C39 48 34 48 31 39 Z"
             : "M30 42 C32 26 39 20 46 22 L50 13 L57 25 L66 17 L75 32 C61 28 47 35 30 42 Z";
+  const archetypeHairPath = portraitArchetype === "angular"
+    ? "M30 42 C32 24 43 16 55 18 C62 14 74 22 79 33 C65 29 55 33 45 38 C39 42 34 45 30 42 Z"
+    : portraitArchetype === "veteran"
+      ? "M34 38 C38 25 52 20 66 26 C72 29 76 34 75 42 C61 33 48 35 36 42 Z"
+      : portraitArchetype === "lean"
+        ? "M34 40 C35 24 51 15 66 23 C76 29 78 37 73 45 C61 35 49 36 36 44 Z"
+        : portraitArchetype === "broad"
+          ? "M30 42 C32 25 47 15 66 20 C77 24 82 33 78 43 C62 32 47 33 31 45 Z"
+          : hairPath;
   const eyeLeft = 46;
   const eyeRight = 64;
   const leftEyePath = eyeStyle === "round"
@@ -400,6 +418,13 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
   const faceShadowPath = lightAngle === "right"
     ? "M36 42 C39 60 48 72 63 75 C48 81 35 70 32 55 C30 48 31 43 36 42 Z"
     : "M60 28 C74 34 78 52 69 67 C64 74 58 77 49 76 C61 70 67 58 66 45 C66 37 64 32 60 28 Z";
+  const templeShadowPath = portraitArchetype === "lean"
+    ? "M37 38 C35 47 36 60 42 70 C35 63 32 49 37 38 Z"
+    : portraitArchetype === "broad"
+      ? "M33 42 C34 57 42 70 55 76 C43 76 33 66 31 54 Z"
+      : portraitArchetype === "angular"
+        ? "M35 42 L43 68 L52 79 L39 68 L33 52 Z"
+        : "M36 43 C36 57 43 69 53 76 C42 74 34 62 34 50 Z";
   const eyeSocketPath = browStyle === "severe"
     ? "M38 42 C47 36 60 36 70 41 C61 45 48 47 38 42 Z"
     : "M39 43 C48 39 61 39 70 43 C61 47 49 48 39 43 Z";
@@ -426,6 +451,32 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
   const collarPath = isPortrait ? "M30 93 L50 124 L72 93 L65 130 L36 130 Z" : "M34 82 L50 98 L68 82 L63 101 L38 101 Z";
   const neckShadowPath = isPortrait ? "M38 72 L36 96 C43 107 60 108 66 95 L62 69 Z" : "M39 71 L38 85 C42 93 58 94 64 85 L62 69 Z";
   const neckLightPath = isPortrait ? "M43 69 L42 92 C48 100 59 99 63 88 L60 68 Z" : "M43 69 L43 83 C49 88 58 87 62 80 L60 68 Z";
+  const archetypeShoulderPath = isPortrait
+    ? portraitArchetype === "broad"
+      ? "M-10 130 C6 101 30 88 52 91 C74 88 101 103 112 130 Z"
+      : portraitArchetype === "lean"
+        ? "M2 130 C14 106 34 94 51 96 C68 94 88 106 99 130 Z"
+        : portraitArchetype === "veteran"
+          ? "M-6 130 C8 104 34 92 51 93 C69 91 94 105 106 130 Z"
+          : shoulderPath
+    : portraitArchetype === "broad"
+      ? "M5 100 C12 77 88 76 96 100 Z"
+      : portraitArchetype === "lean"
+        ? "M15 100 C20 82 80 81 88 100 Z"
+        : shoulderPath;
+  const archetypeCollarPath = isPortrait
+    ? portraitArchetype === "lean"
+      ? "M34 94 L50 126 L68 94 L63 130 L39 130 Z"
+      : portraitArchetype === "broad"
+        ? "M25 93 L50 122 L77 93 L69 130 L32 130 Z"
+        : collarPath
+    : collarPath;
+  const shirtPanelPaths = isPortrait
+    ? [
+      portraitArchetype === "broad" ? "M20 106 C34 98 43 99 50 116" : "M24 106 C36 99 44 100 50 116",
+      portraitArchetype === "lean" ? "M75 108 C65 101 57 101 51 118" : "M78 106 C65 98 57 99 51 116",
+    ]
+    : ["M28 86 C39 82 46 86 50 97", "M72 86 C61 82 54 86 50 97"];
   return (
     <div
       className={cn("shrink-0 overflow-hidden rounded-lg border border-white/70 bg-white shadow-card", className)}
@@ -461,14 +512,17 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
         <rect width="100" height={viewHeight} fill={`url(#${id}-bg)`} />
         <path d={isPortrait ? "M-18 126 L98 -8" : "M-14 92 L88 -8"} stroke="rgba(255,255,255,0.09)" strokeWidth="8" />
         <path d={isPortrait ? "M72 -6 C102 24 104 76 83 128" : "M77 -6 C98 18 97 52 84 77"} stroke="rgba(255,255,255,0.1)" strokeWidth={isPortrait ? "11" : "9"} fill="none" />
-        <path d={shoulderPath} fill={`url(#${id}-shirt)`} />
+        <path d={archetypeShoulderPath} fill={`url(#${id}-shirt)`} />
+        {shirtPanelPaths.map((path) => (
+          <path key={path} d={path} stroke="rgba(255,255,255,0.16)" strokeWidth={isPortrait ? "2.4" : "1.8"} strokeLinecap="round" fill="none" />
+        ))}
         {jerseyStripe ? (
           <>
             <path d={isPortrait ? "M29 93 L39 130" : "M33 83 L42 100"} stroke={accent} strokeWidth={isPortrait ? "6" : "5"} opacity="0.75" />
             <path d={isPortrait ? "M72 93 L61 130" : "M67 82 L58 100"} stroke={accent} strokeWidth={isPortrait ? "6" : "5"} opacity="0.62" />
           </>
         ) : null}
-        <path d={collarPath} fill={kind === "manager" ? "#f8fafc" : "#111827"} opacity="0.9" />
+        <path d={archetypeCollarPath} fill={kind === "manager" ? "#f8fafc" : "#111827"} opacity="0.9" />
         {isPortrait ? <path d="M39 101 L50 119 L62 101" stroke={kind === "manager" ? "#d9e2e9" : accent} strokeWidth="2.6" strokeLinecap="round" fill="none" opacity="0.9" /> : null}
         <path d={neckShadowPath} fill={skinShadow} />
         <path d={neckLightPath} fill={skin} />
@@ -477,15 +531,16 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
             <path d={leftEarPath} fill={skinMid} />
             <path d={rightEarPath} fill={skinShadow} opacity="0.9" />
             <path d="M33 55 C29 55 29 60 33 60 M70 54 C73 55 73 59 69 60" stroke={skinShadow} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.38" />
-            <path d={facePath} fill={`url(#${id}-skin)`} />
+            <path d={archetypeFacePath} fill={`url(#${id}-skin)`} />
             <path d={faceShadowPath} fill={skinShadow} opacity="0.34" />
+            <path d={templeShadowPath} fill={faceInk} opacity="0.11" />
             <path d={keyLightPath} fill={skinLight} opacity={lightAngle === "front" ? "0.32" : "0.46"} />
             <path d={browShadowPath} fill={faceInk} opacity="0.12" />
             <path d={eyeSocketPath} fill="#2a1510" opacity="0.11" />
             <path d={jawPlanePath} fill={skinShadow} opacity="0.22" />
             <path d={chinPlanePath} fill={skinMid} opacity="0.2" />
             <path d="M42 58 C47 61 54 61 60 58 C58 64 47 65 42 58 Z" fill={skinMid} opacity="0.22" />
-            <path d={hairPath} fill={`url(#${id}-hair)`} />
+            <path d={archetypeHairPath} fill={`url(#${id}-hair)`} />
             {sideburnPath ? <path d={sideburnPath} fill={hair} opacity="0.82" /> : null}
             <path d="M35 33 C44 18 63 17 75 32 C59 27 49 29 35 38 Z" fill={hairLight} opacity="0.38" />
             <path d={hairlinePath} stroke={hairLight} strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.42" />
