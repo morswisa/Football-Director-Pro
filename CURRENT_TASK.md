@@ -57,6 +57,7 @@ Playable V1 includes:
 - Confirming a starter sale now queues manager replacement pressure, and during transfer windows can immediately add a manager-led replacement target if a suitable affordable player exists.
 - Regression coverage now proves an affordable starter sale can produce a same-position replacement target close enough in rating, rather than only showing a generic warning.
 - Sale-chain acceptance coverage now verifies the player-facing sequence for an important sale: sale-ready preview, sale-confirmed impact, replacement pressure, and same-position replacement target.
+- Browser acceptance now covers a deterministic player sale from bid to roster/finance consequences: accepted bid, sale confirmation, replacement pressure, replacement target, removed sold player, teammate morale impact, and `Transfer fee received` visibility.
 - Manager model now uses Training, Tactics, Transfers, Youth, Reputation, style, personality, wage, contract years, and status; `Man Management` and `Wage Discipline` are removed from V1.
 - Match preview offers `See Match` for an instant result and `Play Match` for a fast live minute-by-minute playback with score, stats, events, and final whistle before continuing.
 - Live match playback now advances one minute at a time and temporarily replaces the dashboard surface so the final result cannot leak before final whistle.
@@ -139,3 +140,5 @@ Playable V1 includes:
 - Latest remaining-scope answer: planned Web V1 gameplay systems are implemented and heavily covered. What remains is not broad feature discovery: finish the final clean-save acceptance audit, close only original-scope defects found there, do one last mobile/balance pass, then generate Capacitor iOS/Android platforms after the web version is accepted.
 - Latest youth acceptance improvement: the e2e flow now proves a youth contract offer produces a youth-promotion event and visible Roster state. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (10 tests), and the develop-web-game screenshot client.
 - Latest youth acceptance pass is deployed to preview: `https://football-director-58t6ckg0p-mor-swisas-projects.vercel.app`.
+- Latest sale acceptance improvement: the e2e flow now proves an accepted sale creates replacement pressure, removes the player from Roster, lowers teammate morale when appropriate, and leaves a transfer-fee income trail in Finances. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (11 tests), and the develop-web-game screenshot client.
+- Latest sale acceptance pass is deployed to preview: `https://football-director-5lih0cyj5-mor-swisas-projects.vercel.app`.

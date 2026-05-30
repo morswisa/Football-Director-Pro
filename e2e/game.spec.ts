@@ -592,6 +592,132 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
+test("player sale shows replacement pressure, roster removal, and finance trail", async ({ page }) => {
+  await createAcceptanceCareer(page, "Saleford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  const userClub = importedSave.clubs[importedSave.userClubId];
+  const bidderId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId);
+  const replacementClubId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId && clubId !== bidderId) ?? bidderId;
+  const bidder = importedSave.clubs[bidderId];
+  const replacementClub = importedSave.clubs[replacementClubId];
+  const playerId = userClub.playerIds[0];
+  const teammateId = userClub.playerIds[1];
+  const player = importedSave.players[playerId];
+  const teammate = importedSave.players[teammateId];
+  const replacementId = replacementClub.playerIds[0];
+  const replacement = importedSave.players[replacementId];
+
+  importedSave.week = 1;
+  userClub.finances.balance = 500_000;
+  userClub.finances.transactions = [];
+  userClub.playerIds.forEach((id: string) => {
+    if (id === playerId) return;
+    importedSave.players[id].rating = 45;
+    importedSave.players[id].morale = 70;
+  });
+  Object.values(importedSave.players as Record<string, { id: string; clubId?: string; position: string; rating: number; value: number }>).forEach((item) => {
+    if (item.clubId === importedSave.userClubId || item.id === replacementId) return;
+    item.position = "D";
+    item.rating = 40;
+    item.value = 500_000;
+  });
+  player.name = "Acceptance Sale";
+  player.position = "F";
+  player.rating = 74;
+  player.age = 26;
+  player.value = 260_000;
+  player.wage = 2_400;
+  player.contractYears = 3;
+  player.morale = 72;
+  player.careerStats.apps = 35;
+  teammate.name = "Acceptance Teammate";
+  teammate.morale = 70;
+  replacement.name = "Acceptance Replacement";
+  replacement.position = "F";
+  replacement.rating = 71;
+  replacement.age = 24;
+  replacement.value = 120_000;
+  replacement.wage = 1_200;
+  replacement.contractYears = 2;
+  importedSave.transferBudget = { mode: "normal", amount: 500_000 };
+  importedSave.pendingDeals = [];
+  importedSave.eventQueue = [];
+  importedSave.financialSnapshot = undefined;
+  importedSave.currentEvent = {
+    id: "incoming_bid_acceptance_sale",
+    type: "incoming_bid",
+    title: "Bid received",
+    body: `${bidder.name} has made an offer for Acceptance Sale.`,
+    requiresDecision: true,
+    createdSeason: importedSave.season,
+    createdWeek: importedSave.week,
+    playerId,
+    managerId: userClub.managerId,
+    variant: "neutral",
+    proposal: {
+      id: "proposal_acceptance_sale",
+      type: "sell",
+      week: importedSave.week,
+      title: "Sell Acceptance Sale",
+      rationale: "A serious bid has arrived for a first-team player.",
+      playerId,
+      fromClubId: importedSave.userClubId,
+      toClubId: bidderId,
+      fee: 240_000,
+      wageDelta: -player.wage,
+      expiresWeek: importedSave.week + 2,
+    },
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const bidDialog = page.getByRole("dialog");
+  await expect(bidDialog).toContainText("Bid received");
+  await expect(bidDialog).toContainText("Acceptance Sale");
+  await expect(bidDialog).toContainText("Bidding club");
+  await expect(bidDialog).toContainText(bidder.name);
+  await expect(bidDialog).toContainText("Sale decision impact");
+  await bidDialog.getByRole("button", { name: "Accept Bid" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("sale ready");
+  await expect(page.getByRole("dialog")).toContainText("Confirm sale impact");
+  await expect(page.getByRole("dialog")).toContainText("Board confidence -");
+  await expect(page.getByRole("dialog")).toContainText("squad morale -");
+  await page.getByRole("dialog").getByRole("button", { name: "Confirm Sale" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Player sale confirmed");
+  await expect(page.getByRole("dialog")).toContainText("Acceptance Sale has been sold to");
+  await expect(page.getByRole("dialog")).toContainText("Board confidence -");
+  await expect(page.getByRole("dialog")).toContainText("squad morale -");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Replacement needed");
+  await expect(page.getByRole("dialog")).toContainText("should replace Acceptance Sale");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Manager target identified");
+  await expect(page.getByRole("dialog")).toContainText("Target identity F");
+  await expect(page.getByRole("dialog")).toContainText("external transfer target");
+  await page.getByRole("dialog").getByRole("button", { name: "Walk Away" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Roster/i }).click();
+  await expect(page.getByText("Acceptance Sale")).toHaveCount(0);
+  const teammateRow = page.locator("section").filter({ hasText: "Acceptance Teammate" }).first();
+  await expect(teammateRow).toBeVisible();
+  await expect(teammateRow).toContainText("Morale 66%");
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText("Transfer fee received: Acceptance Sale")).toBeVisible();
+  await expect(page.getByText("Fees in")).toBeVisible();
+  await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
+});
+
 test("contract rejection shows trust and morale impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Contractford FC");
 

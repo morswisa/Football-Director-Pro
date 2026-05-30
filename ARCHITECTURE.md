@@ -82,6 +82,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Browser transfer acceptance uses an imported deterministic paid target to verify the full player-facing path: transfer decision impact, completed signing, Roster membership, and `Transfer fee paid` visibility in Finances.
 - Browser contract acceptance uses an imported deterministic squad player to verify weak-offer warnings, contract rejection feedback, and the resulting morale drop displayed in Roster.
 - Browser youth-contract acceptance uses an imported deterministic academy player to verify the decision card, promotion follow-up event, and resulting Roster morale/form/fitness display.
+- Browser sale acceptance uses an imported deterministic incoming bid to verify bid acceptance, sale confirmation, replacement pressure, replacement-target handoff, Roster removal, teammate morale impact, and `Transfer fee received` visibility in Finances.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
@@ -181,3 +182,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Long-run balance coverage now runs several human-style careers across three seasons, asserting playable debt headroom, bounded wage pressure, finite financial snapshots, stable relationships, viable squads, and stable division sizes.
 - Clean-save season-boundary acceptance verifies that a browser career reaches repeated season reviews, shows season awards and impact, continues into later season intros without queue stalls, and then shows multiple completed seasons with impact labels in History.
 - Youth-contract browser acceptance verifies the academy decision path from event card to promoted Roster player state.
+- Sale browser acceptance verifies the sale chain across the event queue and the main inspection surfaces, not just the engine mutation.
