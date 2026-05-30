@@ -15,6 +15,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `e2e`: Playwright browser smoke tests.
 - `capacitor.config.ts`: Capacitor app metadata and static web directory.
 - `MOBILE_BUILD.md`: Reproducible mobile packaging workflow and local toolchain prerequisites.
+- `NATIVE_BUILD_AUDIT.md`: Current local native binary build readiness, including Java/JDK and Xcode blockers.
 - `V1_ACCEPTANCE_AUDIT.md`: Requirement-to-evidence audit for Web V1 gameplay completeness and remaining finalization work.
 - `ios/` and `android/`: Generated Capacitor native project shells for packaging the static `out/` web build into mobile apps.
 - `.vercelignore`: Excludes native project folders from web preview deployments.
