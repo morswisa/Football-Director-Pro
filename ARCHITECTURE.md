@@ -69,6 +69,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Training and Youth facility management is launched from their dashboard metric cards only.
 - Settings is reachable from the header gear button and returns to the Dashboard through the same secondary-page back pattern.
 - Secondary pages share `PageBack`, a compact accessible Dashboard chip. This keeps return navigation consistent without consuming the vertical space of a full card.
+- Secondary tab changes call the local tab setter and reset the shared scrollable content container to the top on the next animation frame, preventing a new section from opening midway down the page.
 - Store status messages render inside the scrollable content area, before the active tab content, so feedback remains visible without covering lower-page action buttons.
 - Status banners are suppressed while event or facility modals are active, keeping the blocking decision layer visually focused.
 - `GameClient` wraps tab changes with status-message clearing. This keeps transient save/action messages scoped to the current surface and prevents stale banners from following quick navigation into secondary sections.
@@ -97,6 +98,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Browser loan acceptance imports deterministic loan-in and loan-out events to verify the Roster movement, loan labels, manager-trust response copy, and `Loan fee paid`/`Loan fee received` visibility.
 - Browser cup acceptance imports a deterministic Chairman's Cup tie to verify the draw event, cup match preview/result, prize-money financial report, unchanged league table record, History cup run, and `Cup prize` transaction in Finances.
 - Stadium upgrade and repair transactions are recorded as same-period infrastructure spending and refresh `latestFinancialSnapshot`, so direct stadium capex is visible in Finances after the action.
+- The Stadium tab is a display layer over existing stadium actions: stand cards show level, capacity, upgrade cost, resulting capacity/level, and repair context, while mutations still route through `upgradeStand` and `repair`.
 - Transfer-window acceptance coverage verifies completed paid purchases, loan-ins, and loan-outs across world ownership, balance movement, manager-trust changes, and financial snapshot fee lines.
 - Browser transfer acceptance uses an imported deterministic paid target to verify the full player-facing path: transfer decision impact, completed signing, Roster membership, and `Transfer fee paid` visibility in Finances.
 - Browser contract acceptance uses an imported deterministic squad player to verify weak-offer warnings, contract rejection feedback, and the resulting morale drop displayed in Roster.

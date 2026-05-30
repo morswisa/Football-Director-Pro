@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Award, CalendarDays, Dumbbell, Landmark, ListOrdered, Play, Settings, ShieldCheck, Sprout, Trophy, UserCog, UsersRound, Wallet } from "lucide-react";
 import { AppFrame } from "./app-frame";
@@ -738,33 +738,93 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const upgrade = useGameStore((state) => state.upgradeStand);
   const repair = useGameStore((state) => state.repair);
   const repairCost = Math.round((100 - current.club.stadium.condition) * 4_500);
+  const repairGain = 100 - current.club.stadium.condition;
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
-      <Card>
-        <h2 className="text-lg font-bold">{current.club.stadium.name}</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <p className="rounded-md bg-surface-muted px-3 py-2">Capacity <b data-testid="stadium-capacity">{current.club.stadium.capacity.toLocaleString()}</b></p>
-          <p className="rounded-md bg-surface-muted px-3 py-2">Condition <b data-testid="stadium-condition">{pct(current.club.stadium.condition)}</b></p>
+      <Card className="overflow-hidden p-0">
+        <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
+          <p className="text-[10px] font-black uppercase text-white/65">Stadium</p>
+          <h2 className="mt-1 truncate text-xl font-black">{current.club.stadium.name}</h2>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl bg-white/13 px-3 py-3 ring-1 ring-white/15">
+              <p className="text-[10px] font-black uppercase text-white/65">Capacity</p>
+              <b data-testid="stadium-capacity" className="mt-1 block text-lg">{current.club.stadium.capacity.toLocaleString()}</b>
+            </div>
+            <div className="rounded-2xl bg-white px-3 py-3 text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.13)]">
+              <p className="text-[10px] font-black uppercase text-neutral-500">Condition</p>
+              <b data-testid="stadium-condition" className={cn("mt-1 block text-lg", current.club.stadium.condition < 55 ? "text-danger" : "text-primary")}>{pct(current.club.stadium.condition)}</b>
+            </div>
+          </div>
         </div>
-        <div className="mt-4 aspect-[16/9] rounded-lg bg-[linear-gradient(140deg,_#1b6e37,_#58b76f_45%,_#e8efe9_46%,_#18542f)] p-4">
-          <div className="h-full rounded border-4 border-white/70 bg-emerald-700/80" />
+        <div className="space-y-3 p-4">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-[linear-gradient(140deg,_#174b2e,_#1d8b48_42%,_#e8efe9_43%,_#29533b_100%)] p-4 shadow-inner">
+            <div className="absolute inset-x-6 top-4 h-8 rounded-t-2xl border-x-[18px] border-t-[14px] border-emerald-950/35" />
+            <div className="absolute inset-x-6 bottom-4 h-8 rounded-b-2xl border-x-[18px] border-b-[14px] border-emerald-950/35" />
+            <div className="absolute inset-y-7 left-4 w-8 rounded-l-2xl border-y-[14px] border-l-[14px] border-emerald-950/35" />
+            <div className="absolute inset-y-7 right-4 w-8 rounded-r-2xl border-y-[14px] border-r-[14px] border-emerald-950/35" />
+            <div className="absolute inset-8 rounded-lg border-[3px] border-white/80 bg-[repeating-linear-gradient(90deg,_#16894a_0_22px,_#1a9c54_22px_44px)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.26)]">
+              <div className="absolute inset-y-0 left-1/2 w-[2px] bg-white/80" />
+              <div className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/80" />
+              <div className="absolute inset-y-8 left-0 w-10 border-y-2 border-r-2 border-white/80" />
+              <div className="absolute inset-y-8 right-0 w-10 border-y-2 border-l-2 border-white/80" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-xl bg-surface-muted px-3 py-3">
+              <p className="font-black uppercase text-neutral-500">Bank balance</p>
+              <b className="mt-1 block text-sm">{formatMoney(current.club.finances.balance)}</b>
+            </div>
+            <div className="rounded-xl bg-surface-muted px-3 py-3">
+              <p className="font-black uppercase text-neutral-500">Repair need</p>
+              <b className="mt-1 block text-sm">{repairGain > 0 ? `+${repairGain}%` : "None"}</b>
+            </div>
+          </div>
         </div>
       </Card>
       {current.club.stadium.stands.map((stand) => (
-        <Card key={stand.id} className="flex items-center justify-between gap-3 p-3">
-          <div>
-            <p className="font-bold">{stand.name}</p>
-            <p className="text-xs text-neutral-500">Level {stand.level} · {stand.capacity.toLocaleString()} seats</p>
-            <p className="text-xs text-neutral-500">Upgrade: {formatMoney(stand.level * 180_000)} · +850 seats</p>
+        <Card key={stand.id} className="space-y-3 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-base font-black">{stand.name}</p>
+              <p className="text-xs text-neutral-500">Level {stand.level} · {stand.capacity.toLocaleString()} seats</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-800">+850 seats</span>
           </div>
-          <Button onClick={() => upgrade(stand.id)}>Upgrade</Button>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="rounded-xl bg-surface-muted px-3 py-2">
+              <p className="font-black uppercase text-neutral-500">Cost</p>
+              <b className="mt-1 block">{formatMoney(stand.level * 180_000)}</b>
+            </div>
+            <div className="rounded-xl bg-surface-muted px-3 py-2">
+              <p className="font-black uppercase text-neutral-500">New cap.</p>
+              <b className="mt-1 block">{(stand.capacity + 850).toLocaleString()}</b>
+            </div>
+            <div className="rounded-xl bg-surface-muted px-3 py-2">
+              <p className="font-black uppercase text-neutral-500">Level</p>
+              <b className="mt-1 block">{stand.level + 1}</b>
+            </div>
+          </div>
+          <Button className="w-full" onClick={() => upgrade(stand.id)}>Upgrade</Button>
         </Card>
       ))}
       <Card className="space-y-3 p-3">
-        <div className="flex justify-between gap-3 text-sm">
-          <span className="text-neutral-500">Repair to 100%</span>
-          <b>{formatMoney(repairCost)}</b>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-black">Repair to 100%</p>
+            <p className="text-xs text-neutral-500">Improves condition by {repairGain}% and reduces stadium-risk pressure.</p>
+          </div>
+          <b className="shrink-0 text-danger">{formatMoney(repairCost)}</b>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="rounded-xl bg-surface-muted px-3 py-2">
+            <p className="font-black uppercase text-neutral-500">Current</p>
+            <b className="mt-1 block">{pct(current.club.stadium.condition)}</b>
+          </div>
+          <div className="rounded-xl bg-surface-muted px-3 py-2">
+            <p className="font-black uppercase text-neutral-500">After repair</p>
+            <b className="mt-1 block">100%</b>
+          </div>
         </div>
         <Button variant="secondary" className="w-full" onClick={repair} disabled={repairCost <= 0}>Repair Stadium</Button>
       </Card>
@@ -1749,9 +1809,13 @@ export function GameClient() {
   const clearMessage = useGameStore((state) => state.clearMessage);
   const [tab, setTab] = useState<Tab>("home");
   const [facilityModal, setFacilityModal] = useState<FacilityKind | undefined>();
+  const contentRef = useRef<HTMLDivElement>(null);
   const setActiveTab = (nextTab: Tab) => {
     clearMessage();
     setTab(nextTab);
+    window.requestAnimationFrame(() => {
+      contentRef.current?.scrollTo({ top: 0 });
+    });
   };
 
   useEffect(() => {
@@ -1809,7 +1873,7 @@ export function GameClient() {
     <AppFrame>
       <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
       <Header save={save} tab={tab} setTab={setActiveTab} />
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
+      <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
         {showMessage ? <div role="status" className="mb-3 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
         {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setActiveTab} />}
         {tab === "standings" && <StandingsTab save={save} setTab={setActiveTab} />}
