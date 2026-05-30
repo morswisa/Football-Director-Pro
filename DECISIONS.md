@@ -130,6 +130,7 @@
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.
 - Final mobile QA should be enforced in browser acceptance, not left as a manual-only check: core V1 surfaces must not create horizontal overflow or visible broken numeric/copy output on the Pixel-sized Playwright viewport.
+- League standings should render as mobile-first row cards rather than a dense table. Each row must expose rank, club, points, played, W-D-L, and goal difference so the player does not lose draw/loss context on small screens.
 - Long-run balance acceptance should check pressure ratios, not just crash freedom: careers must keep wages, debt headroom, squad size, relationships, and division sizes inside playable bands over multiple seasons.
 - Web V1 acceptance must prove a clean save can cross a full season boundary in the browser, including season review and next-season intro, because the Continue loop is the primary product surface.
 - Final browser acceptance should cover repeated season boundaries, not only a single season transition, because the game promise depends on many fast seasons accumulating into reliable club history.

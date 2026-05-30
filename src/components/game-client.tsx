@@ -366,15 +366,7 @@ function StandingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => 
           <ListOrdered className="text-primary" />
         </div>
       </Card>
-      <Card className="p-0">
-        <div className="grid grid-cols-[36px_1fr_34px_34px_34px_40px] gap-2 border-b border-line px-3 py-2 text-xs font-bold text-neutral-500">
-          <span>#</span>
-          <span>Club</span>
-          <span className="text-right">P</span>
-          <span className="text-right">GD</span>
-          <span className="text-right">W</span>
-          <span className="text-right">Pts</span>
-        </div>
+      <Card className="space-y-2 p-2">
         {current.table.map((club, index) => {
           const goalDifference = club.record.gf - club.record.ga;
           const isUser = club.id === current.club.id;
@@ -382,16 +374,21 @@ function StandingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => 
             <div
               key={club.id}
               className={cn(
-                "grid grid-cols-[36px_1fr_34px_34px_34px_40px] gap-2 border-b border-line px-3 py-3 text-sm last:border-b-0",
-                isUser && "bg-emerald-50 font-bold text-primary",
+                "grid grid-cols-[34px_1fr_auto] items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm",
+                isUser ? "border-emerald-200 bg-emerald-50 font-bold text-primary shadow-[0_8px_18px_rgba(21,153,71,0.08)]" : "bg-white",
               )}
             >
-              <span>{index + 1}</span>
-              <span className="truncate">{club.name}</span>
-              <span className="text-right">{club.record.played}</span>
-              <span className="text-right">{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</span>
-              <span className="text-right">{club.record.won}</span>
-              <span className="text-right">{club.record.points}</span>
+              <span className={cn("grid h-8 w-8 place-items-center rounded-lg bg-surface-muted font-black", isUser && "bg-primary text-white")}>{index + 1}</span>
+              <div className="min-w-0">
+                <p className="truncate font-black">{club.name}</p>
+                <p className={cn("mt-1 text-xs text-neutral-500", isUser && "text-primary/75")}>
+                  P {club.record.played} · W-D-L {club.record.won}-{club.record.drawn}-{club.record.lost} · GD {goalDifference > 0 ? `+${goalDifference}` : goalDifference}
+                </p>
+              </div>
+              <div className={cn("min-w-12 rounded-lg bg-surface-muted px-2 py-1 text-right", isUser && "bg-white text-primary")}>
+                <span className="block text-[10px] font-black uppercase text-neutral-500">Pts</span>
+                <span className="text-base font-black">{club.record.points}</span>
+              </div>
             </div>
           );
         })}

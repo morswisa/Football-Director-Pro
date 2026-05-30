@@ -42,6 +42,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Primary sections are selected by local tab state from dashboard metric buttons: Dashboard, Standings, Roster, Manager, Finances, Stadium, History, and Settings.
 - There is no separate top section grid or bottom navigation; non-dashboard sections provide a Back to Dashboard action.
 - Standings are derived from `leagueTable(save)` and rendered from the current division records.
+- The Standings tab renders mobile-first league rows instead of a compact table. Each row shows rank, club, points, played, W-D-L, and goal difference, keeping the full competition context visible on phone widths.
 - League fixtures are generated with a round-robin scheduler: each club in the user's division appears once per league round, then fixtures repeat with reversed home/away legs.
 - League fixture IDs include the season as well as division, round, and slot, preventing persisted `seenEventKeys` from suppressing next-season match previews.
 - Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.

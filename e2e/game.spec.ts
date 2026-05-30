@@ -267,7 +267,8 @@ test("new career reaches playable dashboard", async ({ page }) => {
 
   await page.getByRole("button", { name: /League/i }).click();
   await expect(page.getByText("Standings")).toBeVisible();
-  await expect(page.getByText("Pts")).toBeVisible();
+  await expect(page.getByText("Pts").first()).toBeVisible();
+  await expect(page.getByText("W-D-L").first()).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
@@ -468,7 +469,8 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
   await page.getByRole("button", { name: /League/i }).click();
-  await expect(page.getByText(/Cupford FC0000/)).toBeVisible();
+  await expect(page.getByText("Cupford FC", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("P 0 · W-D-L 0-0-0 · GD 0").first()).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
   await page.getByRole("button", { name: /Finances/i }).click();
