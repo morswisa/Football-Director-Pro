@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-qem5r677o-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-35nyq3bsj-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -86,12 +86,13 @@ Playable V1 includes:
 - Event/entity cards and match events use deterministic generated SVG portrait faces for players and managers, built from a shared procedural face template.
 - Finances, stadium, training, youth, history, achievements.
 - History now surfaces current-season record context before season-end history exists.
+- History now labels completed-season impact explicitly as board/trust/reputation point movement, so season consequences remain readable after the review modal is dismissed.
 - Capacitor config and mobile scripts.
 - Settings covers the original local/offline V1 needs: manual save, export copy/download, validated import into Slot 1, reset local career with confirmation, sound toggle, and normal/large text size.
 - Settings import/export now has browser acceptance coverage: invalid pasted JSON is rejected, a valid exported save can be modified and imported into Slot 1, the imported club identity appears immediately, and the Continue queue proceeds from that imported save.
 - Manager-led transfer and contract proposals no longer have a legacy side path; they are generated, displayed, resolved, and persisted through `GameEvent` records only.
 - Final mobile-surface acceptance now covers the main V1 inspection and decision surfaces for horizontal overflow and broken numeric/copy output.
-- Clean-save browser acceptance now reaches the end-of-season review, verifies awards/impact copy, and continues into the next season intro.
+- Clean-save browser acceptance now reaches the end-of-season review, verifies awards/impact copy, continues into the next season intro, then confirms the completed season is visible in History with impact labels.
 
 ## Next Steps
 
@@ -120,3 +121,5 @@ Playable V1 includes:
 - Latest clean-save season-review acceptance/status pass is deployed to preview.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.
 - Latest status answer: the remaining work is final acceptance and packaging, not new feature discovery. The broad planned V1 systems are implemented; remaining work is to finish full clean-save acceptance, close any original-scope defects found there, do final balance/mobile QA, then generate Capacitor iOS/Android platforms after web V1 approval.
+- Latest acceptance improvement: post-season History now has browser coverage and clearer `Season impact` wording.
+- Latest post-season History acceptance pass is deployed to preview.

@@ -710,7 +710,7 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
             <p className="mt-2 text-xs text-neutral-500">Next: {item.nextDivisionName ?? item.divisionName} · {item.cupSummary ?? "No cup record"}</p>
             {item.seasonImpact ? (
               <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-950">
-                Board {formatSignedPoints(item.seasonImpact.boardConfidenceAfter - item.seasonImpact.boardConfidenceBefore)} · Trust {formatSignedPoints(item.seasonImpact.managerTrustAfter - item.seasonImpact.managerTrustBefore)} · Reputation {formatSignedPoints(item.seasonImpact.reputationAfter - item.seasonImpact.reputationBefore)}
+                Season impact: Board {formatSignedPoints(item.seasonImpact.boardConfidenceAfter - item.seasonImpact.boardConfidenceBefore)} pts · Trust {formatSignedPoints(item.seasonImpact.managerTrustAfter - item.seasonImpact.managerTrustBefore)} pts · Reputation {formatSignedPoints(item.seasonImpact.reputationAfter - item.seasonImpact.reputationBefore)} pts
               </p>
             ) : null}
           </div>
