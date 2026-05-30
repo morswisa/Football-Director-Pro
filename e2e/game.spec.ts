@@ -592,6 +592,159 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
+test("loan decisions show roster and finance impact", async ({ page }) => {
+  await createAcceptanceCareer(page, "Loanford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const loanInSave = JSON.parse(exportedSave);
+  const loanInClub = loanInSave.clubs[loanInSave.userClubId];
+  const parentClubId = Object.keys(loanInSave.clubs).find((clubId) => clubId !== loanInSave.userClubId);
+  const parentClub = loanInSave.clubs[parentClubId];
+  const loanInPlayerId = parentClub.playerIds[0];
+  const loanInPlayer = loanInSave.players[loanInPlayerId];
+  loanInSave.week = 2;
+  loanInClub.finances.balance = 300_000;
+  loanInClub.finances.transactions = [];
+  loanInPlayer.name = "Acceptance Loan In";
+  loanInPlayer.position = "M";
+  loanInPlayer.rating = 67;
+  loanInPlayer.age = 22;
+  loanInPlayer.value = 280_000;
+  loanInPlayer.wage = 1_500;
+  loanInSave.transferBudget = { mode: "normal", amount: 300_000 };
+  loanInSave.pendingDeals = [];
+  loanInSave.eventQueue = [];
+  loanInSave.financialSnapshot = undefined;
+  loanInSave.currentEvent = {
+    id: "loan_in_acceptance_event",
+    type: "contract_offer",
+    title: "Manager suggests loan signing",
+    body: `The manager wants to loan Acceptance Loan In from ${parentClub.name}.`,
+    note: "Loan signings add short-term squad depth without a permanent transfer fee.",
+    requiresDecision: true,
+    createdSeason: loanInSave.season,
+    createdWeek: loanInSave.week,
+    playerId: loanInPlayerId,
+    managerId: loanInClub.managerId,
+    variant: "neutral",
+    proposal: {
+      id: "proposal_acceptance_loan_in",
+      type: "loan",
+      loanDirection: "in",
+      week: loanInSave.week,
+      title: "Loan Acceptance Loan In",
+      rationale: "Short-term midfield depth.",
+      playerId: loanInPlayerId,
+      fromClubId: parentClubId,
+      toClubId: loanInSave.userClubId,
+      fee: 10_000,
+      wageDelta: 500,
+      expiresWeek: loanInSave.week + 2,
+      requestedWage: 500,
+      requestedYears: 1,
+    },
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(loanInSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const loanInDialog = page.getByRole("dialog");
+  await expect(loanInDialog).toContainText("Manager suggests loan signing");
+  await expect(loanInDialog).toContainText("Acceptance Loan In");
+  await expect(loanInDialog).toContainText("Selected loan impact");
+  await expect(loanInDialog).toContainText("completed loan +2");
+  await loanInDialog.getByRole("button", { name: "Submit Loan" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Loan signing completed");
+  await expect(page.getByRole("dialog")).toContainText("Manager trust +2");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Roster/i }).click();
+  const loanInRow = page.locator("section").filter({ hasText: "Acceptance Loan In" }).first();
+  await expect(loanInRow).toBeVisible();
+  await expect(loanInRow).toContainText("Loan in");
+  await expect(loanInRow).toContainText("£500/w");
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText("Loan fee paid: Acceptance Loan In")).toBeVisible();
+  await expect(page.getByText("Fees out")).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const loanOutSave = JSON.parse(exportedSave);
+  const loanOutClub = loanOutSave.clubs[loanOutSave.userClubId];
+  const destinationClubId = Object.keys(loanOutSave.clubs).find((clubId) => clubId !== loanOutSave.userClubId);
+  const destinationClub = loanOutSave.clubs[destinationClubId];
+  const loanOutPlayerId = loanOutClub.playerIds[0];
+  const loanOutPlayer = loanOutSave.players[loanOutPlayerId];
+  loanOutSave.week = 2;
+  loanOutClub.finances.transactions = [];
+  loanOutPlayer.name = "Acceptance Loan Out";
+  loanOutPlayer.position = "D";
+  loanOutPlayer.rating = 49;
+  loanOutPlayer.age = 20;
+  loanOutPlayer.wage = 900;
+  loanOutSave.pendingDeals = [];
+  loanOutSave.eventQueue = [];
+  loanOutSave.financialSnapshot = undefined;
+  loanOutSave.currentEvent = {
+    id: "loan_out_acceptance_event",
+    type: "contract_offer",
+    title: "Loan offer received",
+    body: `${destinationClub.name} wants to loan Acceptance Loan Out until the end of the season.`,
+    note: "The player returns at season end.",
+    requiresDecision: true,
+    createdSeason: loanOutSave.season,
+    createdWeek: loanOutSave.week,
+    playerId: loanOutPlayerId,
+    managerId: loanOutClub.managerId,
+    variant: "neutral",
+    proposal: {
+      id: "proposal_acceptance_loan_out",
+      type: "loan",
+      loanDirection: "out",
+      week: loanOutSave.week,
+      title: "Loan out Acceptance Loan Out",
+      rationale: "Development minutes.",
+      playerId: loanOutPlayerId,
+      fromClubId: loanOutSave.userClubId,
+      toClubId: destinationClubId,
+      fee: 8_000,
+      wageDelta: -400,
+      expiresWeek: loanOutSave.week + 2,
+      requestedWage: 400,
+      requestedYears: 1,
+    },
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(loanOutSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const loanOutDialog = page.getByRole("dialog");
+  await expect(loanOutDialog).toContainText("Loan offer received");
+  await expect(loanOutDialog).toContainText("Acceptance Loan Out");
+  await expect(loanOutDialog).toContainText("Accept loan impact");
+  await expect(loanOutDialog).toContainText("accept loan +1");
+  await loanOutDialog.getByRole("button", { name: "Accept Loan" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Loan agreed");
+  await expect(page.getByRole("dialog")).toContainText("Manager trust +1");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Roster/i }).click();
+  await expect(page.getByText("Acceptance Loan Out")).toHaveCount(0);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText("Loan fee received: Acceptance Loan Out")).toBeVisible();
+  await expect(page.getByText("Fees in")).toBeVisible();
+  await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
+});
+
 test("player sale shows replacement pressure, roster removal, and finance trail", async ({ page }) => {
   await createAcceptanceCareer(page, "Saleford FC");
 

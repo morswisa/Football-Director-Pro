@@ -77,6 +77,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `buildFinancialLines` is the shared weekly finance line-item model for both balance mutation and financial snapshots. Weekly operations use the operating subset, while report snapshots also fold in same-week transfer, loan, manager, prize, and cup transactions that already changed the balance.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
 - Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
+- Browser loan acceptance imports deterministic loan-in and loan-out events to verify the Roster movement, loan labels, manager-trust response copy, and `Loan fee paid`/`Loan fee received` visibility.
 - Stadium upgrade and repair transactions are recorded as same-period infrastructure spending and refresh `latestFinancialSnapshot`, so direct stadium capex is visible in Finances after the action.
 - Transfer-window acceptance coverage verifies completed paid purchases, loan-ins, and loan-outs across world ownership, balance movement, manager-trust changes, and financial snapshot fee lines.
 - Browser transfer acceptance uses an imported deterministic paid target to verify the full player-facing path: transfer decision impact, completed signing, Roster membership, and `Transfer fee paid` visibility in Finances.
@@ -183,3 +184,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Clean-save season-boundary acceptance verifies that a browser career reaches repeated season reviews, shows season awards and impact, continues into later season intros without queue stalls, and then shows multiple completed seasons with impact labels in History.
 - Youth-contract browser acceptance verifies the academy decision path from event card to promoted Roster player state.
 - Sale browser acceptance verifies the sale chain across the event queue and the main inspection surfaces, not just the engine mutation.
+- Loan browser acceptance verifies both temporary incoming and outgoing player movement across the event queue, Roster, and Finances.
