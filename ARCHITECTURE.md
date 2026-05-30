@@ -115,6 +115,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Season impact deltas are captured inside `finishSeason` from the actual mutated club state, including promotion/relegation reputation changes, so the UI does not duplicate the season-outcome formula.
 - Season transitions rebalance sponsorship, debt limit, and upkeep from division level, reputation, stadium capacity, and facility ratings.
 - Debt warnings are generated from the current club finance state and include debt headroom; `checkDebtAndBankruptcy` is the authoritative career-stop gate and writes the exact balance/debt-limit failure context.
+- Browser debt acceptance imports deterministic warning/game-over saves to verify the warning copy and the accessible blocking `Career stopped` dialog.
 - League matchday income is recorded as a same-week finance transaction for reporting, but the balance is moved by the shared weekly operations calculation, preventing ticket-sales display from disappearing on loss-making home weeks.
 - Promotion/relegation swaps a club between adjacent divisions so division sizes remain stable for future fixture generation.
 - Balance edge cases are covered in unit tests: debt-limit game over, no-refund facility downgrades with lower upkeep, manager action locks, and relegation division movement.

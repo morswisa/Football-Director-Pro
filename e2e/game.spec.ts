@@ -474,6 +474,61 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
+test("debt warning and bankruptcy explain the financial limit", async ({ page }) => {
+  await createAcceptanceCareer(page, "Debtford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const warningSave = JSON.parse(exportedSave);
+  const warningClub = warningSave.clubs[warningSave.userClubId];
+  warningClub.finances.balance = -250_000;
+  warningClub.finances.debtLimit = -1_000_000;
+  warningSave.currentEvent = {
+    id: "bank_warning_acceptance",
+    type: "bank_warning",
+    title: "Bank balance in the red",
+    body: "Debtford FC is currently overdrawn. Balance is -£250,000; debt limit is -£1,000,000.",
+    note: "Debt headroom remaining: £750,000. If the balance falls below the debt limit, the board ends the career.",
+    requiresDecision: false,
+    createdSeason: warningSave.season,
+    createdWeek: warningSave.week,
+    variant: "negative",
+  };
+  warningSave.eventQueue = [];
+  warningSave.financialSnapshot = undefined;
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(warningSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const warningDialog = page.getByRole("dialog");
+  await expect(warningDialog).toContainText("Bank balance in the red");
+  await expect(warningDialog).toContainText("Balance is -£250,000");
+  await expect(warningDialog).toContainText("debt limit is -£1,000,000");
+  await expect(warningDialog).toContainText("Debt headroom remaining: £750,000");
+  await warningDialog.getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const gameOverSave = JSON.parse(exportedSave);
+  const gameOverClub = gameOverSave.clubs[gameOverSave.userClubId];
+  gameOverClub.finances.balance = -1_150_000;
+  gameOverClub.finances.debtLimit = -1_000_000;
+  gameOverSave.currentEvent = undefined;
+  gameOverSave.eventQueue = [];
+  gameOverSave.gameOver = "The board has removed you after the club exceeded its debt limit. Balance -£1,150,000; debt limit -£1,000,000; over limit by £150,000.";
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(gameOverSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const gameOverDialog = page.getByRole("dialog");
+  await expect(gameOverDialog).toContainText("Career stopped");
+  await expect(gameOverDialog).toContainText("Board Decision");
+  await expect(gameOverDialog).toContainText("exceeded its debt limit");
+  await expect(gameOverDialog).toContainText("Balance -£1,150,000");
+  await expect(gameOverDialog).toContainText("debt limit -£1,000,000");
+  await expect(gameOverDialog).toContainText("over limit by £150,000");
+  await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+});
+
 test("mobile V1 surfaces stay readable without horizontal overflow", async ({ page }) => {
   await createAcceptanceCareer(page, "Mobileford FC");
   await expectMobileSurfaceHealthy(page, "Dashboard");

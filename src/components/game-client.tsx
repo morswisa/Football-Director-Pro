@@ -881,9 +881,9 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
   if (save.gameOver) {
     return (
       <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-5">
-        <div className="w-full rounded-xl bg-white p-5 shadow-2xl">
+        <div role="dialog" aria-modal="true" aria-labelledby="game-over-title" className="w-full rounded-xl bg-white p-5 shadow-2xl">
           <p className="text-xs font-semibold uppercase text-danger">Career stopped</p>
-          <h2 className="mt-1 text-xl font-bold">Board Decision</h2>
+          <h2 id="game-over-title" className="mt-1 text-xl font-bold">Board Decision</h2>
           <p className="mt-2 text-sm leading-6 text-neutral-600">{save.gameOver}</p>
         </div>
       </div>

@@ -99,6 +99,7 @@
 - Financial reports should expose total income, total expenses, and result directly in the card, not only through line-item rows or note copy, because the player needs a quick period-level reconciliation before continuing.
 - Weekly finance updates and financial report line items must share the same income/expense breakdown; reports must not invent display-only lines that were not reflected in the balance movement.
 - Debt warnings and bankruptcy stops must show exact balance/debt-limit context because debt-limit failure is a career-ending state.
+- Bankruptcy stops are blocking modal dialogs: once the debt limit is exceeded, the player must see the Board Decision and no Continue action should remain available.
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.
 - Header period labels include both month and period number so repeated same-month decisions are clearly part of the same in-game period.
 - Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
