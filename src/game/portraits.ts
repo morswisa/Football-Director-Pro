@@ -87,7 +87,7 @@ export function createFaceGenome(input: { name: string; seedKey?: string; kind?:
   const seed = faceGenomeSeed(seedKey);
   const facialHairStyle = kind === "manager"
     ? pick(seed, ["stubble", "beard", "moustache", "goatee", "clean"] as const, 23)
-    : pick(seed, ["clean", "stubble", "moustache", "goatee"] as const, 23);
+    : pick(seed, ["clean", "clean", "clean", "stubble", "stubble"] as const, 23);
   const hairStyle = pick(seed, ["undercut", "swept", "textured", "spikes", "tight", "fringe"] as const, 11);
   const portraitArchetype = pick(seed, ["athletic", "angular", "veteran", "lean", "broad"] as const, 24);
 

@@ -157,7 +157,7 @@ function ImpactBox({ children, className }: { children: ReactNode; className?: s
 
 function DecisionActionRow({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("grid grid-cols-2 gap-3 border-t border-line bg-white pt-3", className)}>
+    <div className={cn("sticky bottom-0 z-10 -mx-5 grid grid-cols-2 gap-3 border-t border-line bg-white/96 px-5 pb-1 pt-3 shadow-[0_-16px_30px_rgba(16,36,27,0.08)] backdrop-blur", className)}>
       {children}
     </div>
   );
@@ -192,7 +192,7 @@ export function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb"
   const id = `avatar-${reactId}-${seed}`;
   const isPortrait = variant === "portrait";
   const viewHeight = isPortrait ? 130 : 100;
-  const faceInk = "#2d1712";
+  const faceInk = "#342018";
   const baseFacePath = faceShape === "square"
     ? "M34 38 C36 25 50 18 65 24 C75 29 78 43 74 57 L69 68 L59 77 L45 76 L36 66 C31 57 30 45 34 38 Z"
     : faceShape === "narrow"
@@ -366,7 +366,7 @@ export function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb"
             "M60 31 L72 24 L71 38",
           ];
   const portraitTransform = mirror ? "translate(100 0) scale(-1 1)" : undefined;
-  const portraitZoom = isPortrait ? "translate(-5 -7) scale(1.1)" : "";
+  const portraitZoom = isPortrait ? "translate(-3 -5) scale(1.07)" : "";
   const archetypeTransform = portraitArchetype === "broad"
     ? "translate(-2 -1) scale(1.08 0.99)"
     : portraitArchetype === "lean"
@@ -543,29 +543,29 @@ export function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb"
             <path d={rightEarPath} fill={skinShadow} opacity="0.9" />
             <path d="M33 55 C29 55 29 60 33 60 M70 54 C73 55 73 59 69 60" stroke={skinShadow} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.38" />
             <path d={archetypeFacePath} fill={`url(#${id}-skin)`} />
-            <path d={faceShadowPath} fill={skinShadow} opacity="0.34" />
-            <path d={templeShadowPath} fill={faceInk} opacity="0.11" />
-            <path d={cheekShadowPath} fill={skinShadow} opacity="0.24" />
-            <path d={hardFacePlanePath} fill={facePlaneStyle === "soft-mask" ? skinLight : faceInk} opacity={facePlaneStyle === "soft-mask" ? "0.13" : "0.1"} />
-            <path d={foreheadPlanePath} fill={skinLight} opacity="0.2" />
-            <path d={keyLightPath} fill={skinLight} opacity={lightAngle === "front" ? "0.32" : "0.46"} />
-            <path d={highlightPlanePath} stroke={skinLight} strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.42" />
-            <path d={browShadowPath} fill={faceInk} opacity="0.12" />
-            <path d={eyeSocketPath} fill="#2a1510" opacity="0.11" />
-            <path d={jawPlanePath} fill={skinShadow} opacity="0.22" />
-            <path d={chinPlanePath} fill={skinMid} opacity="0.2" />
-            <path d="M42 58 C47 61 54 61 60 58 C58 64 47 65 42 58 Z" fill={skinMid} opacity="0.22" />
+            <path d={faceShadowPath} fill={skinShadow} opacity="0.24" />
+            <path d={templeShadowPath} fill={faceInk} opacity="0.08" />
+            <path d={cheekShadowPath} fill={skinShadow} opacity="0.17" />
+            <path d={hardFacePlanePath} fill={facePlaneStyle === "soft-mask" ? skinLight : faceInk} opacity={facePlaneStyle === "soft-mask" ? "0.1" : "0.07"} />
+            <path d={foreheadPlanePath} fill={skinLight} opacity="0.17" />
+            <path d={keyLightPath} fill={skinLight} opacity={lightAngle === "front" ? "0.24" : "0.34"} />
+            <path d={highlightPlanePath} stroke={skinLight} strokeWidth="1.7" strokeLinecap="round" fill="none" opacity="0.34" />
+            <path d={browShadowPath} fill={faceInk} opacity="0.08" />
+            <path d={eyeSocketPath} fill="#2a1510" opacity="0.07" />
+            <path d={jawPlanePath} fill={skinShadow} opacity="0.15" />
+            <path d={chinPlanePath} fill={skinMid} opacity="0.14" />
+            <path d="M42 58 C47 61 54 61 60 58 C58 64 47 65 42 58 Z" fill={skinMid} opacity="0.14" />
             <path d={archetypeHairPath} fill={`url(#${id}-hair)`} />
             <path d={hairVolumePath} fill={`url(#${id}-hair)`} opacity="0.96" />
-            <path d={hairShadowPath} fill="#050505" opacity="0.24" />
+            <path d={hairShadowPath} fill="#050505" opacity="0.2" />
             {hairDepthPaths.map((path, index) => (
-              <path key={path} d={path} stroke={index === 0 ? hairLight : hair} strokeWidth={index === 2 ? "3.4" : "2.4"} strokeLinecap="round" fill="none" opacity={index === 0 ? "0.42" : "0.36"} />
+              <path key={path} d={path} stroke={index === 0 ? hairLight : hair} strokeWidth={index === 2 ? "2.7" : "2"} strokeLinecap="round" fill="none" opacity={index === 0 ? "0.34" : "0.28"} />
             ))}
             {sideburnPath ? <path d={sideburnPath} fill={hair} opacity="0.82" /> : null}
-            <path d="M35 33 C44 18 63 17 75 32 C59 27 49 29 35 38 Z" fill={hairLight} opacity="0.38" />
-            <path d={hairlinePath} stroke={hairLight} strokeWidth="2.2" strokeLinecap="round" fill="none" opacity="0.42" />
+            <path d="M35 33 C44 18 63 17 75 32 C59 27 49 29 35 38 Z" fill={hairLight} opacity="0.26" />
+            <path d={hairlinePath} stroke={hairLight} strokeWidth="1.7" strokeLinecap="round" fill="none" opacity="0.3" />
             {hairStrands.map((path, index) => (
-              <path key={path} d={path} stroke={index === 1 ? hairLight : hair} strokeWidth={hairTexture === "crop" ? "2.1" : "2.5"} strokeLinecap="round" fill="none" opacity={index === 1 ? "0.44" : "0.62"} />
+              <path key={path} d={path} stroke={index === 1 ? hairLight : hair} strokeWidth={hairTexture === "crop" ? "1.7" : "2"} strokeLinecap="round" fill="none" opacity={index === 1 ? "0.34" : "0.48"} />
             ))}
             {hairStyle === "spikes" || hairStyle === "textured" || hairStyle === "fringe" ? (
               <>
@@ -575,14 +575,14 @@ export function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb"
                 <path d="M67 28 L78 24 L72 38 Z" fill={hair} />
               </>
             ) : null}
-            <path d={leftBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.7" : "3.2"} strokeLinecap="round" fill="none" />
-            <path d={rightBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.7" : "3.2"} strokeLinecap="round" fill="none" />
-            <path d={leftEyeFillPath} fill="#f3d6bf" opacity={eyeStyle === "narrow" ? "0.2" : "0.38"} />
-            <path d={rightEyeFillPath} fill="#f3d6bf" opacity={eyeStyle === "narrow" ? "0.2" : "0.38"} />
-            <path d={leftEyePath} stroke="#0f172a" strokeWidth={eyeStyle === "round" ? "2" : "2.5"} strokeLinecap="round" fill="none" />
-            <path d={rightEyePath} stroke="#0f172a" strokeWidth={eyeStyle === "round" ? "2" : "2.5"} strokeLinecap="round" fill="none" />
-            <circle cx={eyeLeft + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 1 : 0)} r={eyeStyle === "round" ? "1.35" : "1.1"} fill="#111827" />
-            <circle cx={eyeRight + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 2 : 1)} r={eyeStyle === "round" ? "1.3" : "1.05"} fill="#111827" />
+            <path d={leftBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.05" : "2.35"} strokeLinecap="round" fill="none" opacity="0.92" />
+            <path d={rightBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.05" : "2.35"} strokeLinecap="round" fill="none" opacity="0.92" />
+            <path d={leftEyeFillPath} fill="#f6ddc9" opacity={eyeStyle === "narrow" ? "0.14" : "0.28"} />
+            <path d={rightEyeFillPath} fill="#f6ddc9" opacity={eyeStyle === "narrow" ? "0.14" : "0.28"} />
+            <path d={leftEyePath} stroke="#172033" strokeWidth={eyeStyle === "round" ? "1.45" : "1.7"} strokeLinecap="round" fill="none" />
+            <path d={rightEyePath} stroke="#172033" strokeWidth={eyeStyle === "round" ? "1.45" : "1.7"} strokeLinecap="round" fill="none" />
+            <circle cx={eyeLeft + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 1 : 0)} r={eyeStyle === "round" ? "0.95" : "0.8"} fill="#111827" />
+            <circle cx={eyeRight + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 2 : 1)} r={eyeStyle === "round" ? "0.9" : "0.78"} fill="#111827" />
             {hasGlasses ? (
               <>
                 <path d={`M${eyeLeft - 8} ${eyeY - 7} h16 v13 h-16 Z`} fill="none" stroke="#111827" strokeWidth="1.8" />
@@ -592,30 +592,30 @@ export function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb"
             ) : null}
             {hasScar ? <path d={`M${eyeRight + 5} ${eyeY + 4} L${eyeRight + 12} ${eyeY + 13}`} stroke="#f3d0ba" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" /> : null}
             {hasAgeLines ? skinMarkPaths.map((path) => (
-              <path key={path} d={path} stroke={faceInk} strokeWidth="1.05" strokeLinecap="round" fill="none" opacity="0.18" />
+              <path key={path} d={path} stroke={faceInk} strokeWidth="0.85" strokeLinecap="round" fill="none" opacity="0.14" />
             )) : null}
-            {underEyePlanePath ? <path d={underEyePlanePath} stroke={faceInk} strokeWidth={underEyeDepth === "heavy" ? "1.8" : "1.25"} strokeLinecap="round" fill="none" opacity={underEyeDepth === "heavy" ? "0.2" : "0.16"} /> : null}
-            <path d={cheekPath} stroke={skinLight} strokeWidth="1.7" strokeLinecap="round" fill="none" opacity={cheekStyle === "hollow" ? "0.26" : "0.34"} />
-            <path d="M39 51 C44 49 49 50 52 53" stroke={skinShadow} strokeWidth="1.15" strokeLinecap="round" fill="none" opacity="0.24" />
-            <path d="M58 53 C63 50 68 51 71 55" stroke={skinShadow} strokeWidth="1.15" strokeLinecap="round" fill="none" opacity="0.24" />
-            <path d={nosePath} stroke={skinShadow} strokeWidth={noseStyle === "sharp" ? "2" : "2.5"} strokeLinecap="round" fill="none" opacity="0.6" />
-            <path d={castShadowPath} stroke={faceInk} strokeWidth="2.1" strokeLinecap="round" fill="none" opacity="0.18" />
-            <path d={`M${noseX + 1} 45 C${noseX + 5} 51 ${noseX + 2} 57 ${noseX + 7} 60`} stroke={skinLight} strokeWidth="1.25" strokeLinecap="round" fill="none" opacity="0.34" />
-            <path d={nostrilPath} stroke={skinShadow} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.42" />
+            {underEyePlanePath ? <path d={underEyePlanePath} stroke={faceInk} strokeWidth={underEyeDepth === "heavy" ? "1.15" : "0.95"} strokeLinecap="round" fill="none" opacity={underEyeDepth === "heavy" ? "0.14" : "0.1"} /> : null}
+            <path d={cheekPath} stroke={skinLight} strokeWidth="1.25" strokeLinecap="round" fill="none" opacity={cheekStyle === "hollow" ? "0.2" : "0.26"} />
+            <path d="M39 51 C44 49 49 50 52 53" stroke={skinShadow} strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.18" />
+            <path d="M58 53 C63 50 68 51 71 55" stroke={skinShadow} strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.18" />
+            <path d={nosePath} stroke={skinShadow} strokeWidth={noseStyle === "sharp" ? "1.55" : "1.85"} strokeLinecap="round" fill="none" opacity="0.48" />
+            <path d={castShadowPath} stroke={faceInk} strokeWidth="1.55" strokeLinecap="round" fill="none" opacity="0.12" />
+            <path d={`M${noseX + 1} 45 C${noseX + 5} 51 ${noseX + 2} 57 ${noseX + 7} 60`} stroke={skinLight} strokeWidth="0.95" strokeLinecap="round" fill="none" opacity="0.28" />
+            <path d={nostrilPath} stroke={skinShadow} strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.34" />
             {hasMoustache ? <path d={`M43 ${mouthY - 3} C49 ${mouthY - 7} 57 ${mouthY - 6} 66 ${mouthY - 4}`} stroke={hair} strokeWidth={facialHairStyle === "moustache" ? "3" : "2.4"} strokeLinecap="round" fill="none" opacity="0.5" /> : null}
-            <path d={mouthPlanePath} fill={skinShadow} opacity="0.1" />
-            <path d={asymmetricMouthPath} stroke="#5f271f" strokeWidth={mouthStyle === "pressed" ? "2" : "2.4"} strokeLinecap="round" fill="none" />
-            <path d={lowerLipPath} stroke={skinShadow} strokeWidth="1.4" strokeLinecap="round" fill="none" opacity="0.35" />
+            <path d={mouthPlanePath} fill={skinShadow} opacity="0.07" />
+            <path d={asymmetricMouthPath} stroke="#5f271f" strokeWidth={mouthStyle === "pressed" ? "1.35" : "1.65"} strokeLinecap="round" fill="none" />
+            <path d={lowerLipPath} stroke={skinShadow} strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.24" />
             {hasStubble ? (
               <>
-                <path d={facialHairStyle === "goatee" ? "M49 67 C53 76 61 76 65 66 C63 80 50 81 46 69 Z" : "M39 59 C45 75 62 77 69 61 C66 80 44 82 37 66 Z"} fill={hair} opacity={hasBeard ? "0.42" : "0.22"} />
-                <path d={facialHairStyle === "goatee" ? "M49 72 C54 75 60 75 64 70" : "M43 66 C50 70 59 70 66 64"} stroke={hair} strokeWidth="1.6" strokeLinecap="round" opacity="0.26" />
-                <path d="M42 63 C48 66 58 66 66 61 M43 68 C50 72 60 72 67 66" stroke={hair} strokeWidth="0.9" strokeLinecap="round" opacity={hasBeard ? "0.35" : "0.18"} />
+                <path d={facialHairStyle === "goatee" ? "M49 67 C53 76 61 76 65 66 C63 80 50 81 46 69 Z" : "M39 59 C45 75 62 77 69 61 C66 80 44 82 37 66 Z"} fill={hair} opacity={hasBeard ? "0.34" : "0.1"} />
+                <path d={facialHairStyle === "goatee" ? "M49 72 C54 75 60 75 64 70" : "M43 66 C50 70 59 70 66 64"} stroke={hair} strokeWidth="1.25" strokeLinecap="round" opacity={hasBeard ? "0.22" : "0.12"} />
+                <path d="M42 63 C48 66 58 66 66 61 M43 68 C50 72 60 72 67 66" stroke={hair} strokeWidth="0.75" strokeLinecap="round" opacity={hasBeard ? "0.26" : "0.1"} />
               </>
             ) : null}
-            <path d="M37 68 C44 78 59 80 67 65" stroke={skinShadow} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.42" />
-            <path d="M36 40 C33 51 35 63 42 72 M69 39 C75 51 72 65 63 73" stroke={faceInk} strokeWidth="1.35" strokeLinecap="round" fill="none" opacity="0.18" />
-            <path d="M40 75 C47 82 59 82 65 73" stroke="#1f130f" strokeWidth="1.2" strokeLinecap="round" opacity="0.18" />
+            <path d="M37 68 C44 78 59 80 67 65" stroke={skinShadow} strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.3" />
+            <path d="M36 40 C33 51 35 63 42 72 M69 39 C75 51 72 65 63 73" stroke={faceInk} strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.12" />
+            <path d="M40 75 C47 82 59 82 65 73" stroke="#1f130f" strokeWidth="0.9" strokeLinecap="round" opacity="0.13" />
             <path d={neckTendonPath} stroke={skinShadow} strokeWidth="1.35" strokeLinecap="round" fill="none" opacity={isPortrait ? "0.28" : "0"} />
           </g>
         </g>
@@ -1706,9 +1706,9 @@ function EventEntityHeader({ save }: { save: GameSave }) {
       <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-emerald-950 text-white shadow-[0_18px_36px_rgba(16,36,27,0.18)]">
         <div className="relative p-3">
           <div className="pointer-events-none absolute inset-0 opacity-16 [background:linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.35)_38%_41%,transparent_41%_62%,rgba(255,255,255,0.16)_62%_64%,transparent_64%)]" />
-          <div className="relative grid grid-cols-[7rem_1fr] items-stretch gap-3">
+          <div className="relative grid grid-cols-[6.25rem_1fr] items-stretch gap-3">
             <div className="relative overflow-hidden rounded-2xl bg-emerald-900/60 shadow-[0_14px_28px_rgba(0,0,0,0.22)] ring-1 ring-white/20">
-              <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-36 w-full rounded-none border-0 text-base shadow-none" />
+              <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-32 w-full rounded-none border-0 text-base shadow-none" />
               <span className={cn("absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-sm font-black text-white shadow-[0_8px_14px_rgba(0,0,0,0.22)]", positionClass(player.position))}>{displayPosition(player.position)}</span>
               <span className="absolute bottom-2 right-2 rounded-xl bg-white px-2.5 py-1 text-base font-black text-emerald-950 shadow-[0_8px_14px_rgba(0,0,0,0.18)]">{player.rating}</span>
             </div>
@@ -1736,9 +1736,9 @@ function EventEntityHeader({ save }: { save: GameSave }) {
       <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-emerald-950 text-white shadow-[0_18px_36px_rgba(16,36,27,0.18)]">
         <div className="relative p-3">
           <div className="pointer-events-none absolute inset-0 opacity-16 [background:linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.35)_38%_41%,transparent_41%_62%,rgba(255,255,255,0.16)_62%_64%,transparent_64%)]" />
-          <div className="relative grid grid-cols-[7rem_1fr] items-stretch gap-3">
+          <div className="relative grid grid-cols-[6.25rem_1fr] items-stretch gap-3">
             <div className="relative overflow-hidden rounded-2xl bg-emerald-900/60 shadow-[0_14px_28px_rgba(0,0,0,0.22)] ring-1 ring-white/20">
-              <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-36 w-full rounded-none border-0 text-base shadow-none" />
+              <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-32 w-full rounded-none border-0 text-base shadow-none" />
               <span className="absolute bottom-2 right-2 rounded-xl bg-white px-2.5 py-1 text-base font-black text-emerald-950 shadow-[0_8px_14px_rgba(0,0,0,0.18)]">{managerRating(manager)}</span>
             </div>
             <div className="min-w-0 py-1">
@@ -1977,7 +1977,7 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
         <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
       </div>
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
-        The manager has put this player forward. Walking away or missing the deal may frustrate him; completing it should be well received.
+        The manager has put this player forward because he believes this target fits the squad plan. Walking away may frustrate him.
       </p>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Fee to club</p>
@@ -2397,7 +2397,7 @@ function EventModal({ save }: { save: GameSave }) {
   const statusLabel = event.requiresDecision ? "Decision required" : event.type === "match_preview" ? "Match choice" : "Club update";
   const periodLabel = `${seasonLabel(save.season)} · ${monthForWeek(event.createdWeek || save.week)} · Period ${event.createdWeek || save.week}`;
   const queueLabel = save.eventQueue.length > 0 ? `${save.eventQueue.length} queued` : "Current item";
-  const showEventNote = Boolean(event.note && event.type !== "season_summary");
+  const showEventNote = Boolean(event.note && event.type !== "season_summary" && !(event.type === "contract_offer" && proposal));
 
   if (result && save.liveMatch && !save.liveMatch.finished) return <LiveMatchModal save={save} result={result} />;
 
