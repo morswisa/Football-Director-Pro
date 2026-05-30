@@ -616,8 +616,8 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       <Card>
         <h2 className="text-lg font-bold">{current.club.stadium.name}</h2>
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <p className="rounded-md bg-surface-muted px-3 py-2">Capacity <b>{current.club.stadium.capacity.toLocaleString()}</b></p>
-          <p className="rounded-md bg-surface-muted px-3 py-2">Condition <b>{pct(current.club.stadium.condition)}</b></p>
+          <p className="rounded-md bg-surface-muted px-3 py-2">Capacity <b data-testid="stadium-capacity">{current.club.stadium.capacity.toLocaleString()}</b></p>
+          <p className="rounded-md bg-surface-muted px-3 py-2">Condition <b data-testid="stadium-condition">{pct(current.club.stadium.condition)}</b></p>
         </div>
         <div className="mt-4 aspect-[16/9] rounded-lg bg-[linear-gradient(140deg,_#1b6e37,_#58b76f_45%,_#e8efe9_46%,_#18542f)] p-4">
           <div className="h-full rounded border-4 border-white/70 bg-emerald-700/80" />

@@ -165,6 +165,11 @@
 
 ## 2026-05-30
 
+- Continued final acceptance with Stadium actions. Found that upgrade/repair changed the balance but did not create finance transactions, making the spending harder to audit from the Finances screen.
+- Added stadium upgrade and repair transactions, included stadium investment in infrastructure spending, refreshed financial snapshots after those actions, and exposed stable test IDs for Stadium capacity/condition.
+- Added e2e coverage for Stadium upgrade/repair: imported a high-balance test save, verified condition/capacity before and after actions, and confirmed Finances shows infrastructure spending plus `Stadium repair` and `Stadium upgrade` transactions. Added unit coverage that stadium costs flow into the current financial context.
+- Verified the Stadium acceptance pass with `npm run e2e`, `npm run lint`, `npm test` (44 tests), `npm run build`, the `develop-web-game` screenshot client, and a focused mobile Stadium screenshot.
+- Deployed the Stadium acceptance pass to Vercel preview: `https://football-director-ek6obj76p-mor-swisas-projects.vercel.app`.
 - Continued final acceptance with manager hire/fire. The browser test exposed a real UI mismatch: after firing the manager, the engine allowed emergency replacement but the Manager UI disabled negotiation behind the short-term churn lock.
 - Fixed the Manager UI so `Negotiate` remains available when the club has no manager, while still disabling further hire/fire churn after a replacement is hired. The no-manager card now explains that emergency replacement is available.
 - Fixed the required no-manager modal handoff: it now directs the player to the Manager tab without continuing to block that tab, so candidate negotiation is actually reachable.

@@ -73,6 +73,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `buildFinancialLines` is the shared weekly finance line-item model for both balance mutation and financial snapshots. Weekly operations use the operating subset, while report snapshots also fold in same-week transfer, loan, manager, prize, and cup transactions that already changed the balance.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
 - Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
+- Stadium upgrade and repair transactions are recorded as same-period infrastructure spending and refresh `latestFinancialSnapshot`, so direct stadium capex is visible in Finances after the action.
 - Transfer-window acceptance coverage verifies completed paid purchases, loan-ins, and loan-outs across world ownership, balance movement, manager-trust changes, and financial snapshot fee lines.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
@@ -166,3 +167,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Settings acceptance coverage verifies the local save lifecycle from the browser: export produces usable JSON, invalid import input is rejected, valid imported JSON replaces Slot 1, and the imported save can continue through the event queue.
 - Live-match acceptance coverage verifies the `Play Match` route: live state, one-minute progression, no Continue before final whistle, normal match-result summary after final whistle, and Dashboard Last Result after dismissal.
 - Manager acceptance coverage verifies the UI-level hire/fire economy: dismissal compensation, debt context, emergency no-manager replacement, hire cost/wage context, successful replacement, and locked controls after hiring.
+- Stadium acceptance coverage verifies upgrade/repair from the browser, including capacity/condition changes and matching financial transaction/infrastructure visibility.

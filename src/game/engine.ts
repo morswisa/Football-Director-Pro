@@ -419,6 +419,7 @@ function buildFinancialLines(save: GameSave, matchdayIncome = 0, includeTransact
   const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid") || tx.label.toLowerCase().includes("loan fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received") || tx.label.toLowerCase().includes("loan fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const managerCosts = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("manager")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
+  const stadiumInvestment = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("stadium")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
   const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award") || tx.label.toLowerCase().includes("cup prize")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const cupMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("cup matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const leagueMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("league matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
@@ -432,7 +433,7 @@ function buildFinancialLines(save: GameSave, matchdayIncome = 0, includeTransact
   const stadiumRunning = Math.round(upkeep * 0.34);
   const youthAcademy = Math.round(club.youthLevel * 72);
   const trainingFacilities = Math.round(club.trainingLevel * 78);
-  const infrastructure = Math.max(0, upkeep - stadiumRunning - youthAcademy - trainingFacilities) + managerCosts;
+  const infrastructure = Math.max(0, upkeep - stadiumRunning - youthAcademy - trainingFacilities) + managerCosts + stadiumInvestment;
   const expenses = { wages, stadiumRunning, youthAcademy, trainingFacilities, infrastructure, feesOut };
   const income = {
     feesIn,
@@ -2076,9 +2077,12 @@ export function upgradeStand(input: GameSave, standId: string) {
   const cost = stand.level * 180_000;
   if (club.finances.balance < cost) return save;
   club.finances.balance -= cost;
+  club.finances.transactions.unshift({ id: `tx_stadium_upgrade_${save.week}_${stand.id}_${stand.level}`, week: save.week, label: `Stadium upgrade: ${stand.name}`, amount: -cost });
+  club.finances.transactions = club.finances.transactions.slice(0, 24);
   stand.level += 1;
   stand.capacity += 850;
   club.stadium.capacity = club.stadium.stands.reduce((sum, item) => sum + item.capacity, 0);
+  refreshQueuedFinancialReports(save);
   save.achievements.find((a) => a.id === "stadium_upgrade")!.progress = 1;
   return withUpdate(updateAchievements(save));
 }
@@ -2089,7 +2093,12 @@ export function repairStadium(input: GameSave) {
   const cost = Math.round((100 - club.stadium.condition) * 4_500);
   if (club.finances.balance < cost) return save;
   club.finances.balance -= cost;
+  if (cost > 0) {
+    club.finances.transactions.unshift({ id: `tx_stadium_repair_${save.week}_${club.stadium.condition}`, week: save.week, label: "Stadium repair", amount: -cost });
+    club.finances.transactions = club.finances.transactions.slice(0, 24);
+  }
   club.stadium.condition = 100;
+  refreshQueuedFinancialReports(save);
   return withUpdate(save);
 }
 

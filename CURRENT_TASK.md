@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-qh3j2f489-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-ek6obj76p-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -37,6 +37,7 @@ Playable V1 includes:
 - New saves generate natural unique fictional club names without numeric suffixes, and loaded saves are normalized so duplicate club names and same-club player names receive stable display disambiguation.
 - Youth Academy and Training Ground are managed through dashboard modals instead of a separate Training page, with `+1` through `+5` level selection before confirming upgrades or downgrades.
 - Facility and stadium screens show selected level changes, costs, upkeep/capacity effects, and bank-impact context before actions.
+- Stadium upgrades and repairs now write finance transactions, refresh the current financial snapshot, and surface the spending under infrastructure so balance movement is traceable after the action.
 - Manager hiring/firing.
 - Manager hiring/firing now uses contract economics: weekly wages, contract years, compensation previews, free-agent/contracted candidate status, and a manager-action lock after changes.
 - Manager dismissal and hiring negotiation screens show post-cost balance, debt limit, debt headroom, and wage-bill impact before the chairman confirms.
@@ -103,6 +104,8 @@ Playable V1 includes:
 - The expanded clean-save Playwright acceptance path now reaches the first match result, verifies the post-match impact explanation, and confirms the Dashboard shows Last Result after dismissing the result.
 - Live-match browser acceptance now verifies `Play Match` enters the live state, advances minutes one-by-one, withholds the result Continue button until final whistle, then shows the `Match result` summary and returns to Dashboard.
 - Manager browser acceptance now verifies dismissal cost/debt context, no-manager emergency replacement, hire negotiation cost/wage context, successful replacement hire, and post-hire manager-action lock.
+- Stadium browser acceptance now verifies upgrade capacity gain, repair condition recovery, infrastructure spending, and recent transaction visibility for upgrade/repair costs.
+- Latest stadium acceptance pass is deployed to preview.
 - Latest manager acceptance pass is deployed to preview.
 - Latest live-match acceptance pass is deployed to preview.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.

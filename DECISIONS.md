@@ -87,6 +87,7 @@
 - Informational update modals can use a normal footer button instead of a sticky action when sticky controls would obscure long financial/history content.
 - Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
+- Direct infrastructure actions, including stadium upgrade and repair, must leave a finance trail through transactions and current-period infrastructure spending so balance changes are explainable.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
 - Financial surfaces must also show opening balance and closing balance so the player can reconcile report profit/loss with the displayed club balance.
 - Weekly finance updates and financial report line items must share the same income/expense breakdown; reports must not invent display-only lines that were not reflected in the balance movement.

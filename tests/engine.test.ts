@@ -17,6 +17,7 @@ import {
   latestFinancialSnapshot,
   normalizeGameState,
   processWeeklyFinances,
+  repairStadium,
   resolveEvent,
   returnSeasonLoans,
   startNextSeason,
@@ -415,6 +416,33 @@ describe("game engine", () => {
     expect(downgradedClub.finances.balance).toBe(balanceAfterUpgrades);
     expect(downgradedClub.finances.upkeep).toBeLessThan(upkeepAfterUpgrades);
     expect(downgradedClub.finances.upkeep).toBeGreaterThanOrEqual(0);
+  });
+
+  it("records stadium upgrade and repair costs in current financial context", () => {
+    let save = createNewGame({ ...setup, seed: 92 });
+    const club = save.clubs[save.userClubId];
+    club.finances.balance = 2_000_000;
+    club.stadium.condition = 72;
+    const stand = club.stadium.stands[0];
+    const startingCapacity = club.stadium.capacity;
+    const startingBalance = club.finances.balance;
+    const upgradeCost = stand.level * 180_000;
+
+    save = upgradeStand(save, stand.id);
+    let upgradedClub = save.clubs[save.userClubId];
+    expect(upgradedClub.stadium.capacity).toBe(startingCapacity + 850);
+    expect(upgradedClub.finances.balance).toBe(startingBalance - upgradeCost);
+    expect(upgradedClub.finances.transactions[0].label).toContain("Stadium upgrade");
+    expect(latestFinancialSnapshot(save).expenses.infrastructure).toBeGreaterThanOrEqual(upgradeCost);
+
+    const balanceBeforeRepair = upgradedClub.finances.balance;
+    const repairCost = Math.round((100 - upgradedClub.stadium.condition) * 4_500);
+    save = repairStadium(save);
+    upgradedClub = save.clubs[save.userClubId];
+    expect(upgradedClub.stadium.condition).toBe(100);
+    expect(upgradedClub.finances.balance).toBe(balanceBeforeRepair - repairCost);
+    expect(upgradedClub.finances.transactions[0].label).toBe("Stadium repair");
+    expect(latestFinancialSnapshot(save).expenses.infrastructure).toBeGreaterThanOrEqual(upgradeCost + repairCost);
   });
 
   it("allows emergency manager replacement but blocks repeated manager churn", () => {

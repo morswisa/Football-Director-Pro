@@ -264,3 +264,36 @@ test("manager dismissal still allows emergency replacement", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Fire Manager" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Negotiate" }).first()).toBeDisabled();
 });
+
+test("stadium upgrades and repairs show clear financial impact", async ({ page }) => {
+  await createAcceptanceCareer(page, "Standford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  const importedClub = importedSave.clubs[importedSave.userClubId];
+  importedClub.finances.balance = 2_000_000;
+  importedClub.stadium.condition = 72;
+  delete importedSave.financialSnapshot;
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await expect(page.getByText("Imported into Slot 1.")).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Stadium/i }).click();
+  await expect(page.getByTestId("stadium-condition")).toContainText("72%");
+  const startingCapacity = Number((await page.getByTestId("stadium-capacity").innerText()).replace(/,/g, ""));
+  await page.getByRole("button", { name: "Upgrade" }).first().click();
+  await expect(page.getByText("Stand upgraded.")).toBeVisible();
+  await expect.poll(async () => Number((await page.getByTestId("stadium-capacity").innerText()).replace(/,/g, ""))).toBe(startingCapacity + 850);
+
+  await page.getByRole("button", { name: "Repair Stadium" }).click();
+  await expect(page.getByText("Stadium repaired if funds were available.")).toBeVisible();
+  await expect(page.getByTestId("stadium-condition")).toContainText("100%");
+
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText("Infrastructure spending")).toBeVisible();
+  await expect(page.getByText("Stadium repair", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Stadium upgrade:/)).toBeVisible();
+});
