@@ -161,6 +161,14 @@ function ImpactBox({ children, className }: { children: ReactNode; className?: s
   );
 }
 
+function DecisionActionRow({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("grid grid-cols-2 gap-3 border-t border-line bg-white pt-3", className)}>
+      {children}
+    </div>
+  );
+}
+
 function DebtImpactBox({ balance, debtLimit }: { balance: number; debtLimit: number }) {
   const headroom = balance - debtLimit;
   const overLimit = headroom < 0;
@@ -1193,10 +1201,10 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
         <span className="block">Weekly wage bill: {formatSignedMoney(wageBillDelta)}/w, from {formatMoney(currentWageBill)}/w to {formatMoney(currentWageBill + wageBillDelta)}/w.</span>
         <span className="block">{likelyAccepted ? "Manager trust +3; player morale improves." : "Manager trust -3; player morale -8 if the offer is turned down."}</span>
       </ImpactBox>
-      <div className="grid grid-cols-2 gap-3 border-t border-line bg-white pt-3">
+      <DecisionActionRow>
         <Button onClick={() => approve({ wage, years })}>Submit Offer</Button>
         <Button variant="secondary" onClick={reject}>Reject</Button>
-      </div>
+      </DecisionActionRow>
     </div>
   );
 }
@@ -1478,10 +1486,10 @@ function ManagerContractControls({ save }: { save: GameSave }) {
         <span>Extend: manager trust +4; weekly wage bill {formatSignedMoney(wageBillDelta)}/w.</span>
         <span className="block">Let him leave: manager trust resets to 50, board confidence -4, and the club must hire a replacement before continuing.</span>
       </ImpactBox>
-      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+      <DecisionActionRow>
         <Button onClick={() => resolve({ action: "extend", terms: { wage, years } })}>Extend Contract</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Let Him Leave</Button>
-      </div>
+      </DecisionActionRow>
     </div>
   );
 }
@@ -1542,10 +1550,10 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
         <b className="block">Selected offer impact</b>
         Upfront fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the signing is completed.
       </ImpactBox>
-      <div className="grid grid-cols-2 gap-3 border-t border-line bg-white pt-3">
+      <DecisionActionRow>
         <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years } })}>Submit Offer</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
-      </div>
+      </DecisionActionRow>
     </div>
   );
 }
@@ -1578,10 +1586,10 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
           <b className="block">Accept loan impact</b>
           Fee income {formatMoney(expectedFee)}; weekly wage bill drops by {formatMoney(requestedWage)}/w while the player is away.
         </ImpactBox>
-        <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+        <DecisionActionRow>
           <Button onClick={() => resolve({ action: "offer", terms: { fee: expectedFee, wage: requestedWage, years: 1 } })}>Accept Loan</Button>
           <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject</Button>
-        </div>
+        </DecisionActionRow>
       </div>
     );
   }
@@ -1603,24 +1611,24 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
       </ImpactBox>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Loan fee</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {feeOptions.map((option) => (
-            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", fee === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatMoney(option)}</button>
+            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", fee === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatMoney(option)}</button>
           ))}
         </div>
       </div>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly contribution</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
           ))}
         </div>
       </div>
-      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+      <DecisionActionRow>
         <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years: 1 } })}>Submit Loan</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
-      </div>
+      </DecisionActionRow>
     </div>
   );
 }
@@ -1812,10 +1820,10 @@ function EventModal({ save }: { save: GameSave }) {
           })() : (
             <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept bid +1, reject bid -2.</p>
           )}
-          <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+          <DecisionActionRow className="mt-5">
             <Button onClick={() => resolve({ action: "accept" })}>Accept Bid</Button>
             <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject Bid</Button>
-          </div>
+          </DecisionActionRow>
           </>
         ) : null}
 
@@ -1835,25 +1843,33 @@ function EventModal({ save }: { save: GameSave }) {
                 );
               })()
             ) : null}
-            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+            <DecisionActionRow className="mt-5">
               <Button onClick={() => resolve({ action: "confirm" })}>Confirm Sale</Button>
               <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Cancel</Button>
-            </div>
+            </DecisionActionRow>
           </>
         ) : null}
 
         {event.type === "youth_contract" ? (
           <>
             {player ? (
-              <ImpactBox className="mt-4">
-                <b className="block">Youth decision impact</b>
-                Offer contract: weekly wage bill rises by about {formatWeeklyWage(Math.max(player.wage, Math.round(player.rating * 95)))} and player morale improves. Release: no wage cost, player leaves the club.
-              </ImpactBox>
+              <>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                  <p className="rounded-lg bg-surface-muted px-3 py-2">Academy rating <b className="block">{player.rating}/100</b></p>
+                  <p className="rounded-lg bg-surface-muted px-3 py-2">Potential <b className="block">{player.potential}/100</b></p>
+                  <p className="rounded-lg bg-surface-muted px-3 py-2">Position <b className="block">{displayPosition(player.position)}</b></p>
+                  <p className="rounded-lg bg-surface-muted px-3 py-2">Projected wage <b className="block">{formatWeeklyWage(Math.max(player.wage, Math.round(player.rating * 95)))}</b></p>
+                </div>
+                <ImpactBox className="mt-3">
+                  <b className="block">Youth decision impact</b>
+                  Offer contract: weekly wage bill rises and player morale improves. Release: no wage cost, player leaves the club.
+                </ImpactBox>
+              </>
             ) : null}
-            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+            <DecisionActionRow className="mt-5">
               <Button onClick={() => resolve({ action: "offer" })}>Offer Contract</Button>
               <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Release</Button>
-            </div>
+            </DecisionActionRow>
           </>
         ) : null}
 
