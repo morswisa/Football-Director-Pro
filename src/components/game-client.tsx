@@ -835,89 +835,159 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
 function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void }) {
   const current = useCurrent(save)!;
   const goalDifference = current.club.record.gf - current.club.record.ga;
+  const trophies = save.history.flatMap((item) => item.trophies.map((trophy) => `${item.season}: ${trophy}`));
+  const unlockedAchievements = save.achievements.filter((achievement) => achievement.unlockedAt).length;
+  const latestSeason = save.history.at(-1);
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
-      <Card>
-        <h2 className="text-lg font-bold">Current Season</h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Position <b className="block">{current.position ? ordinal(current.position) : "-"}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Played <b className="block">{current.club.record.played}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Record <b className="block">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">GD / Pts <b className="block">{goalDifference > 0 ? `+${goalDifference}` : goalDifference} / {current.club.record.points}</b></p>
+      <Card className="overflow-hidden p-0">
+        <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
+          <p className="text-[10px] font-black uppercase text-white/65">Club legacy</p>
+          <h2 className="mt-1 text-xl font-black">History</h2>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
+              <b className="block text-lg">{save.history.length}</b>
+              <span className="text-[10px] font-black uppercase text-white/65">Seasons</span>
+            </div>
+            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
+              <b className="block text-lg">{trophies.length}</b>
+              <span className="text-[10px] font-black uppercase text-white/65">Trophies</span>
+            </div>
+            <div className="rounded-2xl bg-white px-2 py-3 text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.13)]">
+              <b className="block text-lg text-primary">{unlockedAchievements}/{save.achievements.length}</b>
+              <span className="text-[10px] font-black uppercase text-neutral-500">Achieved</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 p-4 text-xs">
+          <div className="rounded-xl bg-surface-muted px-3 py-3">
+            <p className="font-black uppercase text-neutral-500">Latest outcome</p>
+            <b className="mt-1 block text-sm">{latestSeason ? latestSeason.outcome ?? "stayed" : "In progress"}</b>
+          </div>
+          <div className="rounded-xl bg-surface-muted px-3 py-3">
+            <p className="font-black uppercase text-neutral-500">Cup status</p>
+            <b className="mt-1 block text-sm">{cupStatus(save)}</b>
+          </div>
         </div>
       </Card>
-      <Card>
-        <h2 className="text-lg font-bold">Trophy Cabinet</h2>
-        {save.history.flatMap((item) => item.trophies).length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-500">No trophies or promotions recorded.</p>
-        ) : (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {save.history.flatMap((item) => item.trophies.map((trophy) => `${item.season}: ${trophy}`)).map((label) => (
-              <span key={label} className="rounded-md bg-primary px-2 py-1 text-xs font-black text-white">{label}</span>
+
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-black">Current Season</h2>
+          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-800">{save.divisions.find((division) => division.id === current.club.divisionId)?.name ?? "League"}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">Position</p><b className="mt-1 block text-lg">{current.position ? ordinal(current.position) : "-"}</b></div>
+          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">Played</p><b className="mt-1 block text-lg">{current.club.record.played}</b></div>
+          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">Record</p><b className="mt-1 block text-lg">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b></div>
+          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">GD / Pts</p><b className="mt-1 block text-lg">{goalDifference > 0 ? `+${goalDifference}` : goalDifference} / {current.club.record.points}</b></div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Trophy size={18} className="text-primary" />
+            <h2 className="text-lg font-black">Trophy Cabinet</h2>
+          </div>
+          {trophies.length === 0 ? (
+            <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">No trophies or promotions recorded.</p>
+          ) : (
+            <div className="grid gap-2">
+              {trophies.map((label) => (
+                <div key={label} className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-950">
+                  <Trophy size={15} className="shrink-0 text-primary" />
+                  <b>{label}</b>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-black">{save.cup.name}</h2>
+            <span className="rounded-full bg-surface-muted px-2.5 py-1 text-[10px] font-black uppercase text-neutral-600">{cupStatus(save)}</span>
+          </div>
+          <div className="space-y-2">
+            {save.cup.results.length === 0 ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">The first cup tie has not been played yet.</p> : save.cup.results.map((result) => (
+              <div key={`${result.season}_${result.round}`} className="rounded-xl bg-surface-muted px-3 py-3 text-sm">
+                <div className="flex justify-between gap-3">
+                  <b>{result.roundName}</b>
+                  <b className={result.won ? "text-primary" : "text-danger"}>{result.won ? "Won" : "Lost"}</b>
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">vs {result.opponentName} · {result.goalsFor}-{result.goalsAgainst} · Prize {formatMoney(result.prize)}</p>
+              </div>
             ))}
           </div>
-        )}
-      </Card>
-      <Card>
-        <h2 className="text-lg font-bold">{save.cup.name}</h2>
-        <p className="mt-1 text-sm text-neutral-500">{cupStatus(save)}</p>
-        <div className="mt-3 space-y-2">
-          {save.cup.results.length === 0 ? <p className="text-sm text-neutral-500">The first cup tie has not been played yet.</p> : save.cup.results.map((result) => (
-            <div key={`${result.season}_${result.round}`} className="rounded-lg bg-surface-muted px-3 py-2 text-sm">
-              <div className="flex justify-between gap-3">
-                <b>{result.roundName}</b>
-                <b className={result.won ? "text-primary" : "text-danger"}>{result.won ? "Won" : "Lost"}</b>
-              </div>
-              <p className="text-xs text-neutral-500">vs {result.opponentName} · {result.goalsFor}-{result.goalsAgainst} · Prize {formatMoney(result.prize)}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-      <Card>
-        <h3 className="mb-3 text-sm font-bold">Season History</h3>
-        {save.history.length === 0 ? <p className="text-sm text-neutral-500">Finish a season to create history.</p> : save.history.map((item) => (
-          <div key={item.season} className="border-t border-line py-3 text-sm first:border-t-0">
+        </Card>
+      </div>
+
+      <Card className="space-y-3">
+        <h3 className="text-lg font-black">Season History</h3>
+        {save.history.length === 0 ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">Finish a season to create history.</p> : save.history.map((item) => (
+          <div key={item.season} className="rounded-xl border border-line bg-white p-3 text-sm shadow-[0_8px_18px_rgba(23,33,27,0.04)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <b>{item.season}/{String(item.season + 1).slice(2)}</b>
+                <b className="text-base">{item.season}/{String(item.season + 1).slice(2)}</b>
                 <p className="text-xs text-neutral-500">{item.divisionName}</p>
               </div>
-              <span className={cn("rounded-md px-2 py-1 text-[10px] font-black uppercase", item.outcome === "promoted" ? "bg-primary text-white" : item.outcome === "relegated" ? "bg-red-100 text-danger" : "bg-surface-muted text-neutral-600")}>{item.outcome ?? "stayed"}</span>
+              <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase", item.outcome === "promoted" ? "bg-primary text-white" : item.outcome === "relegated" ? "bg-red-100 text-danger" : "bg-surface-muted text-neutral-600")}>{item.outcome ?? "stayed"}</span>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-              <p className="rounded-md bg-surface-muted px-2 py-1">Finish <b className="block">{ordinal(item.position)}</b></p>
-              <p className="rounded-md bg-surface-muted px-2 py-1">Record <b className="block">{item.won ?? 0}-{item.drawn ?? 0}-{item.lost ?? 0}</b></p>
-              <p className="rounded-md bg-surface-muted px-2 py-1">Award <b className="block">{formatMoney(item.prizeMoney ?? 0)}</b></p>
-              <p className="rounded-md bg-surface-muted px-2 py-1">Balance <b className="block">{formatMoney(item.balance)}</b></p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Finish</p><b className="mt-1 block">{ordinal(item.position)}</b></div>
+              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Record</p><b className="mt-1 block">{item.won ?? 0}-{item.drawn ?? 0}-{item.lost ?? 0}</b></div>
+              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Award</p><b className="mt-1 block">{formatMoney(item.prizeMoney ?? 0)}</b></div>
+              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Balance</p><b className="mt-1 block">{formatMoney(item.balance)}</b></div>
             </div>
-            <p className="mt-2 text-xs text-neutral-500">Next: {item.nextDivisionName ?? item.divisionName} · {item.cupSummary ?? "No cup record"}</p>
+            <p className="mt-3 rounded-xl bg-surface-muted px-3 py-2 text-xs text-neutral-600">Next: {item.nextDivisionName ?? item.divisionName} · {item.cupSummary ?? "No cup record"}</p>
             {item.seasonImpact ? (
-              <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-950">
+              <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-950">
                 Season impact: Board {formatSignedPoints(item.seasonImpact.boardConfidenceAfter - item.seasonImpact.boardConfidenceBefore)} pts · Trust {formatSignedPoints(item.seasonImpact.managerTrustAfter - item.seasonImpact.managerTrustBefore)} pts · Reputation {formatSignedPoints(item.seasonImpact.reputationAfter - item.seasonImpact.reputationBefore)} pts
               </p>
             ) : null}
           </div>
         ))}
       </Card>
-      <Card>
-        <h3 className="mb-3 text-sm font-bold">Hall of Fame</h3>
-        {save.hallOfFame.length === 0 ? <p className="text-sm text-neutral-500">Club legends will appear after long service.</p> : save.hallOfFame.map((name) => <p key={name} className="py-1 text-sm">{name}</p>)}
+
+      <Card className="space-y-3">
+        <h3 className="text-lg font-black">Hall of Fame</h3>
+        {save.hallOfFame.length === 0 ? (
+          <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">Club legends will appear after long service.</p>
+        ) : (
+          <div className="grid gap-2">
+            {save.hallOfFame.map((name) => (
+              <div key={name} className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-950">{name}</div>
+            ))}
+          </div>
+        )}
       </Card>
-      <Card>
-        <h3 className="mb-3 text-sm font-bold">Achievements</h3>
-        <div className="space-y-2">
+
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-lg font-black">Achievements</h3>
+          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-800">{unlockedAchievements}/{save.achievements.length} unlocked</span>
+        </div>
+        <div className="grid gap-2">
           {save.achievements.map((achievement) => (
-            <div key={achievement.id} data-testid={`achievement-${achievement.id}`} className="flex items-center gap-3 rounded-md bg-surface-muted px-3 py-2 text-sm">
-              <Award size={16} className={achievement.unlockedAt ? "text-primary" : "text-neutral-400"} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold">{achievement.title}</p>
-                  <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-black", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-500")}>{achievement.unlockedAt ? "Unlocked" : "Locked"}</span>
+            <div key={achievement.id} data-testid={`achievement-${achievement.id}`} className={cn("rounded-xl border px-3 py-3 text-sm", achievement.unlockedAt ? "border-emerald-100 bg-emerald-50" : "border-line bg-surface-muted")}>
+              <div className="flex items-start gap-3">
+                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-400")}>
+                  <Award size={17} />
                 </div>
-                <p className="text-xs text-neutral-500">{achievement.description}</p>
-                <div className="mt-2 h-1.5 rounded-full bg-white">
-                  <div data-testid={`achievement-progress-${achievement.id}`} className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
+                <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="font-black">{achievement.title}</p>
+                    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black uppercase", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-500")}>{achievement.unlockedAt ? "Unlocked" : "Locked"}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-neutral-500">{achievement.description}</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="h-2 flex-1 rounded-full bg-white">
+                      <div data-testid={`achievement-progress-${achievement.id}`} className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
+                    </div>
+                    <b className="w-10 text-right text-[10px] text-neutral-500">{Math.min(100, Math.round((achievement.progress / Math.max(1, achievement.target)) * 100))}%</b>
+                  </div>
                 </div>
               </div>
             </div>
