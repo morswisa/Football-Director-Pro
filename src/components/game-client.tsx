@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Award, CalendarDays, Copy, Download, Dumbbell, FileJson, Landmark, ListOrdered, Play, Save, Settings, ShieldCheck, Sprout, Trash2, Trophy, Type, Upload, UserCog, UsersRound, Volume2, Wallet } from "lucide-react";
 import { AppFrame } from "./app-frame";
@@ -194,9 +194,12 @@ function avatarRange(seed: number, min: number, max: number, offset = 0) {
   return min + (Math.abs(seed + offset * 1103515245) % (max - min + 1));
 }
 
-function PersonAvatar({ name, seedKey, kind = "player", className }: { name: string; seedKey?: string; kind?: "player" | "manager"; className?: string }) {
+function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", className }: { name: string; seedKey?: string; kind?: "player" | "manager"; variant?: "thumb" | "portrait"; className?: string }) {
   const seed = avatarSeed(seedKey ?? name);
-  const id = `avatar-${seed}`;
+  const reactId = useId().replaceAll(":", "");
+  const id = `avatar-${reactId}-${seed}`;
+  const isPortrait = variant === "portrait";
+  const viewHeight = isPortrait ? 130 : 100;
   const skin = avatarPick(seed, ["#f1b889", "#d9966b", "#bd7855", "#95573e", "#e3a06f", "#c9865f"], 1);
   const skinLight = avatarPick(seed, ["#ffd0a6", "#efb280", "#da8d62", "#b36c4b", "#f4bf91"], 2);
   const skinMid = avatarPick(seed, ["#c87952", "#aa6044", "#87503b", "#70402f", "#b66e4b"], 3);
@@ -240,12 +243,16 @@ function PersonAvatar({ name, seedKey, kind = "player", className }: { name: str
   const eyeRight = 64;
   const jerseyStripe = seed % 3 === 0;
   const portraitTransform = mirror ? "translate(100 0) scale(-1 1)" : undefined;
+  const shoulderPath = isPortrait ? "M-5 130 C8 103 32 91 51 93 C70 90 96 104 106 130 Z" : "M10 100 C15 78 86 77 92 100 Z";
+  const collarPath = isPortrait ? "M30 93 L50 124 L72 93 L65 130 L36 130 Z" : "M34 82 L50 98 L68 82 L63 101 L38 101 Z";
+  const neckShadowPath = isPortrait ? "M38 72 L36 96 C43 107 60 108 66 95 L62 69 Z" : "M39 71 L38 85 C42 93 58 94 64 85 L62 69 Z";
+  const neckLightPath = isPortrait ? "M43 69 L42 92 C48 100 59 99 63 88 L60 68 Z" : "M43 69 L43 83 C49 88 58 87 62 80 L60 68 Z";
   return (
     <div
       className={cn("shrink-0 overflow-hidden rounded-lg border border-white/70 bg-white shadow-card", className)}
       aria-label={`${name} portrait`}
     >
-      <svg viewBox="0 0 100 100" role="img" className="h-full w-full">
+      <svg viewBox={`0 0 100 ${viewHeight}`} role="img" className="h-full w-full">
         <defs>
           <linearGradient id={`${id}-bg`} x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stopColor={`hsl(${bgHue} 45% 18%)`} />
@@ -268,22 +275,24 @@ function PersonAvatar({ name, seedKey, kind = "player", className }: { name: str
             <stop offset="100%" stopColor="#08140f" />
           </linearGradient>
           <clipPath id={`${id}-clip`}>
-            <rect width="100" height="100" rx="0" />
+            <rect width="100" height={viewHeight} rx="0" />
           </clipPath>
         </defs>
         <g clipPath={`url(#${id}-clip)`}>
-        <rect width="100" height="100" fill={`url(#${id}-bg)`} />
-        <path d="M-14 92 L88 -8" stroke="rgba(255,255,255,0.09)" strokeWidth="8" />
-        <path d="M10 100 C15 78 86 77 92 100 Z" fill={`url(#${id}-shirt)`} />
+        <rect width="100" height={viewHeight} fill={`url(#${id}-bg)`} />
+        <path d={isPortrait ? "M-18 126 L98 -8" : "M-14 92 L88 -8"} stroke="rgba(255,255,255,0.09)" strokeWidth="8" />
+        <path d={isPortrait ? "M72 -6 C102 24 104 76 83 128" : "M77 -6 C98 18 97 52 84 77"} stroke="rgba(255,255,255,0.1)" strokeWidth={isPortrait ? "11" : "9"} fill="none" />
+        <path d={shoulderPath} fill={`url(#${id}-shirt)`} />
         {jerseyStripe ? (
           <>
-            <path d="M33 83 L42 100" stroke={accent} strokeWidth="5" opacity="0.75" />
-            <path d="M67 82 L58 100" stroke={accent} strokeWidth="5" opacity="0.62" />
+            <path d={isPortrait ? "M29 93 L39 130" : "M33 83 L42 100"} stroke={accent} strokeWidth={isPortrait ? "6" : "5"} opacity="0.75" />
+            <path d={isPortrait ? "M72 93 L61 130" : "M67 82 L58 100"} stroke={accent} strokeWidth={isPortrait ? "6" : "5"} opacity="0.62" />
           </>
         ) : null}
-        <path d="M34 82 L50 98 L68 82 L63 101 L38 101 Z" fill={kind === "manager" ? "#f8fafc" : "#111827"} opacity="0.9" />
-        <path d="M39 71 L38 85 C42 93 58 94 64 85 L62 69 Z" fill={skinShadow} />
-        <path d="M43 69 L43 83 C49 88 58 87 62 80 L60 68 Z" fill={skin} />
+        <path d={collarPath} fill={kind === "manager" ? "#f8fafc" : "#111827"} opacity="0.9" />
+        {isPortrait ? <path d="M39 101 L50 119 L62 101" stroke={kind === "manager" ? "#d9e2e9" : accent} strokeWidth="2.6" strokeLinecap="round" fill="none" opacity="0.9" /> : null}
+        <path d={neckShadowPath} fill={skinShadow} />
+        <path d={neckLightPath} fill={skin} />
         <g transform={portraitTransform}>
           <g transform={`rotate(${headTilt} 53 50)`}>
             <path d="M31 50 C25 49 25 62 34 63 C31 59 31 54 31 50 Z" fill={skinMid} />
@@ -330,7 +339,12 @@ function PersonAvatar({ name, seedKey, kind = "player", className }: { name: str
             <path d="M40 75 C47 82 59 82 65 73" stroke="#1f130f" strokeWidth="1.2" strokeLinecap="round" opacity="0.18" />
           </g>
         </g>
-        <path d="M77 -6 C98 18 97 52 84 77" stroke="rgba(255,255,255,0.1)" strokeWidth="9" fill="none" />
+        {isPortrait ? (
+          <>
+            <path d="M5 120 C27 112 70 113 96 123" stroke="rgba(255,255,255,0.1)" strokeWidth="3" fill="none" />
+            <path d="M16 129 C26 105 38 97 50 98" stroke="rgba(0,0,0,0.18)" strokeWidth="8" fill="none" />
+          </>
+        ) : null}
         </g>
       </svg>
     </div>
@@ -649,7 +663,7 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
         <Card className="overflow-hidden p-0">
           <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
             <div className="flex items-center gap-3">
-              <PersonAvatar name={current.manager.name} seedKey={current.manager.id} kind="manager" className="h-20 w-20 rounded-2xl text-xl shadow-[0_12px_24px_rgba(0,0,0,0.22)]" />
+              <PersonAvatar name={current.manager.name} seedKey={current.manager.id} kind="manager" variant="portrait" className="h-28 w-24 rounded-2xl text-xl shadow-[0_12px_24px_rgba(0,0,0,0.22)]" />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-black uppercase tracking-normal text-white/65">Current manager</p>
                 <h2 className="truncate text-xl font-black">{current.manager.name}</h2>
@@ -1411,7 +1425,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
         <div className="flex items-center gap-3 p-3">
-          <PersonAvatar name={player.name} seedKey={player.id} className="h-16 w-16 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
+          <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-24 w-20 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[11px] font-black uppercase text-primary">{context}</p>
             <p className="truncate text-lg font-black leading-tight">{player.name}</p>
@@ -1430,7 +1444,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
         <div className="flex items-center gap-3 p-3">
-          <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-16 w-16 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
+          <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-24 w-20 shrink-0 rounded-2xl text-base ring-4 ring-white shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-black uppercase text-primary">Manager office</p>
             <p className="truncate text-lg font-black leading-tight">{manager.name}</p>
