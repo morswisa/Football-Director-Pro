@@ -592,6 +592,79 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
+test("contract rejection shows trust and morale impact", async ({ page }) => {
+  await createAcceptanceCareer(page, "Contractford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  const userClub = importedSave.clubs[importedSave.userClubId];
+  const playerId = userClub.playerIds[0];
+  const player = importedSave.players[playerId];
+  player.name = "Acceptance Contract";
+  player.position = "M";
+  player.rating = 66;
+  player.age = 25;
+  player.wage = 1_000;
+  player.contractYears = 1;
+  player.morale = 68;
+  player.form = 64;
+  player.fitness = 91;
+  importedSave.eventQueue = [];
+  importedSave.financialSnapshot = undefined;
+  importedSave.currentEvent = {
+    id: "contract_offer_acceptance_contract",
+    type: "contract_offer",
+    title: "Manager suggests new deal",
+    body: "The manager thinks Acceptance Contract should be offered a new deal.",
+    note: "This is a current squad contract decision. A weak offer can damage morale and manager trust.",
+    requiresDecision: true,
+    createdSeason: importedSave.season,
+    createdWeek: importedSave.week,
+    playerId,
+    managerId: userClub.managerId,
+    variant: "neutral",
+    proposal: {
+      id: "proposal_acceptance_contract",
+      type: "contract",
+      week: importedSave.week,
+      title: "Renew Acceptance Contract",
+      rationale: "The manager wants to protect a squad player.",
+      playerId,
+      fromClubId: importedSave.userClubId,
+      fee: 0,
+      wageDelta: 1_000,
+      expiresWeek: importedSave.week + 2,
+      requestedWage: 2_000,
+      requestedYears: 3,
+    },
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const contractDialog = page.getByRole("dialog");
+  await expect(contractDialog).toContainText("Manager suggests new deal");
+  await expect(contractDialog).toContainText("Acceptance Contract");
+  await expect(contractDialog).toContainText("Selected offer impact");
+  await contractDialog.getByRole("button", { name: "£1,700/w" }).click();
+  await expect(contractDialog).toContainText("Likely response: reject");
+  await expect(contractDialog).toContainText("Manager trust -3; player morale -8");
+  await contractDialog.getByRole("button", { name: "Submit Offer" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Contract turned down");
+  await expect(page.getByRole("dialog")).toContainText("Manager trust -3; player morale -8");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Roster/i }).click();
+  await expect(page.getByText("Acceptance Contract")).toBeVisible();
+  await expect(page.getByText("Morale 60%")).toBeVisible();
+  await expect(page.getByText("Form 64%")).toBeVisible();
+  await expect(page.getByText("Fit 91%")).toBeVisible();
+  await expectMobileSurfaceHealthy(page, "Roster after contract rejection");
+});
+
 test("stadium upgrades and repairs show clear financial impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Standford FC");
 

@@ -37,6 +37,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - League fixtures are generated with a round-robin scheduler: each club in the user's division appears once per league round, then fixtures repeat with reversed home/away legs.
 - League fixture IDs include the season as well as division, round, and slot, preventing persisted `seenEventKeys` from suppressing next-season match previews.
 - Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
+- Roster rows also show Morale, Form, and Fitness so decision-driven player state changes can be inspected without leaving the roster surface.
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, manager contract expiry, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
 - After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
 - `SeasonHistory.seasonImpact` stores the before/after values for balance, board confidence, manager trust, and club reputation, allowing the season-summary event and History screen to explain season-level relationship/economy movement.
@@ -79,6 +80,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Stadium upgrade and repair transactions are recorded as same-period infrastructure spending and refresh `latestFinancialSnapshot`, so direct stadium capex is visible in Finances after the action.
 - Transfer-window acceptance coverage verifies completed paid purchases, loan-ins, and loan-outs across world ownership, balance movement, manager-trust changes, and financial snapshot fee lines.
 - Browser transfer acceptance uses an imported deterministic paid target to verify the full player-facing path: transfer decision impact, completed signing, Roster membership, and `Transfer fee paid` visibility in Finances.
+- Browser contract acceptance uses an imported deterministic squad player to verify weak-offer warnings, contract rejection feedback, and the resulting morale drop displayed in Roster.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.

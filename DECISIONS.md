@@ -106,6 +106,7 @@
 - Event headers must match the event subject: financial and club updates use the club header, player decisions use the player header, and only manager-subject events use the manager header, even if incidental manager metadata exists on the event.
 - Walking away from an external transfer target must not use squad-contract rejection language.
 - Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.
+- Player morale, form, and fitness are part of the planned Roster inspection surface because contract and match decisions can change player state.
 - Live match playback is a blocking opaque full-screen state: club navigation resumes after the match result is completed, and the dashboard must not leak the final score behind the live view.
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.

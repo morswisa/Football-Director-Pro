@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-kxfzthbi1-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-bdq6mnyiw-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -34,6 +34,7 @@ Playable V1 includes:
 - Roster defaults to position order and supports manual sorting by `Pos`, `Player`, or `Rate`.
 - Dashboard and player-list surfaces now consistently label the section as `Roster`, with an in-page roster summary before the sortable player list.
 - Roster rows use a fixed Pos/Player/Rate layout with sticky sort controls.
+- Roster rows now surface Morale, Form, and Fitness alongside age/contract/wage, so relationship and condition effects are inspectable after decisions.
 - New saves generate natural unique fictional club names without numeric suffixes, and loaded saves are normalized so duplicate club names and same-club player names receive stable display disambiguation.
 - Youth Academy and Training Ground are managed through dashboard modals instead of a separate Training page, with `+1` through `+5` level selection before confirming upgrades or downgrades.
 - Facility and stadium screens show selected level changes, costs, upkeep/capacity effects, and bank-impact context before actions.
@@ -83,6 +84,7 @@ Playable V1 includes:
 - Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero. The selected budget applies only to the active transfer window and expires outside transfer-window weeks.
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
 - Chairman decision cards now surface selected trust, morale, wage-bill, balance, and replacement impact for the main decision types where those values can change, so relationship/economy movement is visible before confirming.
+- Browser acceptance now covers a weak squad-contract offer being rejected, including the pre-submit trust/morale warning, the contract-turned-down response, and the resulting lower morale in Roster.
 - Match simulation.
 - Domestic cup flow: seasonal Chairman's Cup state, scheduled knockout ties, draw events in the Continue loop, cup match previews/results, non-league cup results, prize money in financial reports, cup status on Dashboard, cup history, and a cup achievement.
 - Event/entity cards and match events use deterministic generated SVG portrait faces for players and managers, built from a shared procedural face template.
@@ -131,3 +133,5 @@ Playable V1 includes:
 - Latest manager-finance acceptance pass is deployed to preview.
 - Latest transfer acceptance improvement: the e2e flow now proves a paid transfer target becomes a roster player and leaves a finance trail.
 - Latest paid-transfer acceptance pass is deployed to preview.
+- Latest contract acceptance improvement: the e2e flow now proves contract rejection affects and displays morale/trust feedback.
+- Latest contract rejection acceptance pass is deployed to preview.

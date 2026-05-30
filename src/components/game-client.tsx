@@ -396,6 +396,7 @@ function SquadTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void
             <p className="truncate text-xs text-neutral-500">
               Age {player.age} · {player.loan ? `Loan ${player.loan.direction === "in" ? "in" : "out"} · ${formatWeeklyWage(player.loan.wageShare)}` : `${player.contractYears}y · ${formatWeeklyWage(player.wage)}`}
             </p>
+            <p className="truncate text-xs text-neutral-500">Morale {player.morale}% · Form {player.form}% · Fit {player.fitness}%</p>
           </div>
           <span className={cn("justify-self-end rounded-md px-2 py-1 text-xs font-bold text-white", player.rating >= 70 ? "bg-primary" : player.rating >= 55 ? "bg-warning" : "bg-neutral-500")}>{player.rating}</span>
         </Card>
