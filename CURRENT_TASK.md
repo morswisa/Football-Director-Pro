@@ -88,7 +88,7 @@ Playable V1 includes:
 ## Next Steps
 
 - Latest status answer: the remaining game work is finalization-focused. The planned V1 systems are in place; outstanding work is acceptance, cleanup of any original-scope defects found during acceptance, final mobile QA, final balance tuning, and Capacitor native packaging only after the web V1 is accepted.
-- Settings import/export acceptance coverage has passed locally with the full verification gate and is deployed to preview; commit and push are the remaining release steps for this slice.
+- Settings import/export acceptance coverage has passed locally with the full verification gate, is deployed to preview, and has been pushed to `main` in commit `ae566e0`.
 - Latest status review: no broad new V1 feature areas are currently planned; remaining work is acceptance, balance, mobile QA, and native packaging after web approval.
 - Current status review: remaining work is finalization, not broad feature discovery. The playable V1 systems are implemented; the next work should focus on final acceptance, balance tuning, mobile QA, and then Capacitor packaging after the web build is accepted.
 - Final web-V1 acceptance pass: play through several careers from a clean save and fix only issues that break the original planned loop or make existing planned systems unclear.

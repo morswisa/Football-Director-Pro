@@ -53,7 +53,7 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 ## Next TODO
 
 - Latest status answer: the broad planned V1 gameplay systems are implemented. What remains is to finish and commit/deploy the in-progress save import/export acceptance coverage, run final clean-save web acceptance, close only original-scope issues found there, complete mobile QA and longer balance tuning, then add Capacitor native platforms after web V1 approval.
-- Settings import/export acceptance coverage is now implemented, locally verified, and deployed: `npm run e2e`, `npm run lint`, `npm test` (42 tests), `npm run build`, and the `develop-web-game` screenshot pass all completed. Latest preview for this slice: `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`. Release steps still pending are commit and push.
+- Settings import/export acceptance coverage is now implemented, locally verified, deployed, committed, and pushed to `main`: `npm run e2e`, `npm run lint`, `npm test` (42 tests), `npm run build`, and the `develop-web-game` screenshot pass all completed. Latest preview for this slice: `https://football-director-r8aad0mt4-mor-swisas-projects.vercel.app`. Commit: `ae566e0`.
 - Current status response: broad V1 feature implementation is mostly complete; remaining work is final acceptance, balance/mobile polish, and native packaging after web acceptance.
 - Run the final web-V1 acceptance pass from a clean save and fix only issues inside the original planned scope.
 - During final acceptance playtesting, watch for any remaining chairman choice that changes trust/fan/finance without an on-card explanation.
