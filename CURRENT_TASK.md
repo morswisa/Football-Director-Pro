@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-gq92lvz0s-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-qh3j2f489-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -41,6 +41,7 @@ Playable V1 includes:
 - Manager hiring/firing now uses contract economics: weekly wages, contract years, compensation previews, free-agent/contracted candidate status, and a manager-action lock after changes.
 - Manager dismissal and hiring negotiation screens show post-cost balance, debt limit, debt headroom, and wage-bill impact before the chairman confirms.
 - Manager contracts now age across seasons, compensation drops as years remaining fall, short-term manager-action locks clear at season rollover, and expired manager contracts create a blocking Continue decision to extend the deal or let the manager leave. If the manager leaves, the engine itself blocks further queued season progression until a replacement is hired, then resumes the parked queue.
+- Manager UI now matches the engine's emergency replacement rule: after dismissing a manager, the Manager screen remains usable, explains that emergency replacement is available, and allows one replacement hire even though further manager churn is locked.
 - Manager-led transfer proposals. Contract renewals use wage/year offers; paid purchases use fee + wage + years negotiation with possible club/player refusal.
 - Transfer-window acceptance coverage now proves completed buys, loan-ins, and loan-outs move players, update manager trust, change balances, and appear in same-week financial snapshots.
 - Manager-led proposal cadence is tuned for the Continue loop: transfer-window months can create active proposal weeks, while non-window contract/proposal checks happen only on periodic review weeks instead of every other week.
@@ -101,5 +102,7 @@ Playable V1 includes:
 - Keep the expanded clean-save Playwright acceptance path in place as the default browser smoke gate for planned V1 surfaces and the early Continue chain.
 - The expanded clean-save Playwright acceptance path now reaches the first match result, verifies the post-match impact explanation, and confirms the Dashboard shows Last Result after dismissing the result.
 - Live-match browser acceptance now verifies `Play Match` enters the live state, advances minutes one-by-one, withholds the result Continue button until final whistle, then shows the `Match result` summary and returns to Dashboard.
+- Manager browser acceptance now verifies dismissal cost/debt context, no-manager emergency replacement, hire negotiation cost/wage context, successful replacement hire, and post-hire manager-action lock.
+- Latest manager acceptance pass is deployed to preview.
 - Latest live-match acceptance pass is deployed to preview.
 - Keep Capacitor native platform generation deferred until the web V1 is accepted, then add iOS/Android with `npm run mobile:add:ios` and `npm run mobile:add:android`.

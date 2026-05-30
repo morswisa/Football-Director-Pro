@@ -229,3 +229,38 @@ test("play match runs live before returning to the result", async ({ page }) => 
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Last result")).toBeVisible();
 });
+
+test("manager dismissal still allows emergency replacement", async ({ page }) => {
+  await createAcceptanceCareer(page, "Coachford FC");
+
+  await page.getByRole("button", { name: /Manager/i }).click();
+  await page.getByRole("button", { name: "Fire Manager" }).click();
+
+  const fireDialog = page.getByRole("dialog");
+  await expect(fireDialog).toContainText("Confirm dismissal");
+  await expect(fireDialog).toContainText("Compensation");
+  await expect(fireDialog).toContainText("Balance after");
+  await expect(fireDialog).toContainText("Debt limit");
+  await fireDialog.getByRole("button", { name: "Confirm" }).click();
+
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByText("No manager appointed")).toBeVisible();
+  await expect(page.getByText("Emergency replacement is available")).toBeVisible();
+
+  const negotiateButtons = page.getByRole("button", { name: "Negotiate" });
+  await expect(negotiateButtons.first()).toBeEnabled();
+  await negotiateButtons.first().click();
+
+  const hireDialog = page.getByRole("dialog");
+  await expect(hireDialog).toContainText("Manager negotiation");
+  await expect(hireDialog).toContainText("Expected wage");
+  await expect(hireDialog).toContainText("Immediate cost");
+  await expect(hireDialog).toContainText("Balance after cost");
+  await expect(hireDialog).toContainText("New wage bill");
+  await hireDialog.getByRole("button", { name: "Submit Offer" }).click();
+
+  await expect(page.getByText("Manager hired.")).toBeVisible();
+  await expect(page.getByText("No manager appointed")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Fire Manager" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Negotiate" }).first()).toBeDisabled();
+});

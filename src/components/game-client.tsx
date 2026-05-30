@@ -407,7 +407,12 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const [fireOpen, setFireOpen] = useState(false);
   const [hireId, setHireId] = useState<string>();
   const locked = managerActionLocked(save);
-  const lockMessage = locked ? `Manager changes are locked until week ${save.managerActionLockUntilWeek}.` : undefined;
+  const canNegotiate = !locked || !current.club.managerId;
+  const lockMessage = locked
+    ? current.club.managerId
+      ? `Manager changes are locked until period ${save.managerActionLockUntilWeek}.`
+      : `Emergency replacement is available. Further changes are locked until period ${save.managerActionLockUntilWeek}.`
+    : undefined;
   const divisionLevel = save.divisions.find((division) => division.id === current.club.divisionId)?.level ?? 7;
   const fireCost = current.manager ? calculateManagerCompensation(current.manager) : 0;
   const balanceAfterFire = current.club.finances.balance - fireCost;
@@ -449,9 +454,10 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
           <Button variant="danger" className="w-full" disabled={locked} onClick={() => setFireOpen(true)}>Fire Manager</Button>
         </Card>
       ) : (
-        <Card>
+        <Card className="space-y-3">
           <p className="font-bold">No manager appointed</p>
           <p className="text-sm text-neutral-500">Hire a manager to run the squad and propose transfers.</p>
+          {lockMessage ? <p className="rounded-md bg-surface-muted px-3 py-2 text-xs text-neutral-500">{lockMessage}</p> : null}
         </Card>
       )}
       <div className="space-y-3">
@@ -470,15 +476,15 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
               <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{managerRating(manager)}</p>
             </div>
             {manager.status === "contracted" ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Club compensation: <b>{formatMoney(manager.compensationFee ?? calculateManagerCompensation(manager))}</b></p> : null}
-            <Button className="w-full" disabled={locked} onClick={() => setHireId(manager.id)}>Negotiate</Button>
+            <Button className="w-full" disabled={!canNegotiate} onClick={() => setHireId(manager.id)}>Negotiate</Button>
           </Card>
         ))}
       </div>
       {fireOpen && current.manager ? (
         <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
-          <div className="w-full rounded-xl bg-white p-5 shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-labelledby="fire-manager-title" className="w-full rounded-xl bg-white p-5 shadow-2xl">
             <p className="text-xs font-semibold uppercase text-danger">Confirm dismissal</p>
-            <h2 className="mt-1 text-xl font-bold">{current.manager.name}</h2>
+            <h2 id="fire-manager-title" className="mt-1 text-xl font-bold">{current.manager.name}</h2>
             <div className="mt-4 space-y-2 text-sm">
               <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Weekly wage</span><b>{formatMoney(current.manager.wage)}</b></p>
               <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Contract left</span><b>{current.manager.contractYears * 12} months</b></p>
@@ -516,12 +522,12 @@ function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; 
   const wageBillAfterHire = current.club.finances.weeklyWages - (current.manager?.wage ?? 0) + wage;
   return (
     <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
-      <div className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-labelledby="hire-manager-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
         <p className="text-xs font-semibold uppercase text-primary">Manager negotiation</p>
         <div className="mt-2 flex items-center gap-3">
           <PersonAvatar name={candidate.name} seedKey={candidate.id} kind="manager" className="h-16 w-16 text-base" />
           <div>
-            <h2 className="text-xl font-black">{candidate.name}</h2>
+            <h2 id="hire-manager-title" className="text-xl font-black">{candidate.name}</h2>
             <p className="text-xs text-neutral-500">{candidate.status === "contracted" ? "Under Contract" : "Free Agent"} · Rating {managerRating(candidate)}</p>
           </div>
         </div>
@@ -1677,7 +1683,7 @@ export function GameClient() {
       {message ? <div className="mx-4 mb-2 rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{message}</div> : null}
       <FacilityModal save={save} facility={facilityModal} close={() => setFacilityModal(undefined)} />
       <EventModal save={save} />
-      <DecisionModal save={save} setTab={setTab} suppressed={Boolean(save.currentEvent)} />
+      <DecisionModal save={save} setTab={setTab} suppressed={Boolean(save.currentEvent) || tab === "manager"} />
       </div>
     </AppFrame>
   );

@@ -165,6 +165,12 @@
 
 ## 2026-05-30
 
+- Continued final acceptance with manager hire/fire. The browser test exposed a real UI mismatch: after firing the manager, the engine allowed emergency replacement but the Manager UI disabled negotiation behind the short-term churn lock.
+- Fixed the Manager UI so `Negotiate` remains available when the club has no manager, while still disabling further hire/fire churn after a replacement is hired. The no-manager card now explains that emergency replacement is available.
+- Fixed the required no-manager modal handoff: it now directs the player to the Manager tab without continuing to block that tab, so candidate negotiation is actually reachable.
+- Updated manager lock copy from `week` to `period` to match the current calendar language.
+- Added e2e coverage for manager dismissal and emergency replacement: dismissal compensation/debt context, no-manager state, hire negotiation cost/wage context, successful replacement hire, and post-hire locked controls. Verified with `npm run e2e`, `npm run lint`, `npm test` (43 tests), `npm run build`, the `develop-web-game` screenshot client, and a focused mobile manager-emergency screenshot.
+- Deployed the manager emergency replacement acceptance pass to Vercel preview: `https://football-director-qh3j2f489-mor-swisas-projects.vercel.app`.
 - Continued final acceptance with the `Play Match` path. The new browser test exposed a real bug: clicking Continue after final whistle resolved the `match_result` event immediately instead of showing the match-result summary.
 - Fixed live-match completion by adding a store-level `finishLiveMatch` step. Final whistle now marks live playback finished and then renders the normal `Match result` event; the following Continue returns to the dashboard or next event.
 - Hardened interrupted live-match loads by normalizing unfinished `liveMatch` state with an existing `match_result` event back to a finished result summary, avoiding replay/double-simulation after refresh.

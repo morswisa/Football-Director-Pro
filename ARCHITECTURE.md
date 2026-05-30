@@ -138,6 +138,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Hiring and firing are engine actions with financial consequences and a short action lock, coordinated through Zustand and rendered as Manager tab modals.
 - Manager cost modals compute post-action balance and debt headroom client-side from the same immediate costs sent to the engine; `confirmFireManager` and `submitManagerHireOffer` remain the authoritative mutation and bankruptcy gates.
 - The manager action lock is season-scoped and clears when a new season starts so late-season changes cannot freeze manager decisions into the next campaign.
+- The UI mirrors the engine's emergency replacement exception: `managerActionLocked` disables manager churn only when the club already has a manager; if no manager is appointed, the Manager tab still allows one replacement negotiation.
+- The no-manager blocking modal is suppressed on the Manager tab so the player can actually negotiate with candidates after following the modal's prompt.
 - Manager contract-expiry decisions reuse the event modal and deterministic wage formulas, not a separate React-only state path.
 - If an expired manager leaves, the follow-up message is shown immediately; after it is dismissed, queued season events remain parked until the Manager tab hires a replacement.
 
@@ -163,3 +165,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Deep clean-save Playwright acceptance also covers reaching the first match result, checking the match impact note, and returning to Dashboard with Last Result visible.
 - Settings acceptance coverage verifies the local save lifecycle from the browser: export produces usable JSON, invalid import input is rejected, valid imported JSON replaces Slot 1, and the imported save can continue through the event queue.
 - Live-match acceptance coverage verifies the `Play Match` route: live state, one-minute progression, no Continue before final whistle, normal match-result summary after final whistle, and Dashboard Last Result after dismissal.
+- Manager acceptance coverage verifies the UI-level hire/fire economy: dismissal compensation, debt context, emergency no-manager replacement, hire cost/wage context, successful replacement, and locked controls after hiring.

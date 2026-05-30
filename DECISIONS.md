@@ -31,6 +31,7 @@
 - Manager hiring/firing is not instant. Dismissal requires a compensation confirmation, and hiring requires a wage/contract offer with candidate compensation when the candidate is under contract.
 - Manager dismissal and hiring confirmations must show debt-limit context when immediate compensation costs can move the club into dangerous debt.
 - A manager action lock prevents repeated manager churn in the same short period, while still allowing a club without a manager to negotiate a replacement.
+- The manager action lock must be presented as a churn lock, not as a dead end. If the club has no manager, the Manager tab must keep replacement negotiation reachable and explain the emergency exception.
 - Manager contracts age at season transitions, so compensation falls as the remaining deal shortens. Manager action locks are short-term controls and reset at the next season boundary.
 - An expired manager contract is a blocking chairman decision: extend the manager or let him leave, then hire a replacement before the club can continue.
 - Missing-manager blocking is enforced in the engine as well as the UI. `generateNextEvents` must not pop queued season events while the user club has no manager.
