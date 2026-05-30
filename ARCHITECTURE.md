@@ -59,6 +59,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `normalizeGameState` converts an unfinished `liveMatch` with an existing `match_result` event into a finished live state, so a refresh during playback returns to the result summary instead of replaying or resimulating the fixture.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
 - Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
+- Contract and paid-transfer negotiation controls are compact subcomponents inside event cards. They render larger option grids, selected-state styling, selected impact summaries, and grouped decision actions in the content flow so footers do not obscure selectable terms.
 - Event entity headers are subject-driven: `playerId` renders player context, manager headers render only for manager-subject events, and all other club updates render the club header even if an older queued event still carries incidental manager metadata.
 - Event actions distinguish blocking decisions from informational updates: decision controls can stay sticky for reachability, while ordinary Continue actions remain inline to avoid covering long report rows.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.

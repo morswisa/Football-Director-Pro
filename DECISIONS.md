@@ -101,6 +101,7 @@
 - Facility popups allow preselecting `+1` through `+5` levels before applying an upgrade or downgrade.
 - Action-heavy modals should keep primary confirmation controls sticky at the bottom where possible so required decisions are not hidden below long content.
 - Informational update modals can use a normal footer button instead of a sticky action when sticky controls would obscure long financial/history content.
+- Dense negotiation modals should prioritize readability over always-sticky controls: show terms first, then selected impact, then grouped decision actions. Do not let sticky footers cover wage, fee, contract-length, or impact choices.
 - Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Direct infrastructure actions, including stadium upgrade and repair, must leave a finance trail through transactions and current-period infrastructure spending so balance changes are explainable.

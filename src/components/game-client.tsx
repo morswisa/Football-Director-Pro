@@ -864,7 +864,7 @@ function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   );
 }
 
-function ContractOfferControls({ player, requestedWage, requestedYears, currentWageBill, approve }: { player: Player; requestedWage: number; requestedYears: number; currentWageBill: number; approve: (terms: ContractTerms) => void }) {
+function ContractOfferControls({ player, requestedWage, requestedYears, currentWageBill, approve, reject }: { player: Player; requestedWage: number; requestedYears: number; currentWageBill: number; approve: (terms: ContractTerms) => void; reject: () => void }) {
   const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 0.95, 1, 1.1, 1.2], 50);
   const yearOptions = contractYearOptions(requestedYears);
   const [wage, setWage] = useState(requestedWage);
@@ -876,9 +876,9 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
     <div className="mt-4 space-y-4">
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage offer</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>
               {formatWeeklyWage(option)}
             </button>
           ))}
@@ -888,7 +888,7 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
         <div className="grid grid-cols-5 gap-2">
           {yearOptions.map((option) => (
-            <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
+            <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>
               {option}y
             </button>
           ))}
@@ -903,7 +903,10 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
         <span className="block">Weekly wage bill: {formatSignedMoney(wageBillDelta)}/w, from {formatMoney(currentWageBill)}/w to {formatMoney(currentWageBill + wageBillDelta)}/w.</span>
         <span className="block">{likelyAccepted ? "Manager trust +3; player morale improves." : "Manager trust -3; player morale -8 if the offer is turned down."}</span>
       </ImpactBox>
-      <Button className="sticky bottom-0 w-full shadow-card" onClick={() => approve({ wage, years })}>Submit Offer</Button>
+      <div className="grid grid-cols-2 gap-3 border-t border-line bg-white pt-3">
+        <Button onClick={() => approve({ wage, years })}>Submit Offer</Button>
+        <Button variant="secondary" onClick={reject}>Reject</Button>
+      </div>
     </div>
   );
 }
@@ -1202,23 +1205,19 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
         Trust impact: walk away -4, low fee rejected -2, player rejects -2, deal blocked -5, completed signing +4.
       </p>
-      <ImpactBox>
-        <b className="block">Selected offer impact</b>
-        Upfront fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the signing is completed.
-      </ImpactBox>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Fee to club</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {feeOptions.map((option) => (
-            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", fee === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatMoney(option)}</button>
+            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", fee === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatMoney(option)}</button>
           ))}
         </div>
       </div>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
           ))}
         </div>
       </div>
@@ -1226,11 +1225,15 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
         <div className="grid grid-cols-5 gap-2">
           {yearOptions.map((option) => (
-            <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{option}y</button>
+            <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{option}y</button>
           ))}
         </div>
       </div>
-      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white pt-2">
+      <ImpactBox>
+        <b className="block">Selected offer impact</b>
+        Upfront fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the signing is completed.
+      </ImpactBox>
+      <div className="grid grid-cols-2 gap-3 border-t border-line bg-white pt-3">
         <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years } })}>Submit Offer</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
       </div>
@@ -1451,8 +1454,7 @@ function EventModal({ save }: { save: GameSave }) {
               <p className="rounded-lg bg-surface-muted px-3 py-2">Wage bill <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
               <p className="rounded-lg bg-surface-muted px-3 py-2">Recommended <b className="block">{formatMoney(Math.round(current.club.finances.balance * 0.08))}</b></p>
             </div>
-            <ContractOfferControls player={player} requestedWage={requestedWage} requestedYears={requestedYears} currentWageBill={current.club.finances.weeklyWages} approve={(terms) => resolve({ action: "offer", terms })} />
-            <Button variant="secondary" className="mt-3 w-full" onClick={() => resolve({ action: "reject" })}>Reject</Button>
+            <ContractOfferControls player={player} requestedWage={requestedWage} requestedYears={requestedYears} currentWageBill={current.club.finances.weeklyWages} approve={(terms) => resolve({ action: "offer", terms })} reject={() => resolve({ action: "reject" })} />
           </>
         ) : null}
 
