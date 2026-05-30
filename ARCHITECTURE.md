@@ -223,3 +223,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Youth-contract browser acceptance verifies the academy decision path from event card to promoted Roster player state.
 - Sale browser acceptance verifies the sale chain across the event queue and the main inspection surfaces, not just the engine mutation.
 - Loan browser acceptance verifies both temporary incoming and outgoing player movement across the event queue, Roster, and Finances.
+- `PersonAvatar` composes deterministic SVG portraits from per-person gradients, face-shape paths, mirrored three-quarter pose, head tilt, hair-mass variants, lighting/shadow planes, jersey/manager clothing layers, and optional stubble/beard/glasses/scar details. The save schema stores no portrait assets; identity remains derived from stable ids.

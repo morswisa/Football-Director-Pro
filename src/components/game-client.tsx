@@ -196,35 +196,50 @@ function avatarRange(seed: number, min: number, max: number, offset = 0) {
 
 function PersonAvatar({ name, seedKey, kind = "player", className }: { name: string; seedKey?: string; kind?: "player" | "manager"; className?: string }) {
   const seed = avatarSeed(seedKey ?? name);
-  const skin = avatarPick(seed, ["#f0b98c", "#d99a6d", "#bd7b57", "#8f563f", "#e7aa7b", "#c8875e"], 1);
-  const skinLight = avatarPick(seed, ["#ffd2aa", "#efb184", "#d68c65", "#a76549", "#f2bf92"], 2);
-  const skinShadow = avatarPick(seed, ["#9b4f39", "#7b3d2f", "#6b342b", "#8a4a36", "#5c3229"], 3);
-  const hair = avatarPick(seed, ["#1b120f", "#2b1a14", "#3a2518", "#111827", "#4b2f1d", "#6a4429"], 4);
-  const hairLight = avatarPick(seed, ["#4a2d1c", "#6b4327", "#81552f", "#2f3a4c", "#7a4f2d"], 5);
-  const shirt = kind === "manager" ? avatarPick(seed, ["#17211b", "#263238", "#374151", "#14532d"], 6) : avatarPick(seed, ["#159947", "#0f766e", "#2563eb", "#7c3aed", "#1d4ed8", "#be123c"], 6);
-  const accent = avatarPick(seed, ["#f8fafc", "#facc15", "#22c55e", "#93c5fd", "#f97316"], 7);
-  const bgHue = avatarRange(seed, 145, 235, 8);
-  const faceShape = avatarPick(seed, ["angular", "long", "strong"], 9);
-  const hairStyle = avatarPick(seed, ["crop", "swept", "textured", "messy", "close"], 10);
-  const eyeY = avatarRange(seed, 43, 46, 11);
-  const browTilt = avatarRange(seed, -2, 2, 12);
-  const noseX = avatarRange(seed, 53, 57, 13);
-  const hasStubble = kind === "manager" || seed % 4 === 0;
-  const hasGlasses = kind === "manager" && seed % 5 === 0;
-  const facePath = faceShape === "long"
-    ? "M37 36 C38 23 53 18 66 25 C76 31 75 51 70 64 C64 78 47 80 38 68 C32 59 32 43 37 36 Z"
-    : faceShape === "strong"
-      ? "M34 38 C36 24 52 18 66 25 C76 31 76 50 70 63 L61 76 L45 76 L36 65 C30 55 30 44 34 38 Z"
-      : "M35 37 C38 24 53 18 66 26 C75 33 75 50 69 63 C63 76 47 79 38 68 C31 57 31 44 35 37 Z";
-  const hairPath = hairStyle === "crop"
-    ? "M33 39 C36 22 55 16 70 27 C61 24 49 28 37 40 Z"
+  const id = `avatar-${seed}`;
+  const skin = avatarPick(seed, ["#f1b889", "#d9966b", "#bd7855", "#95573e", "#e3a06f", "#c9865f"], 1);
+  const skinLight = avatarPick(seed, ["#ffd0a6", "#efb280", "#da8d62", "#b36c4b", "#f4bf91"], 2);
+  const skinMid = avatarPick(seed, ["#c87952", "#aa6044", "#87503b", "#70402f", "#b66e4b"], 3);
+  const skinShadow = avatarPick(seed, ["#7b3e30", "#633328", "#553025", "#8b4a35", "#49281f"], 4);
+  const hair = avatarPick(seed, ["#15100e", "#241711", "#352113", "#101827", "#4b2f1e", "#5c3a21"], 5);
+  const hairLight = avatarPick(seed, ["#5a351f", "#7a4b28", "#8a5d35", "#2d3a50", "#6b4327"], 6);
+  const shirt = kind === "manager" ? avatarPick(seed, ["#16221b", "#24313a", "#303946", "#123d2a"], 7) : avatarPick(seed, ["#138947", "#0f6f6e", "#2455b8", "#5527a8", "#1f3e8a", "#8f1734"], 7);
+  const accent = avatarPick(seed, ["#f8fafc", "#f5c542", "#2fe37f", "#8dc5ff", "#f97835", "#d8e1ef"], 8);
+  const bgHue = avatarRange(seed, 145, 250, 9);
+  const faceShape = avatarPick(seed, ["blade", "square", "narrow", "heavy"], 10);
+  const hairStyle = avatarPick(seed, ["undercut", "swept", "textured", "spikes", "tight", "fringe"], 11);
+  const eyeY = avatarRange(seed, 43, 46, 12);
+  const browTilt = avatarRange(seed, -3, 3, 13);
+  const noseX = avatarRange(seed, 54, 59, 14);
+  const mouthY = avatarRange(seed, 64, 67, 15);
+  const headTilt = avatarRange(seed, -4, 4, 16);
+  const mirror = seed % 2 === 0;
+  const hasStubble = kind === "manager" || seed % 3 === 0;
+  const hasBeard = kind === "manager" && seed % 4 === 0;
+  const hasGlasses = kind === "manager" && seed % 6 === 0;
+  const hasScar = seed % 17 === 0;
+  const facePath = faceShape === "square"
+    ? "M34 38 C36 25 50 18 65 24 C75 29 78 43 74 57 L69 68 L59 77 L45 76 L36 66 C31 57 30 45 34 38 Z"
+    : faceShape === "narrow"
+      ? "M39 36 C41 22 55 18 67 27 C77 35 75 51 69 65 C63 79 48 80 40 68 C34 59 34 45 39 36 Z"
+      : faceShape === "heavy"
+        ? "M33 39 C34 25 52 17 68 26 C78 34 78 52 70 66 L60 78 L43 75 L34 64 C29 54 29 44 33 39 Z"
+        : "M36 37 C39 24 53 18 66 25 C76 32 76 50 69 64 C63 76 49 80 39 69 C32 58 32 45 36 37 Z";
+  const hairPath = hairStyle === "undercut"
+    ? "M32 39 C35 22 52 16 70 25 L76 35 C62 30 49 32 35 43 Z"
     : hairStyle === "swept"
-      ? "M32 40 C35 20 61 14 75 29 C60 24 52 35 35 43 Z"
+      ? "M30 41 C34 20 60 12 77 29 C62 24 52 35 34 45 Z"
       : hairStyle === "textured"
-        ? "M32 41 C32 27 39 20 45 22 C49 15 61 17 64 24 C70 22 75 30 73 40 C61 33 48 35 32 41 Z"
-        : hairStyle === "close"
-          ? "M36 36 C40 23 57 20 69 29 C58 26 47 29 36 38 Z"
-          : "M31 42 C33 25 42 20 47 22 L51 15 L58 24 L66 18 L72 31 C60 28 47 35 31 42 Z";
+        ? "M31 41 C31 27 38 20 45 22 C49 15 60 16 65 24 C71 22 77 30 75 41 C60 32 46 35 31 41 Z"
+        : hairStyle === "tight"
+          ? "M36 36 C40 24 57 20 70 29 C59 26 47 29 36 38 Z"
+          : hairStyle === "fringe"
+            ? "M31 39 C33 23 49 16 66 22 C74 26 78 33 75 42 C63 34 55 45 43 39 C39 48 34 48 31 39 Z"
+            : "M30 42 C32 26 39 20 46 22 L50 13 L57 25 L66 17 L75 32 C61 28 47 35 30 42 Z";
+  const eyeLeft = 46;
+  const eyeRight = 64;
+  const jerseyStripe = seed % 3 === 0;
+  const portraitTransform = mirror ? "translate(100 0) scale(-1 1)" : undefined;
   return (
     <div
       className={cn("shrink-0 overflow-hidden rounded-lg border border-white/70 bg-white shadow-card", className)}
@@ -232,50 +247,90 @@ function PersonAvatar({ name, seedKey, kind = "player", className }: { name: str
     >
       <svg viewBox="0 0 100 100" role="img" className="h-full w-full">
         <defs>
-          <linearGradient id={`avatar-bg-${seed}`} x1="0" x2="1" y1="0" y2="1">
+          <linearGradient id={`${id}-bg`} x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stopColor={`hsl(${bgHue} 45% 18%)`} />
-            <stop offset="100%" stopColor={`hsl(${(bgHue + 38) % 360} 46% 35%)`} />
+            <stop offset="62%" stopColor={`hsl(${(bgHue + 26) % 360} 48% 28%)`} />
+            <stop offset="100%" stopColor={`hsl(${(bgHue + 58) % 360} 42% 14%)`} />
           </linearGradient>
-          <clipPath id={`avatar-clip-${seed}`}>
+          <linearGradient id={`${id}-skin`} x1="0.2" x2="0.9" y1="0.05" y2="1">
+            <stop offset="0%" stopColor={skinLight} />
+            <stop offset="54%" stopColor={skin} />
+            <stop offset="100%" stopColor={skinShadow} />
+          </linearGradient>
+          <linearGradient id={`${id}-hair`} x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor={hairLight} />
+            <stop offset="42%" stopColor={hair} />
+            <stop offset="100%" stopColor="#070707" />
+          </linearGradient>
+          <linearGradient id={`${id}-shirt`} x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor={accent} stopOpacity="0.92" />
+            <stop offset="22%" stopColor={shirt} />
+            <stop offset="100%" stopColor="#08140f" />
+          </linearGradient>
+          <clipPath id={`${id}-clip`}>
             <rect width="100" height="100" rx="0" />
           </clipPath>
         </defs>
-        <g clipPath={`url(#avatar-clip-${seed})`}>
-        <rect width="100" height="100" fill={`url(#avatar-bg-${seed})`} />
-        <path d="M-8 92 L84 0" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
-        <path d="M20 102 C23 82 77 80 85 102 Z" fill={shirt} />
-        <path d="M31 82 L50 98 L69 82 L64 102 L36 102 Z" fill={kind === "manager" ? "#f8fafc" : accent} opacity="0.95" />
-        <path d="M39 72 L38 86 C44 94 58 94 63 85 L61 70 Z" fill={skinShadow} />
-        <path d="M43 70 L43 84 C48 88 57 88 61 82 L59 69 Z" fill={skin} />
-        <path d={facePath} fill={skin} />
-        <path d="M52 28 C64 28 72 40 69 55 C66 70 56 77 45 73 C55 72 62 62 63 50 C64 39 59 32 52 28 Z" fill={skinShadow} opacity="0.22" />
-        <path d="M39 39 C42 30 52 25 62 27 C53 28 45 34 42 43 C39 51 39 61 43 68 C35 61 34 48 39 39 Z" fill={skinLight} opacity="0.42" />
-        <path d="M32 50 C28 49 28 60 35 61" fill={skin} />
-        <path d="M69 47 C75 47 75 59 68 61" fill={skinShadow} opacity="0.85" />
-        <path d={hairPath} fill={hair} />
-        <path d="M36 31 C43 20 61 18 72 31 C57 27 48 29 36 36 Z" fill={hairLight} opacity="0.45" />
-        {hairStyle === "messy" || hairStyle === "textured" ? (
+        <g clipPath={`url(#${id}-clip)`}>
+        <rect width="100" height="100" fill={`url(#${id}-bg)`} />
+        <path d="M-14 92 L88 -8" stroke="rgba(255,255,255,0.09)" strokeWidth="8" />
+        <path d="M10 100 C15 78 86 77 92 100 Z" fill={`url(#${id}-shirt)`} />
+        {jerseyStripe ? (
           <>
-            <path d="M42 26 L48 14 L51 28 Z" fill={hair} />
-            <path d="M55 24 L64 13 L62 30 Z" fill={hair} />
-            <path d="M34 36 L25 28 L38 30 Z" fill={hair} />
+            <path d="M33 83 L42 100" stroke={accent} strokeWidth="5" opacity="0.75" />
+            <path d="M67 82 L58 100" stroke={accent} strokeWidth="5" opacity="0.62" />
           </>
         ) : null}
-        <path d={`M40 ${eyeY - 7 + browTilt} Q46 ${eyeY - 10} 51 ${eyeY - 7}`} stroke={hair} strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d={`M57 ${eyeY - 6 - browTilt} Q63 ${eyeY - 8} 68 ${eyeY - 5}`} stroke={hair} strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d={`M42 ${eyeY} Q46 ${eyeY - 2} 50 ${eyeY}`} stroke="#111827" strokeWidth="2.4" strokeLinecap="round" fill="none" />
-        <path d={`M59 ${eyeY + 1} Q63 ${eyeY - 1} 67 ${eyeY + 1}`} stroke="#111827" strokeWidth="2.4" strokeLinecap="round" fill="none" />
-        {hasGlasses ? (
-          <>
-            <circle cx="46" cy={eyeY} r="7" fill="none" stroke="#17211b" strokeWidth="1.8" />
-            <circle cx="64" cy={eyeY} r="7" fill="none" stroke="#17211b" strokeWidth="1.8" />
-            <path d={`M53 ${eyeY} L57 ${eyeY}`} stroke="#17211b" strokeWidth="1.8" />
-          </>
-        ) : null}
-        <path d={`M${noseX} 45 C53 52 51 57 56 60`} stroke={skinShadow} strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.55" />
-        <path d="M45 64 C51 66 58 66 63 63" stroke="#6b2f25" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-        {hasStubble ? <path d="M39 60 C45 74 62 76 68 61 C65 78 45 82 38 66 Z" fill={hair} opacity="0.22" /> : null}
-        <path d="M37 68 C44 78 58 80 66 65" stroke={skinShadow} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.35" />
+        <path d="M34 82 L50 98 L68 82 L63 101 L38 101 Z" fill={kind === "manager" ? "#f8fafc" : "#111827"} opacity="0.9" />
+        <path d="M39 71 L38 85 C42 93 58 94 64 85 L62 69 Z" fill={skinShadow} />
+        <path d="M43 69 L43 83 C49 88 58 87 62 80 L60 68 Z" fill={skin} />
+        <g transform={portraitTransform}>
+          <g transform={`rotate(${headTilt} 53 50)`}>
+            <path d="M31 50 C25 49 25 62 34 63 C31 59 31 54 31 50 Z" fill={skinMid} />
+            <path d="M69 47 C77 48 77 61 68 63 C72 58 72 52 69 47 Z" fill={skinShadow} opacity="0.9" />
+            <path d={facePath} fill={`url(#${id}-skin)`} />
+            <path d="M52 28 C66 28 75 40 71 56 C68 69 60 76 48 75 C58 71 64 60 64 49 C64 38 59 31 52 28 Z" fill={skinShadow} opacity="0.28" />
+            <path d="M39 39 C43 30 52 25 62 27 C52 28 45 34 42 43 C39 52 40 61 44 68 C36 62 34 49 39 39 Z" fill={skinLight} opacity="0.5" />
+            <path d="M42 58 C47 61 54 61 60 58 C58 64 47 65 42 58 Z" fill={skinMid} opacity="0.18" />
+            <path d={hairPath} fill={`url(#${id}-hair)`} />
+            <path d="M35 33 C44 18 63 17 75 32 C59 27 49 29 35 38 Z" fill={hairLight} opacity="0.38" />
+            {hairStyle === "spikes" || hairStyle === "textured" || hairStyle === "fringe" ? (
+              <>
+                <path d="M42 26 L48 12 L52 29 Z" fill={hair} />
+                <path d="M54 24 L64 12 L63 31 Z" fill={hair} />
+                <path d="M36 35 L25 26 L40 29 Z" fill={hair} />
+                <path d="M67 28 L78 24 L72 38 Z" fill={hair} />
+              </>
+            ) : null}
+            <path d={`M${eyeLeft - 7} ${eyeY - 7 + browTilt} Q${eyeLeft - 1} ${eyeY - 10} ${eyeLeft + 6} ${eyeY - 7}`} stroke={hair} strokeWidth="3.2" strokeLinecap="round" fill="none" />
+            <path d={`M${eyeRight - 6} ${eyeY - 6 - browTilt} Q${eyeRight} ${eyeY - 9} ${eyeRight + 6} ${eyeY - 5}`} stroke={hair} strokeWidth="3.2" strokeLinecap="round" fill="none" />
+            <path d={`M${eyeLeft - 5} ${eyeY} Q${eyeLeft - 1} ${eyeY - 2.5} ${eyeLeft + 5} ${eyeY}`} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+            <path d={`M${eyeRight - 5} ${eyeY + 1} Q${eyeRight} ${eyeY - 1.5} ${eyeRight + 5} ${eyeY + 1}`} stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+            <circle cx={eyeLeft + 2} cy={eyeY} r="1.15" fill="#111827" />
+            <circle cx={eyeRight + 2} cy={eyeY + 1} r="1.1" fill="#111827" />
+            {hasGlasses ? (
+              <>
+                <path d={`M${eyeLeft - 8} ${eyeY - 7} h16 v13 h-16 Z`} fill="none" stroke="#111827" strokeWidth="1.8" />
+                <path d={`M${eyeRight - 8} ${eyeY - 6} h16 v13 h-16 Z`} fill="none" stroke="#111827" strokeWidth="1.8" />
+                <path d={`M${eyeLeft + 8} ${eyeY - 1} L${eyeRight - 8} ${eyeY}`} stroke="#111827" strokeWidth="1.8" />
+              </>
+            ) : null}
+            {hasScar ? <path d={`M${eyeRight + 5} ${eyeY + 4} L${eyeRight + 12} ${eyeY + 13}`} stroke="#f3d0ba" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" /> : null}
+            <path d={`M${noseX} 43 C${noseX + 3} 50 ${noseX - 3} 56 ${noseX + 4} 60`} stroke={skinShadow} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.58" />
+            <path d={`M${noseX - 1} 60 C${noseX + 2} 62 ${noseX + 5} 62 ${noseX + 7} 60`} stroke={skinShadow} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.42" />
+            <path d={`M44 ${mouthY} C50 ${mouthY + 2} 58 ${mouthY + 1} 64 ${mouthY - 2}`} stroke="#5f271f" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <path d={`M48 ${mouthY + 3} C53 ${mouthY + 5} 59 ${mouthY + 4} 63 ${mouthY + 1}`} stroke={skinShadow} strokeWidth="1.4" strokeLinecap="round" fill="none" opacity="0.35" />
+            {hasStubble ? (
+              <>
+                <path d="M39 59 C45 75 62 77 69 61 C66 80 44 82 37 66 Z" fill={hair} opacity={hasBeard ? "0.42" : "0.22"} />
+                <path d="M43 66 C50 70 59 70 66 64" stroke={hair} strokeWidth="1.6" strokeLinecap="round" opacity="0.26" />
+              </>
+            ) : null}
+            <path d="M37 68 C44 78 59 80 67 65" stroke={skinShadow} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.34" />
+            <path d="M40 75 C47 82 59 82 65 73" stroke="#1f130f" strokeWidth="1.2" strokeLinecap="round" opacity="0.18" />
+          </g>
+        </g>
+        <path d="M77 -6 C98 18 97 52 84 77" stroke="rgba(255,255,255,0.1)" strokeWidth="9" fill="none" />
         </g>
       </svg>
     </div>
@@ -545,8 +600,8 @@ function SquadTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void
         <Card key={player.id} className="grid grid-cols-[48px_1fr_48px] items-center gap-3 p-3">
           <span className={cn("grid h-9 w-9 place-items-center rounded-md text-center text-xs font-black text-white", positionClass(player.position))}>{displayPosition(player.position)}</span>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <PersonAvatar name={player.name} seedKey={player.id} className="h-9 w-9 shrink-0 rounded-md text-[10px]" />
+            <div className="flex items-center gap-3">
+              <PersonAvatar name={player.name} seedKey={player.id} className="h-12 w-12 shrink-0 rounded-lg text-[10px] ring-2 ring-white" />
               <p className="truncate text-sm font-bold">{player.name}</p>
             </div>
             <p className="truncate text-xs text-neutral-500">
