@@ -79,6 +79,7 @@
 - `Play Match` must not skip the normal result summary. Final whistle only finishes the live playback; the player still sees the `Match result` event before returning to the dashboard or next queued event.
 - Interrupted live playback should load into the result summary rather than replaying or simulating the fixture again.
 - Cup match previews use the same `See Match` / `Play Match` controls as league fixtures to preserve one consistent match flow.
+- Cup acceptance must prove the user-facing flow, not only engine mutation: draw, cup match preview, cup result, prize-money reporting, unchanged league record, History cup run, and Finances transaction visibility.
 - Match results must explain the relationship/facility consequences applied by the engine, so board confidence, manager trust, and stadium condition movement does not feel arbitrary.
 - Relationship metrics must be explainable through repeated outcomes: wins and stable finances help board confidence/trust, losses and negative balances hurt them.
 - Dashboard should not show duplicate controls for the same feature; Training and Youth are opened from their metric cards only.

@@ -362,6 +362,118 @@ test("financial reports stay consistent across several continue periods", async 
   await expect(page.getByTestId("finance-breakdown-result")).toHaveText(latestReport.result);
 });
 
+test("domestic cup flow shows match, prize money, and history", async ({ page }) => {
+  test.setTimeout(45_000);
+  await createAcceptanceCareer(page, "Cupford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  const userClub = importedSave.clubs[importedSave.userClubId];
+  const opponentId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId);
+  const opponent = importedSave.clubs[opponentId];
+  opponent.name = "Cupshire Rovers";
+  userClub.finances.balance = 600_000;
+  userClub.finances.transactions = [];
+  userClub.record = { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0 };
+  userClub.playerIds.forEach((playerId: string) => {
+    importedSave.players[playerId].rating = 88;
+    importedSave.players[playerId].fitness = 96;
+    importedSave.players[playerId].form = 92;
+    importedSave.players[playerId].morale = 92;
+  });
+  opponent.playerIds.forEach((playerId: string) => {
+    importedSave.players[playerId].rating = 34;
+    importedSave.players[playerId].fitness = 72;
+    importedSave.players[playerId].form = 42;
+    importedSave.players[playerId].morale = 45;
+  });
+  importedSave.week = 6;
+  importedSave.currentRound = 5;
+  importedSave.cup = { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] };
+  importedSave.financialSnapshot = undefined;
+  importedSave.eventQueue = [];
+  const cupFixture = {
+    id: "cup_acceptance_round_one",
+    round: 801,
+    homeClubId: importedSave.userClubId,
+    awayClubId: opponentId,
+    status: "scheduled",
+    competition: "cup",
+    cupRound: 1,
+  };
+  importedSave.fixtures = [
+    cupFixture,
+    ...importedSave.fixtures.filter((fixture: { id: string }) => fixture.id !== cupFixture.id),
+  ];
+  importedSave.currentEvent = {
+    id: "cup_draw_acceptance",
+    type: "club_update",
+    title: "Chairman's Cup draw",
+    body: "Cupford FC will face Cupshire Rovers in Round One. Winning pays a cup prize; losing still pays a smaller prize.",
+    requiresDecision: false,
+    createdSeason: importedSave.season,
+    createdWeek: importedSave.week,
+    fixtureId: cupFixture.id,
+    managerId: userClub.managerId,
+  };
+  importedSave.eventQueue = [{
+    id: "match_preview_cup_acceptance_round_one",
+    type: "match_preview",
+    title: "Chairman's Cup: First Round",
+    body: "Home cup tie against Cupshire Rovers in September.",
+    requiresDecision: true,
+    createdSeason: importedSave.season,
+    createdWeek: importedSave.week,
+    fixtureId: cupFixture.id,
+    managerId: userClub.managerId,
+    note: "Cup matches do not affect league points, but prize money and a cup run can change the season.",
+  }];
+
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const drawDialog = page.getByRole("dialog");
+  await expect(drawDialog).toContainText("Chairman's Cup draw");
+  await expect(drawDialog).toContainText("Cupshire Rovers");
+  await expect(drawDialog).not.toContainText("Trust");
+  await drawDialog.getByRole("button", { name: "Continue" }).click();
+
+  const previewDialog = page.getByRole("dialog");
+  await expect(previewDialog).toContainText("Chairman's Cup: First Round");
+  await expect(previewDialog).toContainText("Cup matches do not affect league points");
+  await previewDialog.getByRole("button", { name: "See Match" }).click();
+
+  const resultDialog = page.getByRole("dialog");
+  await expect(resultDialog).toContainText("Chairman's Cup result");
+  await expect(resultDialog).toContainText("First Round");
+  await resultDialog.getByRole("button", { name: "Continue" }).click();
+
+  const financeDialog = page.getByRole("dialog");
+  await expect(financeDialog).toContainText("Financial report");
+  await expect(financeDialog).toContainText("Prize money");
+  await expect(financeDialog).toContainText("Balance moved from");
+  const prizeText = await financeDialog.getByText("Prize money").locator("..").innerText();
+  expect(prizeText).not.toContain("£0");
+  await financeDialog.getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Record/i }).click();
+  await expect(page.getByRole("heading", { name: "Chairman's Cup" })).toBeVisible();
+  await expect(page.getByText("First Round")).toBeVisible();
+  await expect(page.getByText("Cupshire Rovers")).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /League/i }).click();
+  await expect(page.getByText(/Cupford FC0000/)).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText(/Cup prize: First Round/)).toBeVisible();
+  await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
+});
+
 test("mobile V1 surfaces stay readable without horizontal overflow", async ({ page }) => {
   await createAcceptanceCareer(page, "Mobileford FC");
   await expectMobileSurfaceHealthy(page, "Dashboard");
