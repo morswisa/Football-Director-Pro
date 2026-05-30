@@ -115,6 +115,7 @@
 - Secondary section navigation should reset the scrollable content pane to the top. A tab should not inherit Dashboard or previous-section scroll position because that can hide the title/context of the new section.
 - Stadium upgrade/repair choices should use the same mobile cost/effect clarity as other chairman economy screens: show current capacity/condition, bank context, upgrade cost, resulting capacity/level, repair need, and repair result before the action.
 - History should feel like meta progression, not a raw text log. Preserve the same season/cup/trophy/achievement data, but present it through legacy counters, status chips, card-based season records, and visible achievement progress.
+- Settings should remain a secondary utility surface, but it should still use the game's mobile card language: local-career summary first, accessibility/save controls as scannable sections, JSON as a preview rather than the dominant first visual, and destructive reset actions with distinct danger styling.
 - Weekly finance updates and financial report line items must share the same income/expense breakdown; reports must not invent display-only lines that were not reflected in the balance movement.
 - Debt warnings and bankruptcy stops must show exact balance/debt-limit context because debt-limit failure is a career-ending state.
 - Bankruptcy stops are blocking modal dialogs: once the debt limit is exceeded, the player must see the Board Decision and no Continue action should remain available.

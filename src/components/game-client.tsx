@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Award, CalendarDays, Dumbbell, Landmark, ListOrdered, Play, Settings, ShieldCheck, Sprout, Trophy, UserCog, UsersRound, Wallet } from "lucide-react";
+import { ArrowLeft, Award, CalendarDays, Copy, Download, Dumbbell, FileJson, Landmark, ListOrdered, Play, Save, Settings, ShieldCheck, Sprout, Trash2, Trophy, Type, Upload, UserCog, UsersRound, Volume2, Wallet } from "lucide-react";
 import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
@@ -1007,6 +1007,8 @@ function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   const [importStatus, setImportStatus] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
   const exportedSave = useMemo(() => JSON.stringify(save, null, 2), [save]);
+  const current = useCurrent(save)!;
+  const exportSizeKb = Math.max(1, Math.round(new Blob([exportedSave]).size / 1024));
   const copyExport = async () => {
     await navigator.clipboard?.writeText(exportedSave);
     setImportStatus("Save JSON copied.");
@@ -1029,46 +1031,89 @@ function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   return (
     <div className="space-y-4">
       <PageBack setTab={setTab} />
-      <Card>
-        <h2 className="text-lg font-bold">Settings</h2>
-        <p className="mt-1 text-sm text-neutral-500">Local/offline career save.</p>
-        <Button className="mt-4 w-full" onClick={persist}>Manual Save</Button>
+      <Card className="overflow-hidden p-0">
+        <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
+          <p className="text-[10px] font-black uppercase text-white/65">Local career</p>
+          <h2 className="mt-1 text-xl font-black">Settings</h2>
+          <p className="mt-2 text-sm text-white/72">Save, restore, and tune the offline chairman experience.</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
+              <b className="block truncate text-sm">{current.club.name}</b>
+              <span className="text-[10px] font-black uppercase text-white/65">Club</span>
+            </div>
+            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
+              <b className="block text-sm">{save.settings.textSize}</b>
+              <span className="text-[10px] font-black uppercase text-white/65">Text</span>
+            </div>
+            <div className="rounded-2xl bg-white px-2 py-3 text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.13)]">
+              <b className="block text-sm text-primary">{save.settings.sound ? "On" : "Off"}</b>
+              <span className="text-[10px] font-black uppercase text-neutral-500">Sound</span>
+            </div>
+          </div>
+        </div>
+        <div className="p-4">
+          <Button className="w-full" onClick={persist}><Save size={16} /> Manual Save</Button>
+        </div>
       </Card>
-      <Card>
-        <h3 className="text-sm font-bold">Accessibility</h3>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+
+      <Card className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Type size={18} className="text-primary" />
+          <h3 className="text-lg font-black">Accessibility</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
           <Button variant={save.settings.textSize === "normal" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "normal" })}>Normal Text</Button>
           <Button variant={save.settings.textSize === "large" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "large" })}>Large Text</Button>
         </div>
-        <Button variant={save.settings.sound ? "primary" : "secondary"} className="mt-3 w-full" onClick={() => updateSettings({ sound: !save.settings.sound })}>
-          Sound {save.settings.sound ? "On" : "Off"}
+        <Button variant={save.settings.sound ? "primary" : "secondary"} className="w-full" onClick={() => updateSettings({ sound: !save.settings.sound })}>
+          <Volume2 size={16} /> Sound {save.settings.sound ? "On" : "Off"}
         </Button>
       </Card>
-      <Card>
-        <h3 className="text-sm font-bold">Export Save</h3>
-        <p className="mt-1 text-xs text-neutral-500">Use this to back up or share the current local career.</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button onClick={copyExport}>Copy JSON</Button>
-          <Button variant="secondary" onClick={downloadExport}>Download</Button>
+
+      <Card className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <FileJson size={18} className="text-primary" />
+              <h3 className="text-lg font-black">Export Save</h3>
+            </div>
+            <p className="mt-1 text-xs text-neutral-500">Back up or share this local career.</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-surface-muted px-2.5 py-1 text-[10px] font-black uppercase text-neutral-600">{exportSizeKb}KB</span>
         </div>
-        <textarea readOnly value={exportedSave} className="mt-3 h-40 w-full resize-none rounded-lg border border-line bg-surface-muted p-3 font-mono text-[10px]" />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button onClick={copyExport}><Copy size={16} /> Copy JSON</Button>
+          <Button variant="secondary" onClick={downloadExport}><Download size={16} /> Download</Button>
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-black uppercase text-neutral-500">Save preview</p>
+          <textarea readOnly value={exportedSave} className="h-28 w-full resize-none rounded-xl border border-line bg-surface-muted p-3 font-mono text-[10px] leading-4 text-neutral-600" />
+        </div>
       </Card>
-      <Card>
-        <h3 className="text-sm font-bold">Import Save</h3>
-        <p className="mt-1 text-xs text-neutral-500">Pastes over Slot 1 after validation. Invalid saves are rejected.</p>
-        <textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="Paste exported save JSON here" className="mt-3 h-32 w-full resize-none rounded-lg border border-line bg-white p-3 font-mono text-[10px] outline-none focus:border-primary" />
-        <Button className="mt-3 w-full" onClick={submitImport} disabled={!importText.trim()}>Import Into Slot 1</Button>
+
+      <Card className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Upload size={18} className="text-primary" />
+          <h3 className="text-lg font-black">Import Save</h3>
+        </div>
+        <p className="rounded-xl bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600">Pastes over Slot 1 after validation. Invalid saves are rejected.</p>
+        <textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="Paste exported save JSON here" className="h-32 w-full resize-none rounded-xl border border-line bg-white p-3 font-mono text-[10px] leading-4 outline-none focus:border-primary" />
+        <Button className="w-full" onClick={submitImport} disabled={!importText.trim()}>Import Into Slot 1</Button>
       </Card>
-      <Card>
-        <h3 className="text-sm font-bold text-danger">Reset Career</h3>
-        <p className="mt-1 text-xs text-neutral-500">Deletes the local Slot 1 save from this browser.</p>
+
+      <Card className="space-y-3 border-red-100 bg-red-50/50">
+        <div className="flex items-center gap-2">
+          <Trash2 size={18} className="text-danger" />
+          <h3 className="text-lg font-black text-danger">Reset Career</h3>
+        </div>
+        <p className="rounded-xl bg-white px-3 py-3 text-xs leading-5 text-neutral-600">Deletes the local Slot 1 save from this browser.</p>
         {confirmReset ? (
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button variant="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
             <Button onClick={resetCareer}>Confirm Reset</Button>
           </div>
         ) : (
-          <Button variant="secondary" className="mt-3 w-full" onClick={() => setConfirmReset(true)}>Reset Local Career</Button>
+          <Button variant="secondary" className="w-full" onClick={() => setConfirmReset(true)}>Reset Local Career</Button>
         )}
       </Card>
       {importStatus ? <p className="rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{importStatus}</p> : null}
