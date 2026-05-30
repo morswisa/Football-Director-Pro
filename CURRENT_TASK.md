@@ -6,8 +6,9 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-bdq6mnyiw-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-gv0ddzuuw-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
+- Native packaging has started: Capacitor iOS/Android project shells exist, native orientation is locked to portrait, and `MOBILE_BUILD.md` documents local mobile build commands.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
 - Direct follow-up events created while resolving a chairman decision now take priority over older queued context, so the player sees the consequence of the choice before unrelated reports or matches.
@@ -149,7 +150,9 @@ Playable V1 includes:
 - Latest loan acceptance pass is deployed to preview: `https://football-director-b4d35erf9-mor-swisas-projects.vercel.app`.
 - Latest manager-contract acceptance improvement: the e2e flow now proves expired manager contracts can be extended or can force a replacement hire before the club continues. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (13 tests), and the develop-web-game screenshot client.
 - Latest manager-contract acceptance pass is deployed to preview: `https://football-director-619ieocp4-mor-swisas-projects.vercel.app`.
-- Current remaining-scope status: the planned Web V1 gameplay systems are broadly implemented. Remaining work is final clean-save acceptance, targeted fixes for any original-scope defects found there, final mobile/balance verification, and Capacitor iOS/Android packaging after web approval.
+- Current packaging/finalization slice: `npm run mobile:sync`, `npm run mobile:doctor`, `npm run lint`, `npm test` (46 tests), `npm run e2e` (15 tests), the `develop-web-game` screenshot client, and Vercel preview deployment have passed for the mobile build workflow and portrait-orientation updates.
+- Current remaining-scope status: the planned Web V1 gameplay systems are broadly implemented. Remaining work is final clean-save acceptance, targeted fixes for any original-scope defects found there, final mobile/balance verification, and native binary builds after Java Runtime/JDK and full Xcode are available.
+- Latest preview after the mobile workflow/orientation pass: `https://football-director-gv0ddzuuw-mor-swisas-projects.vercel.app`.
 - Current acceptance pass: added browser coverage for the domestic Chairman's Cup flow. The test imports a deterministic cup tie, verifies the draw, cup match preview, instant cup result, prize-money financial report, unchanged league record, History cup run, and `Cup prize` transaction in Finances. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (14 tests), and the develop-web-game screenshot client.
 - Latest cup acceptance pass is deployed to preview: `https://football-director-303bx100u-mor-swisas-projects.vercel.app`.
 - Current acceptance pass: added browser coverage for debt warning and bankruptcy stop states. The test verifies balance/debt-limit/headroom copy before failure and a blocking `Career stopped` Board Decision dialog after the club exceeds the debt limit. The game-over overlay now has `role="dialog"` and accessible labelling. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (15 tests), and the develop-web-game screenshot client.

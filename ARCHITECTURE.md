@@ -14,6 +14,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `tests`: Unit tests for deterministic game logic.
 - `e2e`: Playwright browser smoke tests.
 - `capacitor.config.ts`: Capacitor app metadata and static web directory.
+- `MOBILE_BUILD.md`: Reproducible mobile packaging workflow and local toolchain prerequisites.
 - `ios/` and `android/`: Generated Capacitor native project shells for packaging the static `out/` web build into mobile apps.
 - `.vercelignore`: Excludes native project folders from web preview deployments.
 
@@ -28,8 +29,9 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 7. Settings exposes local-only save control through Zustand: manual save, JSON export, JSON import after Zod migration/validation, reset by deleting Slot 1 from IndexedDB, and persistent accessibility/audio preferences.
 8. Production build emits static files to `out/` for Capacitor sync.
 9. `npm run mobile:sync` runs the static build and copies generated web assets into the iOS and Android project asset folders.
-10. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
-11. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
+10. `npm run mobile:doctor` verifies Capacitor native project health; `npm run mobile:build:android` and `npm run mobile:build:ios` are the intended local binary build commands once Java Runtime/JDK and full Xcode are installed.
+11. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
+12. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
 
 ## Navigation
 
@@ -178,6 +180,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `npm run build`
 - `npm run e2e`
 - Manual mobile browser smoke test at `430x932`
+- `npm run mobile:sync` for static export and Capacitor asset sync
+- `npm run mobile:doctor` for native project health
 - Expanded clean-save Playwright acceptance path covering the main V1 surfaces and early Continue queue.
 - Deep clean-save Playwright acceptance also covers reaching the first match result, checking the match impact note, and returning to Dashboard with Last Result visible.
 - Settings acceptance coverage verifies the local save lifecycle from the browser: export produces usable JSON, invalid import input is rejected, valid imported JSON replaces Slot 1, and the imported save can continue through the event queue.

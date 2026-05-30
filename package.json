@@ -11,6 +11,9 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "mobile:sync": "npm run build && cap sync",
+    "mobile:doctor": "cap doctor android && cap doctor ios",
+    "mobile:build:android": "npm run mobile:sync && cd android && ./gradlew assembleDebug",
+    "mobile:build:ios": "npm run mobile:sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -destination 'generic/platform=iOS Simulator' build",
     "mobile:add:ios": "cap add ios",
     "mobile:add:android": "cap add android"
   },
