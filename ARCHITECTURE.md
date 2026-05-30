@@ -169,6 +169,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `generateNextEvents` returns without popping queued season events when the user club has no manager, so the missing-manager gate cannot be bypassed by repeated Continue calls.
 - After `submitManagerHireOffer` appoints a replacement, the parked queue remains intact and the next `generateNextEvents` call resumes the first queued season event.
 - `HomeTab` derives its career snapshot directly from existing save state: current league record, latest financial snapshot, season history, trophy count, last ten fixture results, next fixture, and last match result. These are UI read models only; Dashboard polish must not mutate engine state or introduce a parallel progression model.
+- `NewGameClient` remains a thin UI layer over `useGameStore.create`: its live club/badge/kit preview is derived from local form state and does not write save data until `Continue`. `LoadGameClient` remains a read-only list over IndexedDB `SaveSlot` records until `Open Save` calls the store load action.
 
 ## Managers
 
