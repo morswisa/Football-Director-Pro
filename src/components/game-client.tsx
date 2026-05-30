@@ -10,6 +10,7 @@ import { Card, StatCard } from "./ui/card";
 import { calculateSaleImpact, evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
 import { cupRoundName, monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
+import { createFaceGenome } from "@/game/portraits";
 import type { ContractTerms, FinancialSnapshot, GameEventType, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
 import { cn, formatMoney, ordinal, pct } from "@/lib/utils";
 import { useGameStore } from "@/store/game-store";
@@ -177,74 +178,20 @@ function DebtImpactBox({ balance, debtLimit }: { balance: number; debtLimit: num
   );
 }
 
-function avatarSeed(value: string) {
-  let hash = 2166136261;
-  for (const char of value) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function avatarPick<T>(seed: number, values: T[], offset = 0) {
-  return values[Math.abs(seed + offset * 2654435761) % values.length];
-}
-
-function avatarRange(seed: number, min: number, max: number, offset = 0) {
-  return min + (Math.abs(seed + offset * 1103515245) % (max - min + 1));
-}
-
-function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", className }: { name: string; seedKey?: string; kind?: "player" | "manager"; variant?: "thumb" | "portrait"; className?: string }) {
-  const seed = avatarSeed(seedKey ?? name);
+export function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", className }: { name: string; seedKey?: string; kind?: "player" | "manager"; variant?: "thumb" | "portrait"; className?: string }) {
+  const genome = createFaceGenome({ name, seedKey, kind, variant });
+  const {
+    seed,
+    palette: { skin, skinLight, skinMid, skinShadow, hair, hairLight, shirt, accent, bgHue },
+    geometry: { faceShape, portraitArchetype, jawStyle, earStyle, headTilt, mirror },
+    hair: { style: hairStyle, hairlineStyle, texture: hairTexture, volume: hairVolume, depth: hairDepth },
+    face: { eyeY, browTilt, noseX, mouthY, eyeStyle, browStyle, noseStyle, mouthStyle, cheekStyle, expressionAsymmetry, facePlaneStyle, eyeSpread, underEyeDepth, highlightBias, lightAngle },
+    details: { facialHairStyle, hasStubble, hasBeard, hasMoustache, hasGlasses, hasScar, hasAgeLines, hasSideburns, jerseyStripe },
+  } = genome;
   const reactId = useId().replaceAll(":", "");
   const id = `avatar-${reactId}-${seed}`;
   const isPortrait = variant === "portrait";
   const viewHeight = isPortrait ? 130 : 100;
-  const skin = avatarPick(seed, ["#f1b889", "#d9966b", "#bd7855", "#95573e", "#e3a06f", "#c9865f"], 1);
-  const skinLight = avatarPick(seed, ["#ffd0a6", "#efb280", "#da8d62", "#b36c4b", "#f4bf91"], 2);
-  const skinMid = avatarPick(seed, ["#c87952", "#aa6044", "#87503b", "#70402f", "#b66e4b"], 3);
-  const skinShadow = avatarPick(seed, ["#7b3e30", "#633328", "#553025", "#8b4a35", "#49281f"], 4);
-  const hair = avatarPick(seed, ["#15100e", "#241711", "#352113", "#101827", "#4b2f1e", "#5c3a21"], 5);
-  const hairLight = avatarPick(seed, ["#5a351f", "#7a4b28", "#8a5d35", "#2d3a50", "#6b4327"], 6);
-  const shirt = kind === "manager" ? avatarPick(seed, ["#16221b", "#24313a", "#303946", "#123d2a"], 7) : avatarPick(seed, ["#138947", "#0f6f6e", "#2455b8", "#5527a8", "#1f3e8a", "#8f1734"], 7);
-  const accent = avatarPick(seed, ["#f8fafc", "#f5c542", "#2fe37f", "#8dc5ff", "#f97835", "#d8e1ef"], 8);
-  const bgHue = avatarRange(seed, 145, 250, 9);
-  const faceShape = avatarPick(seed, ["blade", "square", "narrow", "heavy"], 10);
-  const hairStyle = avatarPick(seed, ["undercut", "swept", "textured", "spikes", "tight", "fringe"], 11);
-  const eyeY = avatarRange(seed, 43, 46, 12);
-  const browTilt = avatarRange(seed, -3, 3, 13);
-  const noseX = avatarRange(seed, 54, 59, 14);
-  const mouthY = avatarRange(seed, 64, 67, 15);
-  const headTilt = avatarRange(seed, -4, 4, 16);
-  const eyeStyle = avatarPick(seed, ["focused", "narrow", "round", "heavy", "wide"], 17);
-  const browStyle = avatarPick(seed, ["straight", "arched", "low", "split", "severe"], 18);
-  const noseStyle = avatarPick(seed, ["straight", "hook", "wide", "sharp", "flat"], 19);
-  const mouthStyle = avatarPick(seed, ["flat", "pressed", "smirk", "downturn", "soft"], 20);
-  const cheekStyle = avatarPick(seed, ["blade", "soft", "hollow", "high"], 21);
-  const hairlineStyle = avatarPick(seed, ["low", "widow", "receding", "broken", "straight"], 22);
-  const facialHairStyle = kind === "manager"
-    ? avatarPick(seed, ["stubble", "beard", "moustache", "goatee", "clean"], 23)
-    : avatarPick(seed, ["clean", "stubble", "moustache", "goatee"], 23);
-  const portraitArchetype = avatarPick(seed, ["athletic", "angular", "veteran", "lean", "broad"], 24);
-  const lightAngle = avatarPick(seed, ["left", "front", "right"], 25);
-  const hairTexture = avatarPick(seed, ["chunky", "wispy", "crop", "wet", "brush"], 26);
-  const jawStyle = avatarPick(seed, ["chiselled", "soft-square", "pointed", "wide"], 27);
-  const earStyle = avatarPick(seed, ["low", "sharp", "round"], 28);
-  const highlightBias = avatarPick(seed, ["temple", "cheek", "nose", "jaw"], 29);
-  const hairVolume = avatarPick(seed, ["flat", "crest", "messy", "slick"], 30);
-  const expressionAsymmetry = avatarPick(seed, ["left", "right", "center"], 31);
-  const facePlaneStyle = avatarPick(seed, ["hard-left", "hard-right", "center-ridge", "soft-mask"], 32);
-  const eyeSpread = avatarRange(seed, -2, 3, 33);
-  const hairDepth = avatarPick(seed, ["temple-fade", "forelock", "crown", "taper"], 34);
-  const underEyeDepth = avatarPick(seed, ["clean", "tired", "sharp", "heavy"], 35);
-  const mirror = seed % 2 === 0;
-  const hasStubble = facialHairStyle === "stubble" || facialHairStyle === "beard" || facialHairStyle === "goatee";
-  const hasBeard = facialHairStyle === "beard";
-  const hasMoustache = facialHairStyle === "moustache" || facialHairStyle === "goatee" || facialHairStyle === "beard";
-  const hasGlasses = kind === "manager" && seed % 6 === 0;
-  const hasScar = seed % 17 === 0;
-  const hasAgeLines = kind === "manager" || portraitArchetype === "veteran" || seed % 11 === 0;
-  const hasSideburns = hairStyle === "undercut" || hairStyle === "tight" || seed % 5 === 0;
   const faceInk = "#2d1712";
   const baseFacePath = faceShape === "square"
     ? "M34 38 C36 25 50 18 65 24 C75 29 78 43 74 57 L69 68 L59 77 L45 76 L36 66 C31 57 30 45 34 38 Z"
@@ -328,7 +275,9 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
         ? `M${eyeRight - 6} ${eyeY} Q${eyeRight} ${eyeY + 3} ${eyeRight + 6} ${eyeY}`
         : eyeStyle === "narrow"
           ? `M${eyeRight - 6} ${eyeY + 2} Q${eyeRight} ${eyeY} ${eyeRight + 6} ${eyeY + 1.5}`
-          : `M${eyeRight - 5} ${eyeY + 1} Q${eyeRight} ${eyeY - 1.5} ${eyeRight + 5} ${eyeY + 1}`;
+        : `M${eyeRight - 5} ${eyeY + 1} Q${eyeRight} ${eyeY - 1.5} ${eyeRight + 5} ${eyeY + 1}`;
+  const leftEyeFillPath = `M${eyeLeft - 6} ${eyeY} Q${eyeLeft} ${eyeY - 3.4} ${eyeLeft + 7} ${eyeY} Q${eyeLeft} ${eyeY + 2.2} ${eyeLeft - 6} ${eyeY} Z`;
+  const rightEyeFillPath = `M${eyeRight - 6} ${eyeY + 1} Q${eyeRight} ${eyeY - 2.4} ${eyeRight + 7} ${eyeY + 1} Q${eyeRight} ${eyeY + 3.1} ${eyeRight - 6} ${eyeY + 1} Z`;
   const leftBrowPath = browStyle === "arched"
     ? `M${eyeLeft - 8} ${eyeY - 7 + browTilt} Q${eyeLeft - 1} ${eyeY - 13} ${eyeLeft + 8} ${eyeY - 8}`
     : browStyle === "low"
@@ -360,14 +309,14 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
     ? `M${noseX - 4} 61 C${noseX - 1} 63 ${noseX + 5} 63 ${noseX + 9} 60`
     : `M${noseX - 1} 60 C${noseX + 2} 62 ${noseX + 5} 62 ${noseX + 7} 60`;
   const mouthPath = mouthStyle === "smirk"
-    ? `M43 ${mouthY + 1} C50 ${mouthY + 4} 59 ${mouthY + 1} 66 ${mouthY - 3}`
+    ? `M43 ${mouthY} C50 ${mouthY + 1} 59 ${mouthY} 66 ${mouthY - 2}`
     : mouthStyle === "downturn"
       ? `M44 ${mouthY - 1} C51 ${mouthY - 3} 59 ${mouthY - 2} 65 ${mouthY + 2}`
-      : mouthStyle === "pressed"
-        ? `M44 ${mouthY} L64 ${mouthY - 1}`
-        : mouthStyle === "soft"
-          ? `M45 ${mouthY} C51 ${mouthY + 3} 59 ${mouthY + 3} 65 ${mouthY - 1}`
-          : `M44 ${mouthY} C50 ${mouthY + 2} 58 ${mouthY + 1} 64 ${mouthY - 2}`;
+    : mouthStyle === "pressed"
+      ? `M44 ${mouthY} L64 ${mouthY - 1}`
+    : mouthStyle === "soft"
+      ? `M45 ${mouthY} C51 ${mouthY + 1} 59 ${mouthY + 1} 65 ${mouthY - 1}`
+      : `M44 ${mouthY} C50 ${mouthY + 1} 58 ${mouthY} 64 ${mouthY - 1}`;
   const lowerLipPath = mouthStyle === "pressed"
     ? `M48 ${mouthY + 3} C53 ${mouthY + 4} 59 ${mouthY + 4} 63 ${mouthY + 2}`
     : `M48 ${mouthY + 4} C53 ${mouthY + 6} 59 ${mouthY + 5} 63 ${mouthY + 2}`;
@@ -416,7 +365,6 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
             "M47 30 L56 19 L60 34",
             "M60 31 L72 24 L71 38",
           ];
-  const jerseyStripe = seed % 3 === 0;
   const portraitTransform = mirror ? "translate(100 0) scale(-1 1)" : undefined;
   const portraitZoom = isPortrait ? "translate(-5 -7) scale(1.1)" : "";
   const archetypeTransform = portraitArchetype === "broad"
@@ -496,9 +444,9 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
     "M43 37 C47 35 51 35 55 37",
   ];
   const asymmetricMouthPath = expressionAsymmetry === "left"
-    ? `M43 ${mouthY + 1} C50 ${mouthY + 3} 58 ${mouthY + 1} 65 ${mouthY - 1}`
+    ? `M43 ${mouthY + 0.5} C50 ${mouthY + 1.5} 58 ${mouthY} 65 ${mouthY - 1}`
     : expressionAsymmetry === "right"
-      ? `M44 ${mouthY - 1} C51 ${mouthY + 1} 59 ${mouthY + 3} 66 ${mouthY + 1}`
+      ? `M44 ${mouthY - 1} C51 ${mouthY} 59 ${mouthY + 1.5} 66 ${mouthY + 0.5}`
       : mouthPath;
   const mouthPlanePath = mouthStyle === "pressed"
     ? `M45 ${mouthY + 1} C51 ${mouthY + 4} 59 ${mouthY + 4} 65 ${mouthY} L63 ${mouthY + 6} C55 ${mouthY + 8} 48 ${mouthY + 6} 45 ${mouthY + 1} Z`
@@ -629,6 +577,8 @@ function PersonAvatar({ name, seedKey, kind = "player", variant = "thumb", class
             ) : null}
             <path d={leftBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.7" : "3.2"} strokeLinecap="round" fill="none" />
             <path d={rightBrowPath} stroke={hair} strokeWidth={browStyle === "split" ? "2.7" : "3.2"} strokeLinecap="round" fill="none" />
+            <path d={leftEyeFillPath} fill="#f3d6bf" opacity={eyeStyle === "narrow" ? "0.2" : "0.38"} />
+            <path d={rightEyeFillPath} fill="#f3d6bf" opacity={eyeStyle === "narrow" ? "0.2" : "0.38"} />
             <path d={leftEyePath} stroke="#0f172a" strokeWidth={eyeStyle === "round" ? "2" : "2.5"} strokeLinecap="round" fill="none" />
             <path d={rightEyePath} stroke="#0f172a" strokeWidth={eyeStyle === "round" ? "2" : "2.5"} strokeLinecap="round" fill="none" />
             <circle cx={eyeLeft + (eyeStyle === "wide" ? 1 : 2)} cy={eyeY + (eyeStyle === "heavy" ? 1 : 0)} r={eyeStyle === "round" ? "1.35" : "1.1"} fill="#111827" />

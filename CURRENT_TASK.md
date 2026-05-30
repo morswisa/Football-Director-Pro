@@ -7,6 +7,8 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
 - Current Vercel preview deployment is available at `https://football-director-mqp9to7od-mor-swisas-projects.vercel.app`.
+- Current face-system planning pass is captured in `FACE_MODEL_RESEARCH.md`: FaceVerse is the selected architectural foundation for the next portrait pipeline, with offline/cache generation and the current deterministic SVG portraits retained as fallback.
+- Current implementation pass adds `src/game/portraits.ts`, a deterministic `FaceGenome` layer used by `PersonAvatar`. The visible portraits are still SVG, but the seed/identity model is now pure engine-side TypeScript and renderer-agnostic.
 - Static export is enabled for Capacitor via `out/`.
 - Native packaging has started: Capacitor iOS/Android project shells exist, native orientation is locked to portrait, and `MOBILE_BUILD.md` documents local mobile build commands.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
@@ -92,6 +94,9 @@ Playable V1 includes:
 - Match simulation.
 - Domestic cup flow: seasonal Chairman's Cup state, scheduled knockout ties, draw events in the Continue loop, cup match previews/results, non-league cup results, prize money in financial reports, cup status on Dashboard, cup history, and a cup achievement.
 - Event/entity cards and match events use deterministic generated SVG portrait faces for players and managers, built from a shared procedural face template.
+- Face portrait research compared `nano_bfm`, `eos`, `face3d`, `FLAME`, and `FaceVerse`. The next portrait implementation should start by extracting a deterministic `FaceGenome` from the current `PersonAvatar` seed logic before testing any heavy model renderer.
+- `PersonAvatar` now derives its palette, geometry, hair, facial features, lighting, and detail flags from `createFaceGenome`. This preserves current in-game portrait locations while giving future bitmap/offline renderers the same stable input contract.
+- `/portrait-lab` exists as an internal visual audit surface for the generated player and manager portrait grid.
 - Finances, stadium, training, youth, history, achievements.
 - History now surfaces current-season record context before season-end history exists.
 - History now labels completed-season impact explicitly as board/trust/reputation point movement, so season consequences remain readable after the review modal is dismissed.
@@ -209,3 +214,5 @@ Playable V1 includes:
 - Latest preview after portrait-shading pass: `https://football-director-kfq5y4g1h-mor-swisas-projects.vercel.app`.
 - Current portrait-depth pass: after additional online reference review around vector portrait face planes and deterministic avatar component systems, `PersonAvatar` now adds seeded eye spacing, face-plane styles, forehead planes, under-eye depth, mouth shadow planes, hair-depth strokes, and a portrait-only crop zoom so player/manager faces fill the decision card more like a football portrait. Verified with mobile event-card screenshot inspection, `npm run lint`, `npm test` (46 tests), `npm run build`, `npm run e2e` (16 tests), `npm run mobile:sync`, and the develop-web-game screenshot client.
 - Latest preview after portrait-depth pass: `https://football-director-20v782545-mor-swisas-projects.vercel.app`.
+- Current face-model research plan: implement a formal seeded `FaceGenome`, keep player-facing relationship math qualitative, then prototype an offline portrait renderer. FaceVerse is preferred conceptually because its coefficient model separates identity, expression, texture, lighting, and camera, but model/checkpoint licensing must be reviewed before commercial use.
+- Current FaceGenome implementation has been verified with focused portrait unit tests, full unit tests, lint, production build, full Playwright e2e, `npm run mobile:sync`, and a mobile visual check of `/portrait-lab`.
