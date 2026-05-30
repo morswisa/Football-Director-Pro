@@ -81,6 +81,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Transfer-window acceptance coverage verifies completed paid purchases, loan-ins, and loan-outs across world ownership, balance movement, manager-trust changes, and financial snapshot fee lines.
 - Browser transfer acceptance uses an imported deterministic paid target to verify the full player-facing path: transfer decision impact, completed signing, Roster membership, and `Transfer fee paid` visibility in Finances.
 - Browser contract acceptance uses an imported deterministic squad player to verify weak-offer warnings, contract rejection feedback, and the resulting morale drop displayed in Roster.
+- Browser youth-contract acceptance uses an imported deterministic academy player to verify the decision card, promotion follow-up event, and resulting Roster morale/form/fitness display.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
@@ -179,3 +180,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Mobile-surface acceptance coverage opens Dashboard, League, Roster, Manager, Finances, Stadium, History, Training, Youth, Settings, and a Continue event on the Pixel-sized Playwright project, asserting no page-level horizontal overflow and no visible `NaN`/`undefined` text.
 - Long-run balance coverage now runs several human-style careers across three seasons, asserting playable debt headroom, bounded wage pressure, finite financial snapshots, stable relationships, viable squads, and stable division sizes.
 - Clean-save season-boundary acceptance verifies that a browser career reaches repeated season reviews, shows season awards and impact, continues into later season intros without queue stalls, and then shows multiple completed seasons with impact labels in History.
+- Youth-contract browser acceptance verifies the academy decision path from event card to promoted Roster player state.

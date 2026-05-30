@@ -85,6 +85,7 @@ Playable V1 includes:
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
 - Chairman decision cards now surface selected trust, morale, wage-bill, balance, and replacement impact for the main decision types where those values can change, so relationship/economy movement is visible before confirming.
 - Browser acceptance now covers a weak squad-contract offer being rejected, including the pre-submit trust/morale warning, the contract-turned-down response, and the resulting lower morale in Roster.
+- Browser acceptance now covers a youth contract promotion: a youth player decision shows wage-bill impact, creates the promotion follow-up event, and the promoted player appears in Roster with updated morale/form/fitness.
 - Match simulation.
 - Domestic cup flow: seasonal Chairman's Cup state, scheduled knockout ties, draw events in the Continue loop, cup match previews/results, non-league cup results, prize money in financial reports, cup status on Dashboard, cup history, and a cup achievement.
 - Event/entity cards and match events use deterministic generated SVG portrait faces for players and managers, built from a shared procedural face template.
@@ -135,3 +136,6 @@ Playable V1 includes:
 - Latest paid-transfer acceptance pass is deployed to preview.
 - Latest contract acceptance improvement: the e2e flow now proves contract rejection affects and displays morale/trust feedback.
 - Latest contract rejection acceptance pass is deployed to preview.
+- Latest remaining-scope answer: planned Web V1 gameplay systems are implemented and heavily covered. What remains is not broad feature discovery: finish the final clean-save acceptance audit, close only original-scope defects found there, do one last mobile/balance pass, then generate Capacitor iOS/Android platforms after the web version is accepted.
+- Latest youth acceptance improvement: the e2e flow now proves a youth contract offer produces a youth-promotion event and visible Roster state. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (10 tests), and the develop-web-game screenshot client.
+- Latest youth acceptance pass is deployed to preview: `https://football-director-58t6ckg0p-mor-swisas-projects.vercel.app`.

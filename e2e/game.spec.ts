@@ -665,6 +665,73 @@ test("contract rejection shows trust and morale impact", async ({ page }) => {
   await expectMobileSurfaceHealthy(page, "Roster after contract rejection");
 });
 
+test("youth contract promotion shows player and roster impact", async ({ page }) => {
+  await createAcceptanceCareer(page, "Youthford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  const userClub = importedSave.clubs[importedSave.userClubId];
+  const youthPlayerId = "youth_acceptance_prospect";
+  importedSave.players[youthPlayerId] = {
+    id: youthPlayerId,
+    clubId: importedSave.userClubId,
+    name: "Acceptance Prospect",
+    position: "D",
+    age: 17,
+    rating: 62,
+    potential: 82,
+    wage: 0,
+    value: 95_000,
+    contractYears: 0,
+    form: 58,
+    fitness: 88,
+    morale: 60,
+    personality: "Builder",
+    seasonStats: { apps: 0, goals: 0, assists: 0, cleanSheets: 0, yellowCards: 0, redCards: 0 },
+    careerStats: { apps: 0, goals: 0, assists: 0, cleanSheets: 0, yellowCards: 0, redCards: 0 },
+  };
+  userClub.playerIds.push(youthPlayerId);
+  importedSave.eventQueue = [];
+  importedSave.financialSnapshot = undefined;
+  importedSave.currentEvent = {
+    id: "youth_contract_acceptance_prospect",
+    type: "youth_contract",
+    title: "Youth contract decision",
+    body: "Acceptance Prospect's academy terms are ready to be reviewed.",
+    note: "The manager sees real promise in this player.",
+    requiresDecision: true,
+    createdSeason: importedSave.season,
+    createdWeek: importedSave.week,
+    playerId: youthPlayerId,
+    managerId: userClub.managerId,
+    variant: "neutral",
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const youthDialog = page.getByRole("dialog");
+  await expect(youthDialog).toContainText("Youth contract decision");
+  await expect(youthDialog).toContainText("Acceptance Prospect");
+  await expect(youthDialog).toContainText("Youth decision impact");
+  await expect(youthDialog).toContainText("weekly wage bill rises");
+  await youthDialog.getByRole("button", { name: "Offer Contract" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Youth player promoted");
+  await expect(page.getByRole("dialog")).toContainText("Acceptance Prospect has signed professional terms");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Roster/i }).click();
+  const prospectRow = page.locator("section").filter({ hasText: "Acceptance Prospect" }).first();
+  await expect(prospectRow).toBeVisible();
+  await expect(prospectRow).toContainText("Morale 68%");
+  await expect(prospectRow).toContainText("Form 58%");
+  await expect(prospectRow).toContainText("Fit 88%");
+  await expectMobileSurfaceHealthy(page, "Roster after youth promotion");
+});
+
 test("stadium upgrades and repairs show clear financial impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Standford FC");
 
