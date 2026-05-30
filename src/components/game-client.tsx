@@ -1728,6 +1728,145 @@ function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
   );
 }
 
+function EventMetricTile({ label, value, tone = "neutral" }: { label: string; value: ReactNode; tone?: "neutral" | "positive" | "negative" | "dark" }) {
+  return (
+    <p className={cn(
+      "min-w-0 rounded-xl px-3 py-3 text-xs",
+      tone === "positive" && "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-100",
+      tone === "negative" && "bg-red-50 text-red-950 ring-1 ring-red-100",
+      tone === "dark" && "bg-emerald-950 text-white",
+      tone === "neutral" && "bg-surface-muted text-neutral-700",
+    )}>
+      <span className={cn("block text-[10px] font-black uppercase", tone === "dark" ? "text-white/65" : "text-neutral-500")}>{label}</span>
+      <b className="mt-1 block break-words text-sm leading-tight">{value}</b>
+    </p>
+  );
+}
+
+function SpecialEventPanel({ save }: { save: GameSave }) {
+  const event = save.currentEvent;
+  const current = useCurrent(save)!;
+  if (!event) return null;
+  const player = event.playerId ? save.players[event.playerId] : undefined;
+  const manager = event.managerId ? save.managers[event.managerId] : current.manager;
+  const balance = current.club.finances.balance;
+  const debtLimit = current.club.finances.debtLimit;
+  const debtHeadroom = balance - debtLimit;
+  const latestSnapshot = event.financialSnapshot ?? latestFinancialSnapshot(save);
+  const avgRating = Math.round(current.players.reduce((sum, squadPlayer) => sum + squadPlayer.rating, 0) / Math.max(1, current.players.length));
+
+  if (event.type === "bank_warning") {
+    return (
+      <div className="mt-4 overflow-hidden rounded-2xl border border-red-100 bg-[linear-gradient(180deg,_#fff7f7,_#ffffff)] shadow-[0_10px_24px_rgba(127,29,29,0.08)]">
+        <div className="flex items-center gap-3 border-b border-red-100 px-4 py-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-red-600 text-white"><Landmark size={20} /></span>
+          <div>
+            <p className="text-xs font-black uppercase text-red-700">Bank position</p>
+            <p className="text-sm font-bold text-red-950">Debt limit is now the critical number.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 p-3">
+          <EventMetricTile label="Balance" value={formatMoney(balance)} tone="negative" />
+          <EventMetricTile label="Debt limit" value={formatMoney(debtLimit)} tone="negative" />
+          <EventMetricTile label={debtHeadroom >= 0 ? "Headroom" : "Over limit"} value={formatMoney(Math.abs(debtHeadroom))} tone={debtHeadroom >= 0 ? "neutral" : "negative"} />
+        </div>
+      </div>
+    );
+  }
+
+  if (event.type === "manager_frustrated" || event.type === "manager_retirement_hint") {
+    const retirement = event.type === "manager_retirement_hint";
+    return (
+      <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+          <span className={cn("grid h-10 w-10 place-items-center rounded-xl text-white", retirement ? "bg-amber-500" : "bg-red-600")}><UserCog size={20} /></span>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase text-primary">{retirement ? "Contract mood" : "Manager relationship"}</p>
+            <p className="truncate text-sm font-bold">{manager?.name ?? "Manager"} · {manager ? managerRating(manager) : "-"} rating</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 p-3">
+          <EventMetricTile label="Trust" value={`${current.club.managerTrust}%`} tone={current.club.managerTrust < 50 ? "negative" : "neutral"} />
+          <EventMetricTile label={retirement ? "Contract" : "Budget"} value={retirement ? `${manager?.contractYears ?? 0}y` : save.transferBudget ? save.transferBudget.mode : "Unset"} />
+          <EventMetricTile label={retirement ? "Wage" : "Balance"} value={retirement ? (manager ? formatWeeklyWage(manager.wage) : "-") : formatMoney(balance)} tone={!retirement && balance < 0 ? "negative" : "neutral"} />
+        </div>
+      </div>
+    );
+  }
+
+  if (event.type === "hall_of_fame" && player) {
+    return (
+      <div className="mt-4 overflow-hidden rounded-2xl border border-amber-100 bg-[linear-gradient(135deg,_#fff7dc,_#ffffff_68%)] shadow-[0_12px_28px_rgba(146,64,14,0.1)]">
+        <div className="flex items-center gap-3 px-4 py-4">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500 text-white"><Trophy size={24} /></span>
+          <div>
+            <p className="text-xs font-black uppercase text-amber-700">Club legacy</p>
+            <p className="text-lg font-black leading-tight">{player.name}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 border-t border-amber-100 bg-white/65 text-center text-xs">
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Apps</small>{player.careerStats.apps}</span>
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Goals</small>{player.careerStats.goals}</span>
+          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Rating</small>{player.rating}/100</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (event.type === "sale_confirmed" && player) {
+    const buyer = player.clubId ? save.clubs[player.clubId] : undefined;
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <EventMetricTile label="Moved to" value={buyer?.name ?? "Buying club"} />
+        <EventMetricTile label="Wage removed" value={formatWeeklyWage(player.wage)} tone="positive" />
+        <EventMetricTile label="Position" value={displayPosition(player.position)} />
+        <EventMetricTile label="Squad average" value={`${avgRating}/100`} />
+      </div>
+    );
+  }
+
+  if (event.type === "youth_promoted" && player) {
+    return (
+      <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-100 bg-[linear-gradient(180deg,_#f0fdf4,_#ffffff)] shadow-[0_10px_24px_rgba(16,185,129,0.08)]">
+        <div className="flex items-center gap-3 border-b border-emerald-100 px-4 py-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-white"><Sprout size={20} /></span>
+          <div>
+            <p className="text-xs font-black uppercase text-primary">Academy graduate</p>
+            <p className="text-sm font-bold">First-team contract now active.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 p-3">
+          <EventMetricTile label="Position" value={displayPosition(player.position)} />
+          <EventMetricTile label="Rating" value={`${player.rating}/100`} />
+          <EventMetricTile label="Wage" value={formatWeeklyWage(player.wage)} />
+        </div>
+      </div>
+    );
+  }
+
+  if (event.type === "contract_response" && player) {
+    return (
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <EventMetricTile label="Player" value={player.name} />
+        <EventMetricTile label="Morale" value={`${player.morale}%`} tone={player.morale < 55 ? "negative" : "neutral"} />
+        <EventMetricTile label="Trust" value={`${current.club.managerTrust}%`} tone={current.club.managerTrust < 50 ? "negative" : "neutral"} />
+      </div>
+    );
+  }
+
+  if (event.type === "transfer_window_open" || event.type === "average_crowd_report") {
+    return (
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <EventMetricTile label="Balance" value={formatMoney(balance)} tone={balance < 0 ? "negative" : "neutral"} />
+        <EventMetricTile label="Stadium" value={current.club.stadium.capacity.toLocaleString()} />
+        <EventMetricTile label="Last result" value={latestSnapshot ? formatMoney(latestSnapshot.profit) : "No report"} tone={latestSnapshot && latestSnapshot.profit >= 0 ? "positive" : "negative"} />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function EventModal({ save }: { save: GameSave }) {
   const event = save.currentEvent;
   const current = useCurrent(save)!;
@@ -1766,6 +1905,7 @@ function EventModal({ save }: { save: GameSave }) {
             {event.body}
           </div>
           {event.note ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
+          <SpecialEventPanel save={save} />
 
         {event.type === "season_intro" ? (
           <div className="mt-4 space-y-2">
