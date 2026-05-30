@@ -275,7 +275,13 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
           </div>
           <CalendarDays className="text-primary" />
         </div>
-        <Button className="w-full" onClick={continueGame} disabled={Boolean(save.gameOver)}>
+        <Button className="w-full" onClick={() => {
+          if (!save.currentEvent && !current.manager) {
+            setTab("manager");
+            return;
+          }
+          continueGame();
+        }} disabled={Boolean(save.gameOver)}>
           {save.currentEvent ? "Open Decision" : !current.manager ? "Hire Manager" : "Continue"}
         </Button>
       </Card>

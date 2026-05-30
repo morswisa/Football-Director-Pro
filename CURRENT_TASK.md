@@ -121,6 +121,8 @@ Playable V1 includes:
 - The expanded clean-save Playwright acceptance path now reaches the first match result, verifies the post-match impact explanation, and confirms the Dashboard shows Last Result after dismissing the result.
 - Live-match browser acceptance now verifies `Play Match` enters the live state, advances minutes one-by-one, withholds the result Continue button until final whistle, then shows the `Match result` summary and returns to Dashboard.
 - Manager browser acceptance now verifies dismissal cost/debt context, no-manager emergency replacement, hire negotiation cost/wage context, successful replacement hire, and post-hire manager-action lock.
+- Manager contract-expiry browser acceptance now verifies both branches: extending the manager contract updates the Manager screen, while letting him leave creates the required hire-manager gate and replacement hire flow.
+- Dashboard `Hire Manager` now navigates to the Manager screen when no manager is appointed instead of silently calling Continue.
 - Stadium browser acceptance now verifies upgrade capacity gain, repair condition recovery, infrastructure spending, and recent transaction visibility for upgrade/repair costs.
 - Latest stadium acceptance pass is deployed to preview.
 - Latest manager acceptance pass is deployed to preview.
@@ -145,3 +147,5 @@ Playable V1 includes:
 - Latest sale acceptance pass is deployed to preview: `https://football-director-5lih0cyj5-mor-swisas-projects.vercel.app`.
 - Latest loan acceptance improvement: the e2e flow now proves loan-in and loan-out decisions move players through the Roster correctly and leave fee trails in Finances. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (12 tests), and the develop-web-game screenshot client.
 - Latest loan acceptance pass is deployed to preview: `https://football-director-b4d35erf9-mor-swisas-projects.vercel.app`.
+- Latest manager-contract acceptance improvement: the e2e flow now proves expired manager contracts can be extended or can force a replacement hire before the club continues. Verified locally with focused e2e, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (13 tests), and the develop-web-game screenshot client.
+- Latest manager-contract acceptance pass is deployed to preview: `https://football-director-619ieocp4-mor-swisas-projects.vercel.app`.

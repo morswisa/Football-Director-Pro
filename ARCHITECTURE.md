@@ -152,6 +152,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - The no-manager blocking modal is suppressed on the Manager tab so the player can actually negotiate with candidates after following the modal's prompt.
 - Manager contract-expiry decisions reuse the event modal and deterministic wage formulas, not a separate React-only state path.
 - If an expired manager leaves, the follow-up message is shown immediately; after it is dismissed, queued season events remain parked until the Manager tab hires a replacement.
+- Browser manager-contract acceptance imports deterministic expired-contract events to verify extension, forced no-manager blocking, the hire-manager gate, and replacement hiring from the Manager screen.
 
 ## Core Constraints
 

@@ -514,6 +514,102 @@ test("manager dismissal still allows emergency replacement", async ({ page }) =>
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
+test("manager contract expiry can extend or force replacement", async ({ page }) => {
+  await createAcceptanceCareer(page, "Expiryford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const extensionSave = JSON.parse(exportedSave);
+  const extensionClub = extensionSave.clubs[extensionSave.userClubId];
+  const extensionManager = extensionSave.managers[extensionClub.managerId];
+  extensionManager.name = "Acceptance Manager";
+  extensionManager.wage = 1_200;
+  extensionManager.contractYears = 0;
+  extensionManager.compensationFee = 0;
+  extensionSave.eventQueue = [];
+  extensionSave.financialSnapshot = undefined;
+  extensionSave.currentEvent = {
+    id: "manager_contract_acceptance_extend",
+    type: "manager_contract_decision",
+    title: "Manager contract expired",
+    body: "Acceptance Manager's contract has expired. Decide whether to extend him or let him leave.",
+    note: "Letting him leave means the club must hire a replacement.",
+    requiresDecision: true,
+    createdSeason: extensionSave.season,
+    createdWeek: extensionSave.week,
+    managerId: extensionManager.id,
+    variant: "neutral",
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(extensionSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const extensionDialog = page.getByRole("dialog");
+  await expect(extensionDialog).toContainText("Manager contract expired");
+  await expect(extensionDialog).toContainText("Acceptance Manager");
+  await expect(extensionDialog).toContainText("Decision impact");
+  await expect(extensionDialog).toContainText("manager trust +4");
+  await extensionDialog.getByRole("button", { name: "Extend Contract" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Manager contract extended");
+  await expect(page.getByRole("dialog")).toContainText("Acceptance Manager has signed a 2-year deal");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Manager/i }).click();
+  await expect(page.getByRole("heading", { name: "Acceptance Manager" })).toBeVisible();
+  await expect(page.getByText(/2 years left/)).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const releaseSave = JSON.parse(exportedSave);
+  const releaseClub = releaseSave.clubs[releaseSave.userClubId];
+  const releaseManager = releaseSave.managers[releaseClub.managerId];
+  releaseManager.name = "Leaving Manager";
+  releaseManager.wage = 1_100;
+  releaseManager.contractYears = 0;
+  releaseManager.compensationFee = 0;
+  releaseSave.eventQueue = [];
+  releaseSave.financialSnapshot = undefined;
+  releaseSave.currentEvent = {
+    id: "manager_contract_acceptance_release",
+    type: "manager_contract_decision",
+    title: "Manager contract expired",
+    body: "Leaving Manager's contract has expired. Decide whether to extend him or let him leave.",
+    note: "Letting him leave means the club must hire a replacement.",
+    requiresDecision: true,
+    createdSeason: releaseSave.season,
+    createdWeek: releaseSave.week,
+    managerId: releaseManager.id,
+    variant: "neutral",
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(releaseSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const releaseDialog = page.getByRole("dialog");
+  await expect(releaseDialog).toContainText("Manager contract expired");
+  await expect(releaseDialog).toContainText("Leaving Manager");
+  await releaseDialog.getByRole("button", { name: "Let Him Leave" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Manager leaves club");
+  await expect(page.getByRole("dialog")).toContainText("must appoint a manager before continuing");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Hire a Manager");
+  await expect(page.getByRole("dialog")).toContainText("cannot continue without a manager");
+  await page.getByRole("dialog").getByRole("button", { name: "View All Candidates" }).click();
+
+  await expect(page.getByText("No manager appointed")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Negotiate" }).first()).toBeEnabled();
+  await page.getByRole("button", { name: "Negotiate" }).first().click();
+
+  const hireDialog = page.getByRole("dialog");
+  await expect(hireDialog).toContainText("Manager negotiation");
+  await expect(hireDialog).toContainText("Expected wage");
+  await hireDialog.getByRole("button", { name: "Submit Offer" }).click();
+  await expect(page.getByText("Manager hired.")).toBeVisible();
+  await expect(page.getByText("No manager appointed")).toHaveCount(0);
+});
+
 test("paid transfer signing shows player and finance trail", async ({ page }) => {
   test.setTimeout(45_000);
   await createAcceptanceCareer(page, "Transferford FC");
