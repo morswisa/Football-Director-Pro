@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-mqp9to7od-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-a0f4jcz9d-mor-swisas-projects.vercel.app`.
 - Current face-system planning pass is captured in `FACE_MODEL_RESEARCH.md`: FaceVerse is the selected architectural foundation for the next portrait pipeline, with offline/cache generation and the current deterministic SVG portraits retained as fallback.
 - Current implementation pass adds `src/game/portraits.ts`, a deterministic `FaceGenome` layer used by `PersonAvatar`. The visible portraits are still SVG, but the seed/identity model is now pure engine-side TypeScript and renderer-agnostic.
 - Static export is enabled for Capacitor via `out/`.
@@ -216,3 +216,4 @@ Playable V1 includes:
 - Latest preview after portrait-depth pass: `https://football-director-20v782545-mor-swisas-projects.vercel.app`.
 - Current face-model research plan: implement a formal seeded `FaceGenome`, keep player-facing relationship math qualitative, then prototype an offline portrait renderer. FaceVerse is preferred conceptually because its coefficient model separates identity, expression, texture, lighting, and camera, but model/checkpoint licensing must be reviewed before commercial use.
 - Current FaceGenome implementation has been verified with focused portrait unit tests, full unit tests, lint, production build, full Playwright e2e, `npm run mobile:sync`, and a mobile visual check of `/portrait-lab`.
+- Latest FaceGenome implementation preview is deployed at `https://football-director-a0f4jcz9d-mor-swisas-projects.vercel.app`.
