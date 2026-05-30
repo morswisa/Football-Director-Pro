@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-bwmqbk4rp-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-kxfzthbi1-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -47,6 +47,7 @@ Playable V1 includes:
 - Manager browser acceptance now follows dismissal and replacement into Finances, proving manager compensation remains visible as a financial transaction after the personnel decision.
 - Manager-led transfer proposals. Contract renewals use wage/year offers; paid purchases use fee + wage + years negotiation with possible club/player refusal.
 - Transfer-window acceptance coverage now proves completed buys, loan-ins, and loan-outs move players, update manager trust, change balances, and appear in same-week financial snapshots.
+- Browser acceptance now covers a deterministic paid signing from decision modal to Roster and Finances, proving selected offer impact, completed-signing trust feedback, player movement, and `Transfer fee paid` transaction visibility.
 - Manager-led proposal cadence is tuned for the Continue loop: transfer-window months can create active proposal weeks, while non-window contract/proposal checks happen only on periodic review weeks instead of every other week.
 - Manager-led loans. Loan-in proposals use a loan fee plus weekly wage contribution, loan-out proposals reduce wage pressure and return players at season end, and loan fees appear in financial reports.
 - Transfer and bid decisions now identify whether the player is an external target or current squad player, show source/bidding club context, and include manager-trust impact in response copy.
@@ -128,3 +129,5 @@ Playable V1 includes:
 - Latest repeated season-boundary acceptance pass is deployed to preview.
 - Latest manager-finance acceptance improvement: the e2e replacement flow now confirms the manager compensation trail in Finances.
 - Latest manager-finance acceptance pass is deployed to preview.
+- Latest transfer acceptance improvement: the e2e flow now proves a paid transfer target becomes a roster player and leaves a finance trail.
+- Latest paid-transfer acceptance pass is deployed to preview.

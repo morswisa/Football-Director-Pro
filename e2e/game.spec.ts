@@ -514,6 +514,84 @@ test("manager dismissal still allows emergency replacement", async ({ page }) =>
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
+test("paid transfer signing shows player and finance trail", async ({ page }) => {
+  test.setTimeout(45_000);
+  await createAcceptanceCareer(page, "Transferford FC");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const importedSave = JSON.parse(exportedSave);
+  const userClub = importedSave.clubs[importedSave.userClubId];
+  const sellerId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId);
+  const seller = importedSave.clubs[sellerId];
+  const targetId = seller.playerIds[0];
+  const target = importedSave.players[targetId];
+  userClub.finances.balance = 1_500_000;
+  userClub.finances.transactions = [];
+  target.name = "Acceptance Target";
+  target.position = "F";
+  target.rating = 68;
+  target.age = 24;
+  target.value = 180_000;
+  target.wage = 2_000;
+  target.contractYears = 2;
+  importedSave.transferBudget = { mode: "normal", amount: 1_500_000 };
+  importedSave.financialSnapshot = undefined;
+  importedSave.eventQueue = [];
+  importedSave.currentEvent = {
+    id: "contract_offer_acceptance_target",
+    type: "contract_offer",
+    title: "Manager target identified",
+    body: `The manager wants to negotiate for transfer target Acceptance Target from ${seller.name}.`,
+    note: "This is an external transfer target, not a current squad contract. Walking away reduces manager trust by 4; completing the signing improves it by 4.",
+    requiresDecision: true,
+    createdSeason: importedSave.season,
+    createdWeek: importedSave.week,
+    playerId: targetId,
+    managerId: userClub.managerId,
+    variant: "neutral",
+    proposal: {
+      id: "proposal_acceptance_target",
+      type: "buy",
+      week: importedSave.week,
+      title: "Sign Acceptance Target",
+      rationale: "Acceptance transfer target",
+      playerId: targetId,
+      fromClubId: sellerId,
+      toClubId: importedSave.userClubId,
+      fee: 180_000,
+      wageDelta: 2_000,
+      expiresWeek: importedSave.week + 2,
+      requestedWage: 2_000,
+      requestedYears: 3,
+    },
+  };
+  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+
+  const transferDialog = page.getByRole("dialog");
+  await expect(transferDialog).toContainText("Manager target identified");
+  await expect(transferDialog).toContainText("Acceptance Target");
+  await expect(transferDialog).toContainText("Selected offer impact");
+  await expect(transferDialog).toContainText("Trust impact");
+  await transferDialog.getByRole("button", { name: "Submit Offer" }).click();
+
+  await expect(page.getByRole("dialog")).toContainText("Signing completed");
+  await expect(page.getByRole("dialog")).toContainText("Manager trust +4");
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await clearCurrentDialog(page);
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Roster/i }).click();
+  await expect(page.getByText("Acceptance Target")).toBeVisible();
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText("Transfer fee paid: Acceptance Target")).toBeVisible();
+  await expect(page.getByText("Fees out")).toBeVisible();
+  await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
+});
+
 test("stadium upgrades and repairs show clear financial impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Standford FC");
 

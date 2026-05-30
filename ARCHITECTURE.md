@@ -78,6 +78,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Loan-fee transactions share the same financial report path as transfer fees. Loaned players carry `Player.loan`, including parent club, temporary club, expiry season, and weekly wage share.
 - Stadium upgrade and repair transactions are recorded as same-period infrastructure spending and refresh `latestFinancialSnapshot`, so direct stadium capex is visible in Finances after the action.
 - Transfer-window acceptance coverage verifies completed paid purchases, loan-ins, and loan-outs across world ownership, balance movement, manager-trust changes, and financial snapshot fee lines.
+- Browser transfer acceptance uses an imported deterministic paid target to verify the full player-facing path: transfer decision impact, completed signing, Roster membership, and `Transfer fee paid` visibility in Finances.
 - Transfer-budget decisions resolve into a confirmation event before the queue continues to later proposals.
 - Transfer budgets are cleared automatically when `pushStandardEvents` runs outside a transfer-window week; manager frustration only considers strict/zero budget while the window is open.
 - Engine functions `generateNextEvents`, `resolveEvent`, and `advanceAfterQueueEmpty` keep event logic outside React.
