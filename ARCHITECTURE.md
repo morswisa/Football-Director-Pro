@@ -14,6 +14,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `tests`: Unit tests for deterministic game logic.
 - `e2e`: Playwright browser smoke tests.
 - `capacitor.config.ts`: Capacitor app metadata and static web directory.
+- `ios/` and `android/`: Generated Capacitor native project shells for packaging the static `out/` web build into mobile apps.
+- `.vercelignore`: Excludes native project folders from web preview deployments.
 
 ## Data Flow
 
@@ -24,9 +26,10 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 5. Load game validates and migrates the saved payload before hydrating Zustand.
 6. Store hydration normalizes display names so duplicate generated club names and same-club player names are disambiguated before rendering. Club-name disambiguation prefers unused fictional prefix/suffix combinations rather than numeric suffixes.
 7. Settings exposes local-only save control through Zustand: manual save, JSON export, JSON import after Zod migration/validation, reset by deleting Slot 1 from IndexedDB, and persistent accessibility/audio preferences.
-8. Production build emits static files to `out/` for future Capacitor sync.
-9. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
-10. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
+8. Production build emits static files to `out/` for Capacitor sync.
+9. `npm run mobile:sync` runs the static build and copies generated web assets into the iOS and Android project asset folders.
+10. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
+11. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
 
 ## Navigation
 
