@@ -12,6 +12,7 @@
     "e2e": "playwright test",
     "mobile:sync": "npm run build && cap sync",
     "mobile:doctor": "cap doctor android && cap doctor ios",
+    "mobile:toolchain": "node scripts/check-native-toolchain.mjs",
     "mobile:build:android": "npm run mobile:sync && cd android && ./gradlew assembleDebug",
     "mobile:build:ios": "npm run mobile:sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -destination 'generic/platform=iOS Simulator' build",
     "mobile:add:ios": "cap add ios",

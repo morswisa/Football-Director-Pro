@@ -11,10 +11,11 @@ Football Director Pro is packaged for mobile with Capacitor. The web app remains
 ## Checks
 
 ```bash
+npm run mobile:toolchain
 npm run mobile:doctor
 ```
 
-This runs Capacitor doctor for Android and iOS.
+`mobile:toolchain` checks Java/JDK, Xcode, and Capacitor readiness in one command. `mobile:doctor` runs Capacitor doctor for Android and iOS.
 
 ## Sync Web To Native
 

@@ -11,6 +11,9 @@ The Football Director Pro web game and Capacitor project shells are ready for na
 | Check | Result | Meaning |
 | --- | --- | --- |
 | `npm run mobile:doctor` | Passed for Android and iOS | Capacitor dependencies and native project shells are valid. |
+| `npm run mobile:toolchain` | Fails on Java Runtime/JDK and full Xcode checks | One-command readiness check now captures the local native binary blockers. |
+| `npm run mobile:sync` | Passed | The static Next export still syncs into Android and iOS project shells. |
+| `npm run lint` | Passed | The toolchain-readiness script/docs pass project linting. |
 | `java -version` | Failed: unable to locate a Java Runtime | Android Gradle builds cannot run until a JDK is installed. |
 | `/usr/libexec/java_home -V` | Failed: unable to locate a Java Runtime | macOS has no discoverable Java installation for Gradle. |
 | `xcode-select -p` | `/Library/Developer/CommandLineTools` | The active developer directory is CommandLineTools, not full Xcode. |
@@ -27,6 +30,7 @@ Android:
 
 ```bash
 npm run mobile:doctor
+npm run mobile:toolchain
 npm run mobile:build:android
 ```
 
@@ -44,9 +48,12 @@ sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
 ```bash
 npm run mobile:doctor
+npm run mobile:toolchain
 npm run mobile:build:ios
 ```
 
 ## Conclusion
 
 Web V1 gameplay is accepted by the current automated evidence. Capacitor sync and native project health checks pass. The remaining native binary deliverable is blocked until Java Runtime/JDK and full Xcode are available on the machine.
+
+Use `npm run mobile:toolchain` as the first check after installing native tooling. Only run `npm run mobile:build:android` or `npm run mobile:build:ios` after the toolchain check passes.
