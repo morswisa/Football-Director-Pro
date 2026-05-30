@@ -80,3 +80,5 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - Latest preview after multi-period finance acceptance coverage: `https://football-director-aym845hi2-mor-swisas-projects.vercel.app`.
 - Latest preview after mobile-surface acceptance coverage: `https://football-director-iqpma6luy-mor-swisas-projects.vercel.app`.
 - Latest preview after long-run balance acceptance coverage: `https://football-director-qymx517vc-mor-swisas-projects.vercel.app`.
+- Current remaining-scope answer: the game is in V1 finalization. Planned gameplay systems are implemented; remaining work is final clean-save acceptance, original-scope defect fixes found during acceptance, final economy/relationship tuning, final mobile QA, and Capacitor iOS/Android packaging after web approval.
+- Latest preview after clean-save season-review acceptance/status pass: `https://football-director-qem5r677o-mor-swisas-projects.vercel.app`.

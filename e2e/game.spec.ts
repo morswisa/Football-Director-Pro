@@ -240,6 +240,28 @@ async function clearCurrentDialog(page: import("@playwright/test").Page) {
   throw new Error("Could not clear the visible event dialog.");
 }
 
+async function resolveEventsUntilSeasonReview(page: import("@playwright/test").Page) {
+  for (let step = 0; step < 280; step += 1) {
+    const dialog = page.getByRole("dialog");
+    if (!(await dialog.count())) {
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(dialog).toBeVisible();
+    }
+
+    if (await dialog.getByText(/season review/i).count()) {
+      await expect(dialog).toContainText("Season award");
+      await expect(dialog).toContainText("Season impact");
+      await expect(dialog).toContainText("Next");
+      await expectMobileSurfaceHealthy(page, "Season review modal");
+      return;
+    }
+
+    await resolveConservativeDialog(page);
+  }
+
+  throw new Error("Did not reach a season review from a clean save.");
+}
+
 test("new career reaches playable dashboard", async ({ page }) => {
   await createAcceptanceCareer(page);
 
@@ -379,6 +401,17 @@ test("mobile V1 surfaces stay readable without horizontal overflow", async ({ pa
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expectMobileSurfaceHealthy(page, "Continue event modal");
+});
+
+test("clean save reaches season review and next season intro in browser", async ({ page }) => {
+  test.setTimeout(90_000);
+  await createAcceptanceCareer(page, "Seasonford FC");
+
+  await resolveEventsUntilSeasonReview(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog")).toContainText("League Path");
+  await expect(page.getByRole("dialog")).toContainText("Seasonford FC");
+  await expectMobileSurfaceHealthy(page, "Next season intro modal");
 });
 
 test("play match runs live before returning to the result", async ({ page }) => {
