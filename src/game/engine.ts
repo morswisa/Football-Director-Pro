@@ -221,12 +221,6 @@ export function calculateSaleImpact(save: GameSave, player: Player, fee: number)
   return { boardDelta, moraleDelta, rank, topThree, starter, longServing, expiringOrAging, premiumFee, summary };
 }
 
-function signedDelta(value: number) {
-  if (value > 0) return `+${value}`;
-  if (value < 0) return `${value}`;
-  return "0";
-}
-
 function signedMoney(value: number) {
   const formatted = Math.abs(value).toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 });
   if (value > 0) return `+${formatted}`;
@@ -238,7 +232,10 @@ function matchImpactNote(before: ReturnType<typeof relationshipSnapshot>, after:
   const boardDelta = after.boardConfidence - before.boardConfidence;
   const trustDelta = after.managerTrust - before.managerTrust;
   const stadiumDelta = after.stadiumCondition - before.stadiumCondition;
-  return `Impact: board confidence ${signedDelta(boardDelta)} (${before.boardConfidence}% -> ${after.boardConfidence}%), manager trust ${signedDelta(trustDelta)} (${before.managerTrust}% -> ${after.managerTrust}%), stadium condition ${signedDelta(stadiumDelta)} (${before.stadiumCondition}% -> ${after.stadiumCondition}%).`;
+  const boardMood = boardDelta > 0 ? "The board mood improved after the result." : boardDelta < 0 ? "The board is less comfortable after the result." : "The board reaction is steady.";
+  const managerMood = trustDelta > 0 ? "The manager will take encouragement from it." : trustDelta < 0 ? "The manager will not be pleased with it." : "The manager reaction is steady.";
+  const stadiumMood = stadiumDelta < 0 ? "Stadium wear increased after hosting football." : "Stadium condition is steady.";
+  return `${boardMood} ${managerMood} ${stadiumMood}`;
 }
 
 function seasonImpactNote(history: GameSave["history"][number]) {
@@ -248,7 +245,10 @@ function seasonImpactNote(history: GameSave["history"][number]) {
   const boardDelta = impact.boardConfidenceAfter - impact.boardConfidenceBefore;
   const trustDelta = impact.managerTrustAfter - impact.managerTrustBefore;
   const reputationDelta = impact.reputationAfter - impact.reputationBefore;
-  return `Season impact: balance ${signedMoney(balanceDelta)}, board confidence ${signedDelta(boardDelta)} (${impact.boardConfidenceBefore}% -> ${impact.boardConfidenceAfter}%), manager trust ${signedDelta(trustDelta)} (${impact.managerTrustBefore}% -> ${impact.managerTrustAfter}%), club reputation ${signedDelta(reputationDelta)} (${impact.reputationBefore} -> ${impact.reputationAfter}).`;
+  const boardMood = boardDelta > 0 ? "board support strengthened" : boardDelta < 0 ? "board pressure increased" : "board support stayed steady";
+  const managerMood = trustDelta > 0 ? "manager confidence improved" : trustDelta < 0 ? "manager confidence slipped" : "manager confidence stayed steady";
+  const reputationMood = reputationDelta > 0 ? "club reputation rose" : reputationDelta < 0 ? "club reputation fell" : "club reputation held";
+  return `Season impact: balance ${signedMoney(balanceDelta)}. ${boardMood}; ${managerMood}; ${reputationMood}.`;
 }
 
 function isCupWeek(save: GameSave) {
@@ -840,7 +840,7 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
       playerId: player.id,
       managerId: manager.id,
       proposal,
-      note: `${manager.name} ${player.age > 30 || player.contractYears <= 1 ? "would be prepared to let him leave" : "wants you to decide whether the fee is enough"}. Accepting improves manager trust by 1; rejecting reduces it by 2.`,
+      note: `${manager.name} ${player.age > 30 || player.contractYears <= 1 ? "would be prepared to let him leave" : "wants you to decide whether the fee is enough"}.`,
     };
   }
   if (proposal.type === "buy") {
@@ -858,7 +858,7 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
       playerId: player.id,
       managerId: manager.id,
       proposal: { ...proposal, requestedWage, requestedYears },
-      note: "This is an external transfer target, not a current squad contract. Walking away reduces manager trust by 4; completing the signing improves it by 4.",
+      note: `${manager.name} believes this target fits the squad plan. Walking away may frustrate him; completing the deal should be well received.`,
     };
   }
   if (proposal.type === "loan") {
@@ -879,8 +879,8 @@ function proposalToEvent(save: GameSave, proposal: TransferProposal): GameEvent 
       managerId: manager.id,
       proposal: { ...proposal, requestedWage: proposal.requestedWage ?? Math.abs(proposal.wageDelta), requestedYears: 1 },
       note: loanIn
-        ? "Loan signings add short-term squad depth without a permanent transfer fee. Completing the loan improves manager trust by 2; walking away reduces it by 2."
-        : "Loaning out a squad player can reduce wage pressure and improve development. Accepting improves manager trust by 1; rejecting reduces it by 1.",
+        ? "Loan signings add short-term squad depth without a permanent transfer fee. The manager wants cover in this area."
+        : "Loaning out a squad player can reduce wage pressure and improve development. The manager is comfortable with the idea.",
     };
   }
   return {
@@ -1196,7 +1196,6 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
   if (event.type === "transfer_budget") {
     const mode = decision?.mode ?? "normal";
     save.transferBudget = { mode, amount: transferBudgetAmount(save, mode) };
-    const trustBefore = club.managerTrust;
     const trustDelta = mode === "max" || mode === "generous" ? 4 : mode === "zero" ? -8 : mode === "strict" ? -5 : 0;
     club.managerTrust = Math.max(0, Math.min(99, club.managerTrust + trustDelta));
     save.currentEvent = {
@@ -1204,7 +1203,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       type: "club_update",
       title: "Transfer budget confirmed",
       body: `${manager?.name ?? "The manager"} now has a ${mode} transfer budget of ${save.transferBudget.amount.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} for ${monthForWeek(save.week)}.`,
-      note: `Manager trust ${signedDelta(club.managerTrust - trustBefore)} (${trustBefore}% -> ${club.managerTrust}%).`,
+      note: trustDelta > 0 ? "The manager welcomes the room to work in the market." : trustDelta < 0 ? "The manager may feel restricted by this budget." : "The manager accepts the budget as workable.",
       requiresDecision: false,
       createdSeason: save.season,
       createdWeek: save.week,
@@ -1224,8 +1223,8 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           type: "contract_response",
           title: loanIn ? "Loan target dropped" : "Loan offer rejected",
           body: loanIn
-            ? `You walked away from a loan deal for ${player.name}. Manager trust -2.`
-            : `You rejected the loan offer for ${player.name}. Manager trust -1.`,
+            ? `You walked away from the loan deal for ${player.name}.`
+            : `You rejected the loan offer for ${player.name}.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -1244,7 +1243,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
             id: `contract_response_loan_refused_${proposal.id}`,
             type: "contract_response",
             title: "Loan terms refused",
-            body: `${source?.name ?? "The parent club"} rejected the loan package for ${player.name}. Manager trust -1.`,
+            body: `${source?.name ?? "The parent club"} rejected the loan package for ${player.name}.`,
             requiresDecision: false,
             createdSeason: save.season,
             createdWeek: save.week,
@@ -1265,7 +1264,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
             id: `contract_response_loan_signed_${proposal.id}`,
             type: "contract_response",
             title: "Loan signing completed",
-            body: `${player.name} has joined on loan from ${source?.name ?? "his parent club"} until the end of the season. Loan fee ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; weekly contribution ${wageShare.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Manager trust +2.`,
+            body: `${player.name} has joined on loan from ${source?.name ?? "his parent club"} until the end of the season. Loan fee ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}; weekly contribution ${wageShare.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
             requiresDecision: false,
             createdSeason: save.season,
             createdWeek: save.week,
@@ -1280,7 +1279,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
             id: `contract_response_loan_blocked_${proposal.id}`,
             type: "contract_response",
             title: "Loan blocked",
-            body: `${player.name}'s loan could not be completed within the available budget. Manager trust -3.`,
+            body: `${player.name}'s loan could not be completed within the available budget.`,
             requiresDecision: false,
             createdSeason: save.season,
             createdWeek: save.week,
@@ -1305,7 +1304,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           id: `contract_response_loan_out_${proposal.id}`,
           type: "contract_response",
           title: "Loan agreed",
-          body: `${player.name} has joined ${destination?.name ?? "another club"} on loan until the end of the season. The club receives ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and saves ${wageCovered.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Manager trust +1.`,
+          body: `${player.name} has joined ${destination?.name ?? "another club"} on loan until the end of the season. The club receives ${proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and saves ${wageCovered.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -1321,7 +1320,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `contract_response_target_dropped_${proposal.id}`,
         type: "contract_response",
         title: "Transfer target dropped",
-        body: `You walked away from ${player.name}, the ${player.position} rated ${player.rating} from ${proposal.fromClubId ? save.clubs[proposal.fromClubId]?.name ?? "another club" : "another club"}. Manager trust -4.`,
+        body: `You walked away from ${player.name}, the ${player.position} rated ${player.rating} from ${proposal.fromClubId ? save.clubs[proposal.fromClubId]?.name ?? "another club" : "another club"}.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -1336,7 +1335,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `contract_response_rejected_${proposal.id}`,
         type: "contract_response",
         title: "Squad contract request rejected",
-        body: `${player.name}, your ${player.position} rated ${player.rating}, was told the club will not offer new terms right now. Manager trust -4; player morale -5.`,
+        body: `${player.name}, your ${player.position} rated ${player.rating}, was told the club will not offer new terms right now.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -1360,14 +1359,14 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
             ...event,
             id: `contract_offer_retry_${proposal.id}_${save.seenEventKeys.length}`,
             body: `${save.clubs[proposal.fromClubId ?? ""]?.name ?? "The selling club"} rejected the opening offer for ${player.name}, but they are willing to hear one improved bid.`,
-            note: "The manager thinks the target is still possible if the fee improves. Manager trust -2 for the rejected opening offer.",
+            note: "The manager thinks the target is still possible if the fee improves.",
           });
         } else {
           enqueue(save, {
             id: `contract_response_club_refused_${proposal.id}`,
             type: "contract_response",
             title: "Club refuses to negotiate",
-            body: `${save.clubs[proposal.fromClubId ?? ""]?.name ?? "The selling club"} rejected the bid and ended talks for ${player.name}. Manager trust -2.`,
+            body: `${save.clubs[proposal.fromClubId ?? ""]?.name ?? "The selling club"} rejected the bid and ended talks for ${player.name}.`,
             requiresDecision: false,
             createdSeason: save.season,
             createdWeek: save.week,
@@ -1383,7 +1382,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           id: `contract_response_player_refused_${proposal.id}`,
           type: "contract_response",
           title: "Player rejects terms",
-          body: `${player.name}'s club accepted the fee, but the player rejected the contract offer. Manager trust -2; player morale -3.`,
+          body: `${player.name}'s club accepted the fee, but the player rejected the contract offer.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -1405,7 +1404,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           id: `contract_response_signed_${proposal.id}`,
           type: "contract_response",
           title: "Signing completed",
-          body: `${player.name} has joined ${club.name} for ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and signed a ${years}-year contract worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Manager trust +4.`,
+          body: `${player.name} has joined ${club.name} for ${offeredFee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} and signed a ${years}-year contract worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -1420,7 +1419,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
           id: `contract_response_failed_${proposal.id}`,
           type: "contract_response",
           title: "Deal blocked",
-          body: `${player.name}'s transfer could not be completed within the available budget. Manager trust -5.`,
+          body: `${player.name}'s transfer could not be completed within the available budget.`,
           requiresDecision: false,
           createdSeason: save.season,
           createdWeek: save.week,
@@ -1449,7 +1448,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `contract_response_${accepted ? "accepted" : "turned_down"}_${proposal.id}`,
         type: "contract_response",
         title: accepted ? "Contract accepted" : "Contract turned down",
-        body: accepted ? `${player.name} has signed a ${years}-year deal worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week. Manager trust +3; player morale improved.` : `${player.name} turned down the offer and wants terms closer to his expectations. Manager trust -3; player morale -8.`,
+        body: accepted ? `${player.name} has signed a ${years}-year deal worth ${wage.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })} per week.` : `${player.name} turned down the offer and wants terms closer to his expectations.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -1469,7 +1468,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `sale_ready_${pendingDeal.id}`,
         type: "sale_ready",
         title: `${player.position} sale ready`,
-        body: `${bidder?.name ?? "The bidding club"} is ready to buy ${player.name}, your ${player.position} rated ${player.rating}, for ${event.proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Manager trust +1 for accepting the bid. Confirming the sale would move board confidence ${signedDelta(saleImpact.boardDelta)} and squad morale ${signedDelta(saleImpact.moraleDelta)}.`,
+        body: `${bidder?.name ?? "The bidding club"} is ready to buy ${player.name}, your ${player.position} rated ${player.rating}, for ${event.proposal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
         requiresDecision: true,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -1485,7 +1484,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `sale_rejected_${event.proposal.id}`,
         type: "contract_response",
         title: "Bid rejected",
-        body: `You rejected ${bidder?.name ?? "the bidding club"}'s offer for ${player.name}, your ${player.position} rated ${player.rating}. Manager trust -2.`,
+        body: `You rejected ${bidder?.name ?? "the bidding club"}'s offer for ${player.name}, your ${player.position} rated ${player.rating}.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,
@@ -1517,7 +1516,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
         id: `sale_confirmed_${deal.id}`,
         type: "sale_confirmed",
         title: "Player sale confirmed",
-        body: `${soldPlayer.name} has been sold to ${buyingClub?.name ?? "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}. Board confidence ${signedDelta(saleImpact.boardDelta)}; squad morale ${signedDelta(saleImpact.moraleDelta)}.`,
+        body: `${soldPlayer.name} has been sold to ${buyingClub?.name ?? "the buying club"} for ${deal.fee.toLocaleString("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 })}.`,
         requiresDecision: false,
         createdSeason: save.season,
         createdWeek: save.week,

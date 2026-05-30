@@ -100,9 +100,9 @@ async function resolveEventsUntilFirstMatchResult(page: import("@playwright/test
     if (await dialog.getByRole("button", { name: "See Match" }).count()) {
       await dialog.getByRole("button", { name: "See Match" }).click();
       await expect(dialog).toContainText("Match result");
-      await expect(dialog).toContainText("Impact: board confidence");
-      await expect(dialog).toContainText("manager trust");
-      await expect(dialog).toContainText("stadium condition");
+      await expect(dialog).toContainText(/board/i);
+      await expect(dialog).toContainText(/manager/i);
+      await expect(dialog).toContainText(/stadium/i);
       await dialog.getByRole("button", { name: "Continue" }).click();
       await expect(page.getByText("Last result")).toBeVisible();
       return;
@@ -718,7 +718,7 @@ test("manager contract expiry can extend or force replacement", async ({ page })
   await expect(extensionDialog).toContainText("Manager contract expired");
   await expect(extensionDialog).toContainText("Acceptance Manager");
   await expect(extensionDialog).toContainText("Decision impact");
-  await expect(extensionDialog).toContainText("manager trust +4");
+  await expect(extensionDialog).toContainText("manager should feel backed");
   await extensionDialog.getByRole("button", { name: "Extend Contract" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Manager contract extended");
@@ -810,7 +810,7 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
     type: "contract_offer",
     title: "Manager target identified",
     body: `The manager wants to negotiate for transfer target Acceptance Target from ${seller.name}.`,
-    note: "This is an external transfer target, not a current squad contract. Walking away reduces manager trust by 4; completing the signing improves it by 4.",
+    note: "The manager believes this target fits the squad plan.",
     requiresDecision: true,
     createdSeason: importedSave.season,
     createdWeek: importedSave.week,
@@ -840,11 +840,11 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
   await expect(transferDialog).toContainText("Manager target identified");
   await expect(transferDialog).toContainText("Acceptance Target");
   await expect(transferDialog).toContainText("Selected offer impact");
-  await expect(transferDialog).toContainText("Trust impact");
+  await expect(transferDialog).toContainText("The manager has put this player forward");
   await transferDialog.getByRole("button", { name: "Submit Offer" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Signing completed");
-  await expect(page.getByRole("dialog")).toContainText("Manager trust +4");
+  await expect(page.getByRole("dialog")).not.toContainText("Manager trust");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
@@ -919,11 +919,11 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
   await expect(loanInDialog).toContainText("Manager suggests loan signing");
   await expect(loanInDialog).toContainText("Acceptance Loan In");
   await expect(loanInDialog).toContainText("Selected loan impact");
-  await expect(loanInDialog).toContainText("completed loan +2");
+  await expect(loanInDialog).toContainText("manager wants short-term cover");
   await loanInDialog.getByRole("button", { name: "Submit Loan" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Loan signing completed");
-  await expect(page.getByRole("dialog")).toContainText("Manager trust +2");
+  await expect(page.getByRole("dialog")).not.toContainText("Manager trust");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
@@ -993,11 +993,11 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
   await expect(loanOutDialog).toContainText("Loan offer received");
   await expect(loanOutDialog).toContainText("Acceptance Loan Out");
   await expect(loanOutDialog).toContainText("Accept loan impact");
-  await expect(loanOutDialog).toContainText("accept loan +1");
+  await expect(loanOutDialog).toContainText("comfortable letting him leave temporarily");
   await loanOutDialog.getByRole("button", { name: "Accept Loan" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Loan agreed");
-  await expect(page.getByRole("dialog")).toContainText("Manager trust +1");
+  await expect(page.getByRole("dialog")).not.toContainText("Manager trust");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
@@ -1104,14 +1104,12 @@ test("player sale shows replacement pressure, roster removal, and finance trail"
 
   await expect(page.getByRole("dialog")).toContainText("sale ready");
   await expect(page.getByRole("dialog")).toContainText("Confirm sale impact");
-  await expect(page.getByRole("dialog")).toContainText("Board confidence -");
-  await expect(page.getByRole("dialog")).toContainText("squad morale -");
+  await expect(page.getByRole("dialog")).toContainText("Supporters are concerned");
   await page.getByRole("dialog").getByRole("button", { name: "Confirm Sale" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Player sale confirmed");
   await expect(page.getByRole("dialog")).toContainText("Acceptance Sale has been sold to");
-  await expect(page.getByRole("dialog")).toContainText("Board confidence -");
-  await expect(page.getByRole("dialog")).toContainText("squad morale -");
+  await expect(page.getByRole("dialog")).toContainText("Supporters are concerned");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Replacement needed");
@@ -1120,7 +1118,7 @@ test("player sale shows replacement pressure, roster removal, and finance trail"
 
   await expect(page.getByRole("dialog")).toContainText("Manager target identified");
   await expect(page.getByRole("dialog")).toContainText("Target identity F");
-  await expect(page.getByRole("dialog")).toContainText("external transfer target");
+  await expect(page.getByRole("dialog")).toContainText("fits the squad plan");
   await page.getByRole("dialog").getByRole("button", { name: "Walk Away" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
@@ -1194,11 +1192,11 @@ test("contract rejection shows trust and morale impact", async ({ page }) => {
   await expect(contractDialog).toContainText("Selected offer impact");
   await contractDialog.getByRole("button", { name: "£1,700/w" }).click();
   await expect(contractDialog).toContainText("Likely response: reject");
-  await expect(contractDialog).toContainText("Manager trust -3; player morale -8");
+  await expect(contractDialog).toContainText("could irritate the player");
   await contractDialog.getByRole("button", { name: "Submit Offer" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Contract turned down");
-  await expect(page.getByRole("dialog")).toContainText("Manager trust -3; player morale -8");
+  await expect(page.getByRole("dialog")).not.toContainText("Manager trust");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
@@ -1352,15 +1350,15 @@ test("clean career coherence audit keeps events readable and explainable", async
 
     if (/Match result/i.test(text)) {
       seen.matchResults += 1;
-      await expect(dialog).toContainText("Impact: board confidence");
-      await expect(dialog).toContainText("manager trust");
-      await expect(dialog).toContainText("stadium condition");
+      await expect(dialog).toContainText(/board/i);
+      await expect(dialog).toContainText(/manager/i);
+      await expect(dialog).toContainText(/stadium/i);
       seen.relationshipExplanation = true;
     }
 
     if (/Transfer budget confirmed/i.test(text)) {
       seen.transferBudgetConfirmation = true;
-      expect(text).toMatch(/manager trust/i);
+      expect(text).toMatch(/manager/i);
     }
 
     await resolveConservativeDialog(page);

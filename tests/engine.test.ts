@@ -352,7 +352,7 @@ describe("game engine", () => {
     expect(save.transferBudget?.mode).toBe("strict");
     expect(save.transferBudget?.amount).toBeGreaterThanOrEqual(0);
     expect(save.currentEvent?.title).toBe("Transfer budget confirmed");
-    expect(save.currentEvent?.note).toContain("Manager trust -5");
+    expect(save.currentEvent?.note).toContain("restricted");
   });
 
   it("expires transfer budgets outside transfer windows", () => {
@@ -392,7 +392,7 @@ describe("game engine", () => {
     expect(save.currentEvent?.seasonHistory?.season).toBe(history.season);
     expect(save.currentEvent?.body).toContain("Season award");
     expect(save.currentEvent?.note).toContain("Season impact");
-    expect(save.currentEvent?.note).toContain("board confidence");
+    expect(save.currentEvent?.note).toContain("board support");
     save = resolveEvent(save, save.currentEvent!.id);
     expect(save.currentEvent?.type).toBe("season_intro");
   });
@@ -582,9 +582,9 @@ describe("game engine", () => {
     expect(save.currentEvent?.type).toBe("match_result");
     expect(save.lastMatch?.result).toBeDefined();
     expect(save.liveMatch).toBeUndefined();
-    expect(save.currentEvent?.note).toContain("Impact: board confidence");
-    expect(save.currentEvent?.note).toContain("manager trust");
-    expect(save.currentEvent?.note).toContain("stadium condition");
+    expect(save.currentEvent?.note).toMatch(/board/i);
+    expect(save.currentEvent?.note).toMatch(/manager/i);
+    expect(save.currentEvent?.note).toMatch(/Stadium|stadium/i);
   });
 
   it("creates live playback state for play match without double simulation", () => {
@@ -698,7 +698,7 @@ describe("game engine", () => {
     expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore + 4);
     expect(save.clubs[save.userClubId].finances.balance).toBe(balanceBefore - transferFee);
     expect(save.currentEvent?.title).toBe("Signing completed");
-    expect(save.currentEvent?.body).toContain("Manager trust +4");
+    expect(save.currentEvent?.body).not.toContain("Manager trust");
     const report = save.eventQueue.find((event) => event.type === "financial_report") ?? save.currentEvent;
     expect(report?.financialSnapshot?.expenses.feesOut).toBeGreaterThan(0);
     expect(report?.body).toContain("Balance moved from");
@@ -744,7 +744,7 @@ describe("game engine", () => {
     expect(save.clubs[save.userClubId].playerIds).toContain(player.id);
     expect(save.players[player.id].loan?.direction).toBe("in");
     expect(save.currentEvent?.title).toBe("Loan signing completed");
-    expect(save.currentEvent?.body).toContain("Manager trust +2");
+    expect(save.currentEvent?.body).not.toContain("Manager trust");
     expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore + 2);
     expect(save.clubs[save.userClubId].finances.balance).toBe(balanceBefore - 10_000);
     expect(latestFinancialSnapshot(save).expenses.feesOut).toBeGreaterThan(0);
@@ -794,7 +794,7 @@ describe("game engine", () => {
     expect(save.clubs[destination.id].playerIds).toContain(player.id);
     expect(save.players[player.id].loan?.direction).toBe("out");
     expect(save.currentEvent?.title).toBe("Loan agreed");
-    expect(save.currentEvent?.body).toContain("Manager trust +1");
+    expect(save.currentEvent?.body).not.toContain("Manager trust");
     expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore + 1);
     expect(save.clubs[save.userClubId].finances.balance).toBe(balanceBefore + 8_000);
     expect(latestFinancialSnapshot(save).income.feesIn).toBeGreaterThan(0);
@@ -844,9 +844,11 @@ describe("game engine", () => {
       createdWeek: save.week,
       financialSnapshot: latestFinancialSnapshot(save),
     }];
+    const trustBefore = club.managerTrust;
     save = resolveEvent(save, save.currentEvent.id, { action: "reject" });
     expect(save.currentEvent?.title).toBe("Transfer target dropped");
-    expect(save.currentEvent?.body).toContain("Manager trust -4");
+    expect(save.currentEvent?.body).not.toContain("Manager trust");
+    expect(save.clubs[save.userClubId].managerTrust).toBe(trustBefore - 4);
     expect(save.eventQueue[0]?.id).toBe("queued_unrelated_report");
   });
 
@@ -889,7 +891,7 @@ describe("game engine", () => {
     expect(save.currentEvent?.type).toBe("sale_ready");
     expect(save.currentEvent?.pendingDeal?.buyerClubId).toBe(bidder.id);
     expect(save.currentEvent?.body).toContain(bidder.name);
-    expect(save.currentEvent?.body).toContain(`board confidence ${expectedImpact.boardDelta}`);
+    expect(save.currentEvent?.body).not.toContain("board confidence");
     save = resolveEvent(save, save.currentEvent.id, { action: "confirm" });
     expect(save.players[player.id].clubId).toBe(bidder.id);
     expect(save.clubs[club.id].playerIds).not.toContain(player.id);
@@ -897,7 +899,7 @@ describe("game engine", () => {
     expect(save.currentEvent?.body).toContain(bidder.name);
     expect(save.clubs[club.id].boardConfidence).toBe(beforeBoard + expectedImpact.boardDelta);
     expect(save.players[teammate.id].morale).toBe(beforeMorale + expectedImpact.moraleDelta);
-    expect(save.currentEvent?.body).toContain("Board confidence");
+    expect(save.currentEvent?.body).not.toContain("Board confidence");
     expect(save.eventQueue.some((event) => event.type === "manager_frustrated" && event.title === "Replacement needed")).toBe(true);
   });
 
@@ -963,6 +965,7 @@ describe("game engine", () => {
     replacement.value = 140_000;
     replacement.wage = 1_300;
     const expectedImpact = calculateSaleImpact(save, player, 340_000);
+    const boardBefore = club.boardConfidence;
     save.currentEvent = {
       id: "incoming_bid_sale_chain",
       type: "incoming_bid",
@@ -990,11 +993,11 @@ describe("game engine", () => {
 
     save = resolveEvent(save, save.currentEvent.id, { action: "accept" });
     expect(save.currentEvent?.type).toBe("sale_ready");
-    expect(save.currentEvent?.body).toContain("Confirming the sale would move board confidence");
+    expect(save.currentEvent?.body).not.toContain("board confidence");
     save = resolveEvent(save, save.currentEvent!.id, { action: "confirm" });
     expect(save.currentEvent?.type).toBe("sale_confirmed");
-    expect(save.currentEvent?.body).toContain(`Board confidence ${expectedImpact.boardDelta >= 0 ? "+" : ""}${expectedImpact.boardDelta}`);
-    expect(save.currentEvent?.body).toContain(`squad morale ${expectedImpact.moraleDelta >= 0 ? "+" : ""}${expectedImpact.moraleDelta}`);
+    expect(save.clubs[club.id].boardConfidence).toBe(boardBefore + expectedImpact.boardDelta);
+    expect(save.currentEvent?.body).not.toContain("Board confidence");
     expect(save.eventQueue[0]?.title).toBe("Replacement needed");
     expect(save.eventQueue[1]?.type).toBe("contract_offer");
     expect(save.eventQueue[1]?.proposal?.type).toBe("buy");

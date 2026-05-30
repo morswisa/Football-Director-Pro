@@ -146,13 +146,6 @@ function formatSignedPoints(value: number) {
   return "0";
 }
 
-function transferBudgetTrustDelta(mode: TransferBudgetMode) {
-  if (mode === "max" || mode === "generous") return 4;
-  if (mode === "strict") return -5;
-  if (mode === "zero") return -8;
-  return 0;
-}
-
 function ImpactBox({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cn("rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-950", className)}>
@@ -203,20 +196,35 @@ function avatarRange(seed: number, min: number, max: number, offset = 0) {
 
 function PersonAvatar({ name, seedKey, kind = "player", className }: { name: string; seedKey?: string; kind?: "player" | "manager"; className?: string }) {
   const seed = avatarSeed(seedKey ?? name);
-  const skin = avatarPick(seed, ["#f3c7a1", "#d99b6d", "#b97855", "#8f563f", "#f0b98c", "#c9875d"], 1);
-  const hair = avatarPick(seed, ["#251b16", "#47301d", "#6b4327", "#111827", "#7a4f2d", "#d6a553", "#5d4037"], 2);
-  const shirt = kind === "manager" ? avatarPick(seed, ["#17211b", "#263238", "#374151", "#14532d"], 3) : avatarPick(seed, ["#159947", "#0f766e", "#2563eb", "#dc3d43", "#dba827", "#7c3aed"], 3);
-  const bgHue = avatarRange(seed, 100, 180, 4);
-  const faceShape = avatarPick(seed, ["round", "long", "square"], 5);
-  const hairStyle = avatarPick(seed, ["short", "side", "curly", "buzz", "swept"], 6);
-  const mouth = avatarPick(seed, ["M38 61 Q50 68 62 61", "M39 62 Q50 60 61 62", "M39 60 Q50 65 61 60"], 7);
-  const eyeY = avatarRange(seed, 42, 45, 8);
-  const browTilt = avatarRange(seed, -2, 2, 9);
-  const noseX = avatarRange(seed, 49, 51, 10);
-  const hasBeard = kind === "manager" || seed % 5 === 0;
-  const hasGlasses = seed % 7 === 0 || (kind === "manager" && seed % 3 === 0);
-  const facePath = faceShape === "long" ? "M30 42 C30 24 70 24 70 42 L67 61 C64 76 36 76 33 61 Z" : faceShape === "square" ? "M29 41 C29 25 71 25 71 41 L68 65 C63 76 37 76 32 65 Z" : "M28 43 C28 25 72 25 72 43 C72 65 63 77 50 77 C37 77 28 65 28 43 Z";
-  const hairPath = hairStyle === "short" ? "M28 42 C29 20 71 20 72 42 C63 34 41 35 28 42 Z" : hairStyle === "side" ? "M27 42 C28 23 66 18 73 39 C58 32 47 34 29 45 Z" : hairStyle === "curly" ? "M27 41 C27 25 34 22 39 24 C43 18 53 18 57 24 C64 20 72 27 72 42 C59 35 42 35 27 41 Z" : hairStyle === "buzz" ? "M30 38 C33 24 67 24 70 38 C57 32 43 32 30 38 Z" : "M27 43 C31 21 70 19 74 40 C57 28 45 31 27 43 Z";
+  const skin = avatarPick(seed, ["#f0b98c", "#d99a6d", "#bd7b57", "#8f563f", "#e7aa7b", "#c8875e"], 1);
+  const skinLight = avatarPick(seed, ["#ffd2aa", "#efb184", "#d68c65", "#a76549", "#f2bf92"], 2);
+  const skinShadow = avatarPick(seed, ["#9b4f39", "#7b3d2f", "#6b342b", "#8a4a36", "#5c3229"], 3);
+  const hair = avatarPick(seed, ["#1b120f", "#2b1a14", "#3a2518", "#111827", "#4b2f1d", "#6a4429"], 4);
+  const hairLight = avatarPick(seed, ["#4a2d1c", "#6b4327", "#81552f", "#2f3a4c", "#7a4f2d"], 5);
+  const shirt = kind === "manager" ? avatarPick(seed, ["#17211b", "#263238", "#374151", "#14532d"], 6) : avatarPick(seed, ["#159947", "#0f766e", "#2563eb", "#7c3aed", "#1d4ed8", "#be123c"], 6);
+  const accent = avatarPick(seed, ["#f8fafc", "#facc15", "#22c55e", "#93c5fd", "#f97316"], 7);
+  const bgHue = avatarRange(seed, 145, 235, 8);
+  const faceShape = avatarPick(seed, ["angular", "long", "strong"], 9);
+  const hairStyle = avatarPick(seed, ["crop", "swept", "textured", "messy", "close"], 10);
+  const eyeY = avatarRange(seed, 43, 46, 11);
+  const browTilt = avatarRange(seed, -2, 2, 12);
+  const noseX = avatarRange(seed, 53, 57, 13);
+  const hasStubble = kind === "manager" || seed % 4 === 0;
+  const hasGlasses = kind === "manager" && seed % 5 === 0;
+  const facePath = faceShape === "long"
+    ? "M37 36 C38 23 53 18 66 25 C76 31 75 51 70 64 C64 78 47 80 38 68 C32 59 32 43 37 36 Z"
+    : faceShape === "strong"
+      ? "M34 38 C36 24 52 18 66 25 C76 31 76 50 70 63 L61 76 L45 76 L36 65 C30 55 30 44 34 38 Z"
+      : "M35 37 C38 24 53 18 66 26 C75 33 75 50 69 63 C63 76 47 79 38 68 C31 57 31 44 35 37 Z";
+  const hairPath = hairStyle === "crop"
+    ? "M33 39 C36 22 55 16 70 27 C61 24 49 28 37 40 Z"
+    : hairStyle === "swept"
+      ? "M32 40 C35 20 61 14 75 29 C60 24 52 35 35 43 Z"
+      : hairStyle === "textured"
+        ? "M32 41 C32 27 39 20 45 22 C49 15 61 17 64 24 C70 22 75 30 73 40 C61 33 48 35 32 41 Z"
+        : hairStyle === "close"
+          ? "M36 36 C40 23 57 20 69 29 C58 26 47 29 36 38 Z"
+          : "M31 42 C33 25 42 20 47 22 L51 15 L58 24 L66 18 L72 31 C60 28 47 35 31 42 Z";
   return (
     <div
       className={cn("shrink-0 overflow-hidden rounded-lg border border-white/70 bg-white shadow-card", className)}
@@ -225,32 +233,50 @@ function PersonAvatar({ name, seedKey, kind = "player", className }: { name: str
       <svg viewBox="0 0 100 100" role="img" className="h-full w-full">
         <defs>
           <linearGradient id={`avatar-bg-${seed}`} x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor={`hsl(${bgHue} 54% 38%)`} />
-            <stop offset="100%" stopColor={`hsl(${(bgHue + 42) % 360} 58% 56%)`} />
+            <stop offset="0%" stopColor={`hsl(${bgHue} 45% 18%)`} />
+            <stop offset="100%" stopColor={`hsl(${(bgHue + 38) % 360} 46% 35%)`} />
           </linearGradient>
+          <clipPath id={`avatar-clip-${seed}`}>
+            <rect width="100" height="100" rx="0" />
+          </clipPath>
         </defs>
+        <g clipPath={`url(#avatar-clip-${seed})`}>
         <rect width="100" height="100" fill={`url(#avatar-bg-${seed})`} />
-        <circle cx="16" cy="18" r="18" fill="rgba(255,255,255,0.16)" />
-        <path d="M18 100 C22 82 78 82 82 100 Z" fill={shirt} />
-        {kind === "manager" ? <path d="M34 84 L50 96 L66 84 L60 100 L40 100 Z" fill="#f8fafc" opacity="0.95" /> : null}
+        <path d="M-8 92 L84 0" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+        <path d="M20 102 C23 82 77 80 85 102 Z" fill={shirt} />
+        <path d="M31 82 L50 98 L69 82 L64 102 L36 102 Z" fill={kind === "manager" ? "#f8fafc" : accent} opacity="0.95" />
+        <path d="M39 72 L38 86 C44 94 58 94 63 85 L61 70 Z" fill={skinShadow} />
+        <path d="M43 70 L43 84 C48 88 57 88 61 82 L59 69 Z" fill={skin} />
         <path d={facePath} fill={skin} />
-        {hasBeard ? <path d="M33 58 C39 75 61 75 67 58 C65 76 36 80 33 58 Z" fill={hair} opacity="0.38" /> : null}
+        <path d="M52 28 C64 28 72 40 69 55 C66 70 56 77 45 73 C55 72 62 62 63 50 C64 39 59 32 52 28 Z" fill={skinShadow} opacity="0.22" />
+        <path d="M39 39 C42 30 52 25 62 27 C53 28 45 34 42 43 C39 51 39 61 43 68 C35 61 34 48 39 39 Z" fill={skinLight} opacity="0.42" />
+        <path d="M32 50 C28 49 28 60 35 61" fill={skin} />
+        <path d="M69 47 C75 47 75 59 68 61" fill={skinShadow} opacity="0.85" />
         <path d={hairPath} fill={hair} />
-        <path d={`M35 ${eyeY - 6 + browTilt} Q41 ${eyeY - 9} 46 ${eyeY - 6}`} stroke={hair} strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d={`M54 ${eyeY - 6 - browTilt} Q60 ${eyeY - 9} 65 ${eyeY - 6}`} stroke={hair} strokeWidth="3" strokeLinecap="round" fill="none" />
-        <circle cx="40" cy={eyeY} r="3" fill="#17211b" />
-        <circle cx="60" cy={eyeY} r="3" fill="#17211b" />
-        {hasGlasses ? (
+        <path d="M36 31 C43 20 61 18 72 31 C57 27 48 29 36 36 Z" fill={hairLight} opacity="0.45" />
+        {hairStyle === "messy" || hairStyle === "textured" ? (
           <>
-            <circle cx="40" cy={eyeY} r="8" fill="none" stroke="#17211b" strokeWidth="2" />
-            <circle cx="60" cy={eyeY} r="8" fill="none" stroke="#17211b" strokeWidth="2" />
-            <path d={`M48 ${eyeY} L52 ${eyeY}`} stroke="#17211b" strokeWidth="2" />
+            <path d="M42 26 L48 14 L51 28 Z" fill={hair} />
+            <path d="M55 24 L64 13 L62 30 Z" fill={hair} />
+            <path d="M34 36 L25 28 L38 30 Z" fill={hair} />
           </>
         ) : null}
-        <path d={`M${noseX} 46 Q47 54 51 57`} stroke="#7c3f2b" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.42" />
-        <path d={mouth} stroke="#6b2f25" strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d="M31 47 C27 47 27 57 33 58" stroke={skin} strokeWidth="5" strokeLinecap="round" />
-        <path d="M69 47 C73 47 73 57 67 58" stroke={skin} strokeWidth="5" strokeLinecap="round" />
+        <path d={`M40 ${eyeY - 7 + browTilt} Q46 ${eyeY - 10} 51 ${eyeY - 7}`} stroke={hair} strokeWidth="3" strokeLinecap="round" fill="none" />
+        <path d={`M57 ${eyeY - 6 - browTilt} Q63 ${eyeY - 8} 68 ${eyeY - 5}`} stroke={hair} strokeWidth="3" strokeLinecap="round" fill="none" />
+        <path d={`M42 ${eyeY} Q46 ${eyeY - 2} 50 ${eyeY}`} stroke="#111827" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+        <path d={`M59 ${eyeY + 1} Q63 ${eyeY - 1} 67 ${eyeY + 1}`} stroke="#111827" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+        {hasGlasses ? (
+          <>
+            <circle cx="46" cy={eyeY} r="7" fill="none" stroke="#17211b" strokeWidth="1.8" />
+            <circle cx="64" cy={eyeY} r="7" fill="none" stroke="#17211b" strokeWidth="1.8" />
+            <path d={`M53 ${eyeY} L57 ${eyeY}`} stroke="#17211b" strokeWidth="1.8" />
+          </>
+        ) : null}
+        <path d={`M${noseX} 45 C53 52 51 57 56 60`} stroke={skinShadow} strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.55" />
+        <path d="M45 64 C51 66 58 66 63 63" stroke="#6b2f25" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+        {hasStubble ? <path d="M39 60 C45 74 62 76 68 61 C65 78 45 82 38 66 Z" fill={hair} opacity="0.22" /> : null}
+        <path d="M37 68 C44 78 58 80 66 65" stroke={skinShadow} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.35" />
+        </g>
       </svg>
     </div>
   );
@@ -1250,7 +1276,7 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
         <b className="block">Selected offer impact</b>
         <span>Likely response: {likelyAccepted ? "accept" : "reject"}.</span>
         <span className="block">Weekly wage bill: {formatSignedMoney(wageBillDelta)}/w, from {formatMoney(currentWageBill)}/w to {formatMoney(currentWageBill + wageBillDelta)}/w.</span>
-        <span className="block">{likelyAccepted ? "Manager trust +3; player morale improves." : "Manager trust -3; player morale -8 if the offer is turned down."}</span>
+        <span className="block">{likelyAccepted ? "The player and manager should react well to these terms." : "A weak offer could irritate the player and disappoint the manager."}</span>
       </ImpactBox>
       <DecisionActionRow>
         <Button onClick={() => approve({ wage, years })}>Submit Offer</Button>
@@ -1470,7 +1496,6 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
   }
   const selectedMode = modes.find((item) => item.mode === mode) ?? modes[2];
   const selectedBudgetAmount = amountFor(selectedMode.factor);
-  const selectedTrustDelta = transferBudgetTrustDelta(mode);
   return (
     <div className="mt-4 space-y-3">
       {modes.map((item) => (
@@ -1480,8 +1505,8 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
             <b>{formatMoney(amountFor(item.factor))}</b>
           </div>
           <p className="text-xs text-neutral-500">{item.detail}</p>
-          <p className={cn("mt-1 text-xs font-bold", transferBudgetTrustDelta(item.mode) > 0 ? "text-primary" : transferBudgetTrustDelta(item.mode) < 0 ? "text-danger" : "text-neutral-500")}>
-            Manager trust {formatSignedPoints(transferBudgetTrustDelta(item.mode))}
+          <p className="mt-1 text-xs font-bold text-neutral-500">
+            {item.mode === "max" || item.mode === "generous" ? "The manager will welcome this." : item.mode === "strict" || item.mode === "zero" ? "The manager may feel restricted." : "A workable middle ground."}
           </p>
         </button>
       ))}
@@ -1491,7 +1516,7 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
       </div>
       <ImpactBox>
         <b className="block">Selected budget impact</b>
-        Transfer budget {formatMoney(selectedBudgetAmount)}; manager trust {formatSignedPoints(selectedTrustDelta)}.
+        Transfer budget {formatMoney(selectedBudgetAmount)}. The manager reaction depends on how much room this gives him in the market.
       </ImpactBox>
       <Button className="sticky bottom-0 w-full shadow-card" onClick={() => resolve({ mode })}>Set Transfer Budget</Button>
     </div>
@@ -1542,8 +1567,8 @@ function ManagerContractControls({ save }: { save: GameSave }) {
       </div>
       <ImpactBox>
         <b className="block">Decision impact</b>
-        <span>Extend: manager trust +4; weekly wage bill {formatSignedMoney(wageBillDelta)}/w.</span>
-        <span className="block">Let him leave: manager trust resets to 50, board confidence -4, and the club must hire a replacement before continuing.</span>
+        <span>Extend: weekly wage bill {formatSignedMoney(wageBillDelta)}/w, and the manager should feel backed.</span>
+        <span className="block">Let him leave: the board will expect a replacement before the club continues.</span>
       </ImpactBox>
       <DecisionActionRow>
         <Button onClick={() => resolve({ action: "extend", terms: { wage, years } })}>Extend Contract</Button>
@@ -1579,7 +1604,7 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
         <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
       </div>
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
-        Trust impact: walk away -4, low fee rejected -2, player rejects -2, deal blocked -5, completed signing +4.
+        The manager has put this player forward. Walking away or missing the deal may frustrate him; completing it should be well received.
       </p>
       <div>
         <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Fee to club</p>
@@ -1640,7 +1665,7 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
           <p className="rounded-lg bg-surface-muted px-3 py-2">Loan fee in <b className="block">{formatMoney(expectedFee)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly wage covered <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
         </div>
-        <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept loan +1, reject loan -1. The player returns at season end.</p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager is comfortable letting him leave temporarily. The player returns at season end.</p>
         <ImpactBox>
           <b className="block">Accept loan impact</b>
           Fee income {formatMoney(expectedFee)}; weekly wage bill drops by {formatMoney(requestedWage)}/w while the player is away.
@@ -1663,7 +1688,7 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
         <p className="rounded-lg bg-surface-muted px-3 py-2">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
       </div>
-      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: completed loan +2, weak terms refused -1, blocked by budget -3, walk away -2.</p>
+      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager wants short-term cover here. Weak terms or walking away may frustrate him.</p>
       <ImpactBox>
         <b className="block">Selected loan impact</b>
         Upfront loan fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the loan is completed.
@@ -2078,13 +2103,13 @@ function EventModal({ save }: { save: GameSave }) {
             return (
               <ImpactBox className="mt-3">
                 <b className="block">Sale decision impact</b>
-                Accept bid: manager trust +1. Confirming later would move board confidence {formatSignedPoints(saleImpact.boardDelta)} and squad morale {formatSignedPoints(saleImpact.moraleDelta)}.
+                The manager {saleImpact.starter ? "will want the squad protected if this player leaves" : "is open to the sale if the fee is right"}.
                 <span className="block">{saleImpact.summary}</span>
-                <span className="block">Reject bid: manager trust -2.</span>
+                <span className="block">Rejecting keeps the squad intact, but may close this market opportunity.</span>
               </ImpactBox>
             );
           })() : (
-            <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">Trust impact: accept bid +1, reject bid -2.</p>
+            <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager&apos;s reaction depends on whether the fee matches the player&apos;s role in the squad.</p>
           )}
           <DecisionActionRow className="mt-5">
             <Button onClick={() => resolve({ action: "accept" })}>Accept Bid</Button>
@@ -2102,9 +2127,8 @@ function EventModal({ save }: { save: GameSave }) {
                   <ImpactBox className="mt-4">
                     <b className="block">Confirm sale impact</b>
                     Balance {formatSignedMoney(event.pendingDeal.fee)}; weekly wage bill drops by {formatMoney(player.wage)}/w.
-                    <span className="block">Board confidence {formatSignedPoints(saleImpact.boardDelta)}; squad morale {formatSignedPoints(saleImpact.moraleDelta)}.</span>
                     <span className="block">{saleImpact.summary}</span>
-                    <span className="block">Manager trust already changed when the bid was accepted; cancelling makes no immediate finance change.</span>
+                    <span className="block">Cancelling keeps the player and makes no immediate finance change.</span>
                   </ImpactBox>
                 );
               })()
