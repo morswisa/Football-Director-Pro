@@ -277,6 +277,10 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
   const currentManagerRating = current.manager ? managerRating(current.manager) : 0;
   const latestFinance = latestFinancialSnapshot(save);
   const divisionName = save.divisions.find((division) => division.id === current.club.divisionId)?.name;
+  const goalDifference = current.club.record.gf - current.club.record.ga;
+  const completedSeasons = save.history.length;
+  const trophyCount = save.history.reduce((sum, item) => sum + item.trophies.length, 0);
+  const latestSeason = save.history[0];
   const lastTen = save.fixtures
     .filter((fixture) => fixture.result && (fixture.homeClubId === current.club.id || fixture.awayClubId === current.club.id))
     .slice(-10)
@@ -287,57 +291,86 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
       const goalsAgainst = userHome ? result.awayGoals : result.homeGoals;
       return goalsFor > goalsAgainst ? "W" : goalsFor === goalsAgainst ? "D" : "L";
     });
+  const formRecord = {
+    W: lastTen.filter((item) => item === "W").length,
+    D: lastTen.filter((item) => item === "D").length,
+    L: lastTen.filter((item) => item === "L").length,
+  };
   return (
     <div className="space-y-4">
-      <Card className="relative overflow-hidden border-emerald-900/10 bg-[linear-gradient(135deg,_#ffffff_0%,_#f5fbf6_52%,_#edf4ff_100%)] p-0">
-        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,_#159947,_#2563eb,_#dba827)]" />
-        <div className="p-4">
+      <Card className="relative overflow-hidden border-emerald-900/10 bg-[linear-gradient(135deg,_#10241b,_#0f8139_58%,_#1aa24f)] p-0 text-white">
+        <div className="pointer-events-none absolute inset-0 opacity-18 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.28)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.16)_58%_60%,transparent_60%)]" />
+        <div className="relative p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase text-primary">Chairman&apos;s desk</p>
-              <h2 className="mt-1 text-2xl font-black">{current.position ? ordinal(current.position) : "-"}</h2>
-              <p className="mt-0.5 truncate text-sm font-bold text-neutral-700">{divisionName}</p>
-              <p className="mt-1 text-xs text-neutral-500">Board {current.club.boardConfidence}% · Trust {current.club.managerTrust}% · Cup {cupStatus(save)}</p>
+              <p className="text-[10px] font-black uppercase text-white/65">Chairman&apos;s desk</p>
+              <h2 className="mt-1 text-3xl font-black">{current.position ? ordinal(current.position) : "-"}</h2>
+              <p className="mt-0.5 truncate text-sm font-bold text-white/85">{divisionName}</p>
+              <p className="mt-1 text-xs text-white/65">Board {current.club.boardConfidence}% · Trust {current.club.managerTrust}% · Cup {cupStatus(save)}</p>
             </div>
-            <div className="rounded-xl bg-club-navy px-3 py-2 text-right text-white shadow-[0_12px_24px_rgba(16,36,27,0.18)]">
-              <p className="text-[10px] font-bold uppercase text-white/65">Balance</p>
+            <div className="rounded-xl bg-white px-3 py-2 text-right text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
+              <p className="text-[10px] font-bold uppercase text-neutral-500">Balance</p>
               <p data-testid="dashboard-balance" className="text-lg font-black">{formatMoney(current.club.finances.balance)}</p>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-            <div className="rounded-lg bg-white/80 px-3 py-2 ring-1 ring-emerald-950/5">
-              <span className="text-neutral-500">Roster</span>
+          <div className="mt-4 grid grid-cols-4 rounded-2xl border border-white/15 bg-emerald-950/28 text-center text-xs backdrop-blur">
+            <div className="border-r border-white/10 px-2 py-3">
+              <span className="text-white/60">P</span>
+              <b className="block text-base">{current.club.record.played}</b>
+            </div>
+            <div className="border-r border-white/10 px-2 py-3">
+              <span className="text-white/60">W-D-L</span>
+              <b className="block text-base">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b>
+            </div>
+            <div className="border-r border-white/10 px-2 py-3">
+              <span className="text-white/60">GD</span>
+              <b className="block text-base">{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b>
+            </div>
+            <div className="px-2 py-3">
+              <span className="text-white/60">Pts</span>
+              <b className="block text-base">{current.club.record.points}</b>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+            <div className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10">
+              <span className="text-white/60">Roster</span>
               <b className="block text-base">{squadRating || "-"}</b>
             </div>
-            <div className="rounded-lg bg-white/80 px-3 py-2 ring-1 ring-emerald-950/5">
-              <span className="text-neutral-500">Manager</span>
+            <div className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10">
+              <span className="text-white/60">Manager</span>
               <b className="block text-base">{currentManagerRating || "-"}</b>
             </div>
-            <div className="rounded-lg bg-white/80 px-3 py-2 ring-1 ring-emerald-950/5">
-              <span className="text-neutral-500">Latest</span>
-              <b data-testid="dashboard-latest-report" className={cn("block text-base", latestFinance.profit >= 0 ? "text-primary" : "text-danger")}>{formatMoney(latestFinance.profit)}</b>
+            <div className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10">
+              <span className="text-white/60">Latest</span>
+              <b data-testid="dashboard-latest-report" className={cn("block text-base", latestFinance.profit >= 0 ? "text-emerald-100" : "text-red-100")}>{formatMoney(latestFinance.profit)}</b>
             </div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <p className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10"><span className="text-white/60">Completed seasons</span><b className="block text-sm">{completedSeasons}</b></p>
+            <p className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10"><span className="text-white/60">Trophies</span><b className="block text-sm">{trophyCount}</b></p>
           </div>
         </div>
       </Card>
-      <Card className="space-y-3 border-emerald-100 bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase text-neutral-500">Next match</p>
-            <p className="text-lg font-bold">{nextOpponent ? `${nextOpponent.name}` : "Season complete"}</p>
-            <p className="text-sm text-neutral-500">{current.nextFixture?.homeClubId === current.club.id ? "Home" : "Away"}</p>
+      <Card className="overflow-hidden border-emerald-100 bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)] p-0">
+        <div className="flex items-center justify-between gap-3 px-4 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase text-primary">Next up</p>
+            <p className="truncate text-xl font-black">{nextOpponent ? `${nextOpponent.name}` : "Season complete"}</p>
+            <p className="text-sm text-neutral-500">{current.nextFixture ? current.nextFixture.homeClubId === current.club.id ? "Home" : "Away" : latestSeason ? `Last season: ${latestSeason.outcome ?? "completed"}` : "Awaiting schedule"}</p>
           </div>
-          <CalendarDays className="text-primary" />
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-primary"><CalendarDays size={22} /></span>
         </div>
-        <Button className="w-full" onClick={() => {
-          if (!save.currentEvent && !current.manager) {
-            setTab("manager");
-            return;
-          }
-          continueGame();
-        }} disabled={Boolean(save.gameOver)}>
-          {save.currentEvent ? "Open Decision" : !current.manager ? "Hire Manager" : "Continue"}
-        </Button>
+        <div className="border-t border-line bg-white px-4 py-3">
+          <Button className="w-full" onClick={() => {
+            if (!save.currentEvent && !current.manager) {
+              setTab("manager");
+              return;
+            }
+            continueGame();
+          }} disabled={Boolean(save.gameOver)}>
+            {save.currentEvent ? "Open Decision" : !current.manager ? "Hire Manager" : "Continue"}
+          </Button>
+        </div>
       </Card>
       <div className="grid grid-cols-3 gap-2">
         <MiniMetric icon={<ListOrdered size={15} />} label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} accent="emerald" />
@@ -351,21 +384,39 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
         <MiniMetric icon={<Trophy size={15} />} label="Record" value={`${current.club.record.won}-${current.club.record.drawn}-${current.club.record.lost}`} onClick={() => setTab("history")} accent="blue" />
         <MiniMetric icon={<Award size={15} />} label="Cup" value={cupStatus(save)} onClick={() => setTab("history")} accent="amber" />
       </div>
-      <Card className="flex items-center justify-between gap-2 p-3">
-        <span className="shrink-0 whitespace-nowrap text-xs font-bold uppercase text-neutral-500">Last 10</span>
-        <div className="grid min-w-0 flex-1 grid-cols-10 gap-1">
+      <Card className="space-y-3 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase text-neutral-500">Recent form</p>
+            <p className="text-sm font-bold">{formRecord.W}W · {formRecord.D}D · {formRecord.L}L</p>
+          </div>
+          <button type="button" onClick={() => setTab("history")} className="rounded-full bg-surface-muted px-3 py-1.5 text-xs font-black text-neutral-600">History</button>
+        </div>
+        <div className="grid grid-cols-10 gap-1">
           {(lastTen.length ? lastTen : ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]).map((result, index) => (
-            <span key={`${result}_${index}`} className={cn("grid h-6 min-w-0 place-items-center rounded-md text-[10px] font-black text-white", result === "W" ? "bg-primary" : result === "D" ? "bg-warning" : result === "L" ? "bg-danger" : "bg-neutral-300")}>{result}</span>
+            <span key={`${result}_${index}`} className={cn("grid h-8 min-w-0 place-items-center rounded-lg text-[11px] font-black text-white shadow-[0_6px_14px_rgba(23,33,27,0.08)]", result === "W" ? "bg-primary" : result === "D" ? "bg-warning" : result === "L" ? "bg-danger" : "bg-neutral-300")}>{result}</span>
           ))}
         </div>
       </Card>
       {save.lastMatch?.result ? (
-        <Card>
-          <p className="text-xs font-semibold uppercase text-neutral-500">Last result</p>
-          <p className="mt-1 text-xl font-bold">
-            {save.clubs[save.lastMatch.homeClubId].name} {save.lastMatch.result.homeGoals} - {save.lastMatch.result.awayGoals} {save.clubs[save.lastMatch.awayClubId].name}
-          </p>
-          <div className="mt-3 space-y-2">
+        <Card className="overflow-hidden p-0">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] text-center">
+            <div className="p-4">
+              <p className="text-[10px] font-black uppercase text-neutral-500">Home</p>
+              <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.homeClubId].name}</p>
+            </div>
+            <div className="px-3 py-4">
+              <p className="rounded-2xl bg-emerald-950 px-4 py-3 text-2xl font-black text-white">{save.lastMatch.result.homeGoals}-{save.lastMatch.result.awayGoals}</p>
+            </div>
+            <div className="p-4">
+              <p className="text-[10px] font-black uppercase text-neutral-500">Away</p>
+              <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.awayClubId].name}</p>
+            </div>
+          </div>
+          <div className="border-t border-line px-4 py-3">
+            <p className="text-xs font-black uppercase text-neutral-500">Last result</p>
+          </div>
+          <div className="space-y-2 px-4 pb-4">
             {save.lastMatch.result.events.length === 0 ? (
               <div className="rounded-md bg-surface-muted px-3 py-2 text-sm text-neutral-600">No major match events recorded.</div>
             ) : save.lastMatch.result.events.slice(0, 5).map((event, index) => (
