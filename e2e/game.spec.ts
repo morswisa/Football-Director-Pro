@@ -506,6 +506,12 @@ test("manager dismissal still allows emergency replacement", async ({ page }) =>
   await expect(page.getByText("No manager appointed")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Fire Manager" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Negotiate" }).first()).toBeDisabled();
+
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+  await page.getByRole("button", { name: /Finances/i }).click();
+  await expect(page.getByText(/Manager compensation:/)).toBeVisible();
+  await expect(page.getByText("Infrastructure spending")).toBeVisible();
+  await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
 
 test("stadium upgrades and repairs show clear financial impact", async ({ page }) => {
