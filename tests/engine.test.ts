@@ -110,6 +110,42 @@ function resolveHumanStyleEvent(save: ReturnType<typeof createNewGame>) {
   return resolveEvent(save, event.id, { action: "continue" });
 }
 
+function expectPlayableLongRunState(save: ReturnType<typeof createNewGame>) {
+  const club = save.clubs[save.userClubId];
+  const divisionLevel = save.divisions.find((division) => division.id === club.divisionId)?.level ?? 7;
+  const latest = latestFinancialSnapshot(save);
+  const squad = club.playerIds.map((id) => save.players[id]).filter(Boolean);
+  const weeklyRecurringIncome = Math.max(1, latest.income.sponsorship + latest.income.merchandise + latest.income.tv);
+  const wagePressure = club.finances.weeklyWages / weeklyRecurringIncome;
+  const maxWeeklyWagesByLevel: Record<number, number> = {
+    1: 7_500_000,
+    2: 2_500_000,
+    3: 900_000,
+    4: 550_000,
+    5: 260_000,
+    6: 180_000,
+    7: 130_000,
+  };
+
+  expect(save.gameOver).toBeUndefined();
+  expect(Number.isFinite(club.finances.balance)).toBe(true);
+  expect(Number.isFinite(club.finances.weeklyWages)).toBe(true);
+  expect(Number.isFinite(latest.totalIncome)).toBe(true);
+  expect(Number.isFinite(latest.totalExpenses)).toBe(true);
+  expect(latest.totalIncome - latest.totalExpenses).toBe(latest.profit);
+  expect(club.finances.balance).toBeGreaterThan(club.finances.debtLimit);
+  expect(club.finances.weeklyWages).toBeGreaterThan(0);
+  expect(club.finances.weeklyWages).toBeLessThan(maxWeeklyWagesByLevel[divisionLevel] ?? maxWeeklyWagesByLevel[7]);
+  expect(wagePressure).toBeLessThan(2.6);
+  expect(club.boardConfidence).toBeGreaterThanOrEqual(5);
+  expect(club.boardConfidence).toBeLessThanOrEqual(99);
+  expect(club.managerTrust).toBeGreaterThanOrEqual(0);
+  expect(club.managerTrust).toBeLessThanOrEqual(99);
+  expect(squad.length).toBeGreaterThanOrEqual(11);
+  expect(squad.length).toBeLessThanOrEqual(36);
+  expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
+}
+
 describe("game engine", () => {
   it("creates a deterministic world", () => {
     const a = createNewGame(setup);
@@ -405,6 +441,10 @@ describe("game engine", () => {
     expect(upgradedClub.youthLevel).toBe(startingYouth + 1);
     expect(upgradedClub.finances.upkeep).toBeGreaterThan(startingUpkeep);
     expect(upgradedClub.finances.balance).toBeLessThan(startingBalance);
+    expect(upgradedClub.finances.transactions.some((tx) => tx.label === "Training investment")).toBe(true);
+    expect(upgradedClub.finances.transactions.some((tx) => tx.label === "Youth academy investment")).toBe(true);
+    expect(latestFinancialSnapshot(save).balanceAfter).toBe(upgradedClub.finances.balance);
+    expect(latestFinancialSnapshot(save).expenses.infrastructure).toBeGreaterThan(0);
 
     const balanceAfterUpgrades = upgradedClub.finances.balance;
     const upkeepAfterUpgrades = upgradedClub.finances.upkeep;
@@ -416,6 +456,7 @@ describe("game engine", () => {
     expect(downgradedClub.finances.balance).toBe(balanceAfterUpgrades);
     expect(downgradedClub.finances.upkeep).toBeLessThan(upkeepAfterUpgrades);
     expect(downgradedClub.finances.upkeep).toBeGreaterThanOrEqual(0);
+    expect(latestFinancialSnapshot(save).balanceAfter).toBe(downgradedClub.finances.balance);
   });
 
   it("records stadium upgrade and repair costs in current financial context", () => {
@@ -1253,6 +1294,38 @@ describe("game engine", () => {
     expect(club.finances.balance).toBeGreaterThan(club.finances.debtLimit);
     expect(save.divisions.every((division) => division.clubIds.length === 20)).toBe(true);
   }, 40_000);
+
+  it("keeps several long human-style careers inside playable balance bands", () => {
+    for (const seed of [20260801, 20260802, 20260803]) {
+      let save = createNewGame({ ...setup, seed });
+      const seenBalances: number[] = [];
+      const seenWages: number[] = [];
+
+      for (let step = 0; step < 1500 && save.history.length < 3; step += 1) {
+        save = generateNextEvents(save);
+        let guard = 0;
+        while (save.currentEvent && guard < 110) {
+          save = resolveHumanStyleEvent(save);
+          guard += 1;
+        }
+        expect(guard).toBeLessThan(110);
+
+        const club = save.clubs[save.userClubId];
+        if (!save.currentEvent && step % 34 === 0 && club.finances.balance > 950_000) {
+          save = step % 68 === 0 ? upgradeTraining(save, 1) : upgradeYouthAcademy(save, 1);
+        }
+
+        expectPlayableLongRunState(save);
+        seenBalances.push(save.clubs[save.userClubId].finances.balance);
+        seenWages.push(save.clubs[save.userClubId].finances.weeklyWages);
+      }
+
+      expect(save.history.length).toBeGreaterThanOrEqual(3);
+      expect(new Set(save.history.map((history) => history.season)).size).toBeGreaterThanOrEqual(3);
+      expect(Math.max(...seenBalances) - Math.min(...seenBalances)).toBeGreaterThan(50_000);
+      expect(Math.max(...seenWages)).toBeGreaterThan(0);
+    }
+  }, 90_000);
 
   it("runs many direct engine seasons with stable balances and squads", () => {
     let save = createNewGame({ ...setup, seed: 20260601 });

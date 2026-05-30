@@ -51,6 +51,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Event actions distinguish blocking decisions from informational updates: decision controls can stay sticky for reachability, while ordinary Continue actions remain inline to avoid covering long report rows.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
+- Training and Youth facility upgrades write same-period finance transactions, appear in infrastructure spending, and refresh current/queued financial reports. Downgrades do not refund cash but refresh reports because they alter weekly upkeep.
 - Training and Youth facility management is launched from their dashboard metric cards only.
 - Settings is reachable from the header gear button and returns to the Dashboard through the same secondary-page back pattern.
 
@@ -171,3 +172,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Stadium acceptance coverage verifies upgrade/repair from the browser, including capacity/condition changes and matching financial transaction/infrastructure visibility.
 - Multi-period finance acceptance coverage runs several Continue periods, checks financial report balance movement/copy for `NaN`, and verifies the latest report values match Dashboard and Finances surfaces.
 - Mobile-surface acceptance coverage opens Dashboard, League, Roster, Manager, Finances, Stadium, History, Training, Youth, Settings, and a Continue event on the Pixel-sized Playwright project, asserting no page-level horizontal overflow and no visible `NaN`/`undefined` text.
+- Long-run balance coverage now runs several human-style careers across three seasons, asserting playable debt headroom, bounded wage pressure, finite financial snapshots, stable relationships, viable squads, and stable division sizes.

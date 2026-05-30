@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-iqpma6luy-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-qymx517vc-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -37,6 +37,7 @@ Playable V1 includes:
 - New saves generate natural unique fictional club names without numeric suffixes, and loaded saves are normalized so duplicate club names and same-club player names receive stable display disambiguation.
 - Youth Academy and Training Ground are managed through dashboard modals instead of a separate Training page, with `+1` through `+5` level selection before confirming upgrades or downgrades.
 - Facility and stadium screens show selected level changes, costs, upkeep/capacity effects, and bank-impact context before actions.
+- Training and Youth upgrades now write finance transactions, refresh current financial snapshots, and appear under infrastructure spending. Downgrades still provide no refund but refresh finance context because upkeep changes.
 - Stadium upgrades and repairs now write finance transactions, refresh the current financial snapshot, and surface the spending under infrastructure so balance movement is traceable after the action.
 - Manager hiring/firing.
 - Manager hiring/firing now uses contract economics: weekly wages, contract years, compensation previews, free-agent/contracted candidate status, and a manager-action lock after changes.
@@ -60,6 +61,7 @@ Playable V1 includes:
 - Match-result events now explain the actual post-match relationship/facility movement, including board confidence, manager trust, and stadium condition deltas.
 - Player and manager wage recommendations are formula-driven by division, rating/reputation, age/role/potential, and personality where relevant.
 - Long-run balancing now updates sponsorship, debt limit, stadium upkeep, board confidence, manager trust, and stadium condition across match and season progression.
+- Long-run balance coverage now spans several deterministic human-style careers across at least three seasons and asserts playable wage pressure, debt headroom, relationships, squad size, and division sizes.
 - Lower-division cashflow has been tightened: matchday ticket income now scales by division level, and lower-league season awards are modest with clear promotion upside instead of broad windfalls for poor finishes.
 - Promotion and relegation are both modeled in season transitions, with club reputation and confidence changes.
 - Edge-case coverage now proves debt-limit game over, facility upgrade/downgrade economics, manager churn lock behavior, and relegation movement between divisions.
@@ -92,7 +94,8 @@ Playable V1 includes:
 
 ## Next Steps
 
-- Latest mobile acceptance pass: main V1 surfaces now have Pixel-sized browser coverage for readability, no horizontal overflow, and no visible broken values. Remaining work is longer balance tuning, final clean-save web acceptance, fixing only original-scope defects found during acceptance, and Capacitor native packaging after the web V1 is accepted.
+- Latest long-run balance pass: several human-style careers now have three-season playable-band coverage, and Training/Youth facility investments now reconcile with financial reports. Remaining work is final clean-save web acceptance, fixing only original-scope defects found during acceptance, and Capacitor native packaging after the web V1 is accepted.
+- Latest long-run balance pass is deployed to preview.
 - Latest mobile acceptance pass is deployed to preview.
 - Latest finance acceptance pass is deployed to preview.
 - Latest status answer: the remaining game work is finalization-focused. The planned V1 systems are in place; outstanding work is acceptance, cleanup of any original-scope defects found during acceptance, final mobile QA, final balance tuning, and Capacitor native packaging only after the web V1 is accepted.

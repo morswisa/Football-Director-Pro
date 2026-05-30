@@ -88,6 +88,7 @@
 - Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Direct infrastructure actions, including stadium upgrade and repair, must leave a finance trail through transactions and current-period infrastructure spending so balance changes are explainable.
+- Facility investment is infrastructure spending for reporting purposes. Training/Youth upgrades should be visible as same-period transactions; Training/Youth downgrades should not create income, but must refresh finance snapshots because weekly upkeep changes.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
 - Financial surfaces must also show opening balance and closing balance so the player can reconcile report profit/loss with the displayed club balance.
 - Financial reports should expose total income, total expenses, and result directly in the card, not only through line-item rows or note copy, because the player needs a quick period-level reconciliation before continuing.
@@ -106,3 +107,4 @@
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.
 - Final mobile QA should be enforced in browser acceptance, not left as a manual-only check: core V1 surfaces must not create horizontal overflow or visible broken numeric/copy output on the Pixel-sized Playwright viewport.
+- Long-run balance acceptance should check pressure ratios, not just crash freedom: careers must keep wages, debt headroom, squad size, relationships, and division sizes inside playable bands over multiple seasons.

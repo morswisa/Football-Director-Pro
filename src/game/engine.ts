@@ -419,7 +419,12 @@ function buildFinancialLines(save: GameSave, matchdayIncome = 0, includeTransact
   const feesOut = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee paid") || tx.label.toLowerCase().includes("loan fee paid")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const feesIn = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("transfer fee received") || tx.label.toLowerCase().includes("loan fee received")).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const managerCosts = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("manager")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
-  const stadiumInvestment = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("stadium")).reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
+  const infrastructureInvestment = weekTransactions
+    .filter((tx) => {
+      const label = tx.label.toLowerCase();
+      return label.includes("stadium") || label.includes("training investment") || label.includes("youth academy investment");
+    })
+    .reduce((sum, tx) => sum + Math.abs(Math.min(0, tx.amount)), 0);
   const prizeMoney = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("season award") || tx.label.toLowerCase().includes("cup prize")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const cupMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("cup matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
   const leagueMatchdayIncome = weekTransactions.filter((tx) => tx.label.toLowerCase().includes("league matchday income")).reduce((sum, tx) => sum + Math.max(0, tx.amount), 0);
@@ -433,7 +438,7 @@ function buildFinancialLines(save: GameSave, matchdayIncome = 0, includeTransact
   const stadiumRunning = Math.round(upkeep * 0.34);
   const youthAcademy = Math.round(club.youthLevel * 72);
   const trainingFacilities = Math.round(club.trainingLevel * 78);
-  const infrastructure = Math.max(0, upkeep - stadiumRunning - youthAcademy - trainingFacilities) + managerCosts + stadiumInvestment;
+  const infrastructure = Math.max(0, upkeep - stadiumRunning - youthAcademy - trainingFacilities) + managerCosts + infrastructureInvestment;
   const expenses = { wages, stadiumRunning, youthAcademy, trainingFacilities, infrastructure, feesOut };
   const income = {
     feesIn,
@@ -2105,12 +2110,19 @@ export function repairStadium(input: GameSave) {
 export function upgradeTraining(input: GameSave, levels = 1) {
   const save = clone(input);
   const club = userClub(save);
+  let totalCost = 0;
   for (let i = 0; i < levels; i += 1) {
     const cost = nextUpgradeCost(club.trainingLevel, 14_000);
     if (club.trainingLevel >= 99 || club.finances.balance < cost) break;
     club.finances.balance -= cost;
+    totalCost += cost;
     club.trainingLevel += 1;
     club.finances.upkeep += Math.round(cost / 850);
+  }
+  if (totalCost > 0) {
+    club.finances.transactions.unshift({ id: `tx_training_upgrade_${save.week}_${club.trainingLevel}_${levels}`, week: save.week, label: "Training investment", amount: -totalCost });
+    club.finances.transactions = club.finances.transactions.slice(0, 24);
+    refreshQueuedFinancialReports(save);
   }
   return withUpdate(save);
 }
@@ -2124,18 +2136,26 @@ export function downgradeTraining(input: GameSave, levels = 1) {
     club.trainingLevel -= 1;
     club.finances.upkeep = Math.max(0, club.finances.upkeep - Math.round(previousCost / 850));
   }
+  refreshQueuedFinancialReports(save);
   return withUpdate(save);
 }
 
 export function upgradeYouthAcademy(input: GameSave, levels = 1) {
   const save = clone(input);
   const club = userClub(save);
+  let totalCost = 0;
   for (let i = 0; i < levels; i += 1) {
     const cost = nextUpgradeCost(club.youthLevel, 13_000);
     if (club.youthLevel >= 99 || club.finances.balance < cost) break;
     club.finances.balance -= cost;
+    totalCost += cost;
     club.youthLevel += 1;
     club.finances.upkeep += Math.round(cost / 900);
+  }
+  if (totalCost > 0) {
+    club.finances.transactions.unshift({ id: `tx_youth_upgrade_${save.week}_${club.youthLevel}_${levels}`, week: save.week, label: "Youth academy investment", amount: -totalCost });
+    club.finances.transactions = club.finances.transactions.slice(0, 24);
+    refreshQueuedFinancialReports(save);
   }
   return withUpdate(save);
 }
@@ -2149,6 +2169,7 @@ export function downgradeYouthAcademy(input: GameSave, levels = 1) {
     club.youthLevel -= 1;
     club.finances.upkeep = Math.max(0, club.finances.upkeep - Math.round(previousCost / 900));
   }
+  refreshQueuedFinancialReports(save);
   return withUpdate(save);
 }
 
