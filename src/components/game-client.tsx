@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Award, CalendarDays, Dumbbell, Landmark, ListOrdered, Play, Settings, ShieldCheck, Sprout, Trophy, UserCog, UsersRound, Wallet } from "lucide-react";
+import { ArrowLeft, Award, CalendarDays, Dumbbell, Landmark, ListOrdered, Play, Settings, ShieldCheck, Sprout, Trophy, UserCog, UsersRound, Wallet } from "lucide-react";
 import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
@@ -217,7 +217,15 @@ function PersonAvatar({ name, seedKey, kind = "player", className }: { name: str
 
 function PageBack({ setTab }: { setTab: (tab: Tab) => void }) {
   return (
-    <Button variant="secondary" className="mb-3 w-full" onClick={() => setTab("home")}>Back to Dashboard</Button>
+    <button
+      type="button"
+      aria-label="Back to Dashboard"
+      onClick={() => setTab("home")}
+      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line/90 bg-white px-3 py-2 text-xs font-black uppercase text-neutral-600 shadow-[0_8px_18px_rgba(23,33,27,0.05)] transition hover:border-primary hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <ArrowLeft size={15} />
+      Dashboard
+    </button>
   );
 }
 
@@ -1711,6 +1719,7 @@ export function GameClient() {
       <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
       <Header save={save} tab={tab} setTab={setTab} />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
+        {message ? <div role="status" className="mb-3 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
         {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setTab} />}
         {tab === "standings" && <StandingsTab save={save} setTab={setTab} />}
         {tab === "squad" && <SquadTab save={save} setTab={setTab} />}
@@ -1720,7 +1729,6 @@ export function GameClient() {
         {tab === "history" && <HistoryTab save={save} setTab={setTab} />}
         {tab === "settings" && <SettingsTab save={save} setTab={setTab} />}
       </div>
-      {message ? <div className="mx-4 mb-2 rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{message}</div> : null}
       <FacilityModal save={save} facility={facilityModal} close={() => setFacilityModal(undefined)} />
       <EventModal save={save} />
       <DecisionModal save={save} setTab={setTab} suppressed={Boolean(save.currentEvent) || tab === "manager"} />

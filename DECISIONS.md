@@ -90,6 +90,8 @@
 - Dashboard should not show duplicate controls for the same feature; Training and Youth are opened from their metric cards only.
 - Dashboard hierarchy should keep the chairman summary and primary Continue/next-match action above secondary inspection metrics, so the core "one more period" loop remains visible in the first mobile viewport.
 - The visual system should stay clean green/white with restrained navy, blue, and amber accents. Accent color is used for hierarchy and section distinction, not as a full one-note palette.
+- Secondary pages should use a compact Dashboard back chip instead of a large full-width return card, preserving vertical space for inspection content.
+- Status messages should not cover bottom action controls. They render inside the scroll content as temporary banners rather than as bottom overlays.
 - Generated portrait avatars are part of V1 identity. They use one shared procedural SVG template, seeded by player/manager IDs where possible, so faces stay consistent across the career without storing image assets.
 - Facilities use 1-99 ratings; upgrades increase by one rating point and display both one-time cost and weekly upkeep impact.
 - Youth Academy and Training Ground are managed through dashboard popups, not a dedicated page.

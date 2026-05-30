@@ -461,7 +461,7 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
 
   await page.getByRole("button", { name: /Record/i }).click();
   await expect(page.getByRole("heading", { name: "Chairman's Cup" })).toBeVisible();
-  await expect(page.getByText("First Round")).toBeVisible();
+  await expect(page.getByText("First Round", { exact: true })).toBeVisible();
   await expect(page.getByText("Cupshire Rovers")).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 

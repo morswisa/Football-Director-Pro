@@ -66,6 +66,8 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Training and Youth facility upgrades write same-period finance transactions, appear in infrastructure spending, and refresh current/queued financial reports. Downgrades do not refund cash but refresh reports because they alter weekly upkeep.
 - Training and Youth facility management is launched from their dashboard metric cards only.
 - Settings is reachable from the header gear button and returns to the Dashboard through the same secondary-page back pattern.
+- Secondary pages share `PageBack`, a compact accessible Dashboard chip. This keeps return navigation consistent without consuming the vertical space of a full card.
+- Store status messages render inside the scrollable content area, before the active tab content, so feedback remains visible without covering lower-page action buttons.
 
 ## Portraits
 
