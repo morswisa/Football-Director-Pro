@@ -6,7 +6,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 
 - Full Core V1 vertical slice implemented as a Next.js web app.
 - The app runs locally at `http://127.0.0.1:3000` while the dev server is active.
-- Current Vercel preview deployment is available at `https://football-director-aym845hi2-mor-swisas-projects.vercel.app`.
+- Current Vercel preview deployment is available at `https://football-director-iqpma6luy-mor-swisas-projects.vercel.app`.
 - Static export is enabled for Capacitor via `out/`.
 - V1 scope remains local/offline only: no cloud save, no ads, no IAP, no real clubs, no manual scouting, no manual lineup/tactics.
 - Current iteration implements a save-backed Continue-driven `GameEvent` queue. Dashboard `Continue` now opens the next required event, and unresolved decision events block progression.
@@ -88,10 +88,12 @@ Playable V1 includes:
 - Settings covers the original local/offline V1 needs: manual save, export copy/download, validated import into Slot 1, reset local career with confirmation, sound toggle, and normal/large text size.
 - Settings import/export now has browser acceptance coverage: invalid pasted JSON is rejected, a valid exported save can be modified and imported into Slot 1, the imported club identity appears immediately, and the Continue queue proceeds from that imported save.
 - Manager-led transfer and contract proposals no longer have a legacy side path; they are generated, displayed, resolved, and persisted through `GameEvent` records only.
+- Final mobile-surface acceptance now covers the main V1 inspection and decision surfaces for horizontal overflow and broken numeric/copy output.
 
 ## Next Steps
 
-- Latest finance acceptance pass: multi-period financial report consistency is now covered in engine and browser tests. Remaining work is final clean-save web acceptance, longer balance tuning, final mobile QA across all planned surfaces, fixing only original-scope defects found during acceptance, and Capacitor native packaging after the web V1 is accepted.
+- Latest mobile acceptance pass: main V1 surfaces now have Pixel-sized browser coverage for readability, no horizontal overflow, and no visible broken values. Remaining work is longer balance tuning, final clean-save web acceptance, fixing only original-scope defects found during acceptance, and Capacitor native packaging after the web V1 is accepted.
+- Latest mobile acceptance pass is deployed to preview.
 - Latest finance acceptance pass is deployed to preview.
 - Latest status answer: the remaining game work is finalization-focused. The planned V1 systems are in place; outstanding work is acceptance, cleanup of any original-scope defects found during acceptance, final mobile QA, final balance tuning, and Capacitor native packaging only after the web V1 is accepted.
 - Settings import/export acceptance coverage has passed locally with the full verification gate, is deployed to preview, and has been pushed to `main` in commit `ae566e0`.

@@ -105,3 +105,4 @@
 - Live match playback is a blocking opaque full-screen state: club navigation resumes after the match result is completed, and the dashboard must not leak the final score behind the live view.
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.
+- Final mobile QA should be enforced in browser acceptance, not left as a manual-only check: core V1 surfaces must not create horizontal overflow or visible broken numeric/copy output on the Pixel-sized Playwright viewport.

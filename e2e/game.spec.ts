@@ -13,6 +13,39 @@ async function createAcceptanceCareer(page: import("@playwright/test").Page, clu
   await expect(page.getByText(clubName)).toBeVisible();
 }
 
+async function expectMobileSurfaceHealthy(page: import("@playwright/test").Page, label: string) {
+  const result = await page.evaluate(() => {
+    const viewportWidth = window.innerWidth;
+    const documentWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
+    const text = document.body.innerText;
+    const overflowing = Array.from(document.querySelectorAll<HTMLElement>("body *"))
+      .filter((element) => {
+        const style = window.getComputedStyle(element);
+        if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 1 || rect.height <= 1) return false;
+        return rect.left < -1 || rect.right > viewportWidth + 1;
+      })
+      .slice(0, 5)
+      .map((element) => ({
+        tag: element.tagName.toLowerCase(),
+        text: element.textContent?.trim().slice(0, 80) ?? "",
+        left: Math.round(element.getBoundingClientRect().left),
+        right: Math.round(element.getBoundingClientRect().right),
+      }));
+    return {
+      viewportWidth,
+      documentWidth,
+      hasBrokenText: /\bNaN\b|\bundefined\b/.test(text),
+      overflowing,
+    };
+  });
+
+  expect(result.hasBrokenText, `${label} should not show NaN or undefined`).toBe(false);
+  expect(result.documentWidth, `${label} should not create page-level horizontal overflow`).toBeLessThanOrEqual(result.viewportWidth + 1);
+  expect(result.overflowing, `${label} should not have visible elements outside the viewport`).toEqual([]);
+}
+
 async function resolveEventsUntilMatchPreview(page: import("@playwright/test").Page) {
   for (let step = 0; step < 40; step += 1) {
     const dialog = page.getByRole("dialog");
@@ -305,6 +338,47 @@ test("financial reports stay consistent across several continue periods", async 
   await expect(page.getByTestId("finance-breakdown-income")).toHaveText(latestReport.income);
   await expect(page.getByTestId("finance-breakdown-expenses")).toHaveText(latestReport.expenses);
   await expect(page.getByTestId("finance-breakdown-result")).toHaveText(latestReport.result);
+});
+
+test("mobile V1 surfaces stay readable without horizontal overflow", async ({ page }) => {
+  await createAcceptanceCareer(page, "Mobileford FC");
+  await expectMobileSurfaceHealthy(page, "Dashboard");
+
+  const surfaces: { button: RegExp | string; expected: string; label: string }[] = [
+    { button: /League/i, expected: "Standings", label: "League" },
+    { button: /Roster/i, expected: "ROSTER", label: "Roster" },
+    { button: /Manager/i, expected: "Fire Manager", label: "Manager" },
+    { button: /Finances/i, expected: "Latest report breakdown", label: "Finances" },
+    { button: /Stadium/i, expected: "Repair Stadium", label: "Stadium" },
+    { button: /Record/i, expected: "Current Season", label: "History" },
+  ];
+
+  for (const surface of surfaces) {
+    await page.getByRole("button", { name: surface.button }).click();
+    await expect(page.getByText(surface.expected).first()).toBeVisible();
+    await expectMobileSurfaceHealthy(page, surface.label);
+    await page.getByRole("button", { name: "Back to Dashboard" }).click();
+    await expectMobileSurfaceHealthy(page, `Dashboard after ${surface.label}`);
+  }
+
+  await page.getByRole("button", { name: /Training/i }).click();
+  await expect(page.getByRole("dialog")).toContainText("Training Ground");
+  await expectMobileSurfaceHealthy(page, "Training modal");
+  await page.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("button", { name: /Youth/i }).click();
+  await expect(page.getByRole("dialog")).toContainText("Youth Academy");
+  await expectMobileSurfaceHealthy(page, "Youth modal");
+  await page.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByText("Export Save")).toBeVisible();
+  await expectMobileSurfaceHealthy(page, "Settings");
+  await page.getByRole("button", { name: "Back to Dashboard" }).click();
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expectMobileSurfaceHealthy(page, "Continue event modal");
 });
 
 test("play match runs live before returning to the result", async ({ page }) => {

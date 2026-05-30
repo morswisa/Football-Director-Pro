@@ -170,3 +170,4 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Manager acceptance coverage verifies the UI-level hire/fire economy: dismissal compensation, debt context, emergency no-manager replacement, hire cost/wage context, successful replacement, and locked controls after hiring.
 - Stadium acceptance coverage verifies upgrade/repair from the browser, including capacity/condition changes and matching financial transaction/infrastructure visibility.
 - Multi-period finance acceptance coverage runs several Continue periods, checks financial report balance movement/copy for `NaN`, and verifies the latest report values match Dashboard and Finances surfaces.
+- Mobile-surface acceptance coverage opens Dashboard, League, Roster, Manager, Finances, Stadium, History, Training, Youth, Settings, and a Continue event on the Pixel-sized Playwright project, asserting no page-level horizontal overflow and no visible `NaN`/`undefined` text.
