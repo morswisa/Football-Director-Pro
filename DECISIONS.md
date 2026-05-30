@@ -110,3 +110,4 @@
 - Final mobile QA should be enforced in browser acceptance, not left as a manual-only check: core V1 surfaces must not create horizontal overflow or visible broken numeric/copy output on the Pixel-sized Playwright viewport.
 - Long-run balance acceptance should check pressure ratios, not just crash freedom: careers must keep wages, debt headroom, squad size, relationships, and division sizes inside playable bands over multiple seasons.
 - Web V1 acceptance must prove a clean save can cross a full season boundary in the browser, including season review and next-season intro, because the Continue loop is the primary product surface.
+- Final browser acceptance should cover repeated season boundaries, not only a single season transition, because the game promise depends on many fast seasons accumulating into reliable club history.

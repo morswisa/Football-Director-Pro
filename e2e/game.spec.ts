@@ -403,8 +403,8 @@ test("mobile V1 surfaces stay readable without horizontal overflow", async ({ pa
   await expectMobileSurfaceHealthy(page, "Continue event modal");
 });
 
-test("clean save reaches season review, next intro, and history in browser", async ({ page }) => {
-  test.setTimeout(90_000);
+test("clean save reaches repeated season reviews and history in browser", async ({ page }) => {
+  test.setTimeout(140_000);
   await createAcceptanceCareer(page, "Seasonford FC");
 
   await resolveEventsUntilSeasonReview(page);
@@ -412,16 +412,24 @@ test("clean save reaches season review, next intro, and history in browser", asy
   await expect(page.getByRole("dialog")).toContainText("League Path");
   await expect(page.getByRole("dialog")).toContainText("Seasonford FC");
   await expectMobileSurfaceHealthy(page, "Next season intro modal");
+  await resolveEventsUntilSeasonReview(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("dialog")).toContainText("League Path");
+  await expect(page.getByRole("dialog")).toContainText("Seasonford FC");
+  await expectMobileSurfaceHealthy(page, "Second next season intro modal");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: /Record/i }).click();
   await expect(page.getByText("Season History")).toBeVisible();
   await expect(page.getByText("Seasonford FC")).toBeVisible();
-  await expect(page.getByText("Award")).toBeVisible();
+  await expect(page.getByText("2030/31")).toBeVisible();
+  await expect(page.getByText("2031/32")).toBeVisible();
+  await expect(page.getByText("Award").first()).toBeVisible();
   await expect(page.getByText("Balance").first()).toBeVisible();
-  await expect(page.getByText(/Board [+-]?\d+ pts/)).toBeVisible();
-  await expect(page.getByText(/Trust [+-]?\d+ pts/)).toBeVisible();
-  await expect(page.getByText(/Reputation [+-]?\d+ pts/)).toBeVisible();
+  await expect(page.getByText(/Board [+-]?\d+ pts/).first()).toBeVisible();
+  await expect(page.getByText(/Trust [+-]?\d+ pts/).first()).toBeVisible();
+  await expect(page.getByText(/Reputation [+-]?\d+ pts/).first()).toBeVisible();
+  await expect(page.locator("p", { hasText: /Season impact: Board/ })).toHaveCount(2);
   await expectMobileSurfaceHealthy(page, "Post-season history surface");
 });
 
