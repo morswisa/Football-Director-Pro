@@ -1656,33 +1656,61 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
   const homeGoals = visibleEvents.filter((event) => event.type === "goal" && event.clubId === home.id).length;
   const awayGoals = visibleEvents.filter((event) => event.type === "goal" && event.clubId === away.id).length;
   const progress = minute / 90;
+  const visibleHomeShots = Math.round(result.homeShots * progress);
+  const visibleAwayShots = Math.round(result.awayShots * progress);
+  const visibleHomeOnTarget = Math.round(result.homeOnTarget * progress);
+  const visibleAwayOnTarget = Math.round(result.awayOnTarget * progress);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background p-5">
-      <div role="dialog" aria-modal="true" aria-labelledby="live-match-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
-        <p className="text-xs font-semibold uppercase text-primary">Live match</p>
-        <h2 id="live-match-title" className="mt-1 text-xl font-black">{home.name} {homeGoals} - {awayGoals} {away.name}</h2>
-        <p className="mt-1 text-xs text-neutral-500">Match is in progress. Finish the match to return to club controls.</p>
-        <div className="mt-4 rounded-xl bg-surface-muted p-4 text-center">
-          <p data-testid="live-minute" className="text-4xl font-black">{minute}&apos;</p>
-          <div className="mt-3 h-2 rounded-full bg-white">
-            <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} />
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[radial-gradient(circle_at_top,_#135f36,_#071510_70%)] p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="live-match-title" className="max-h-full w-full max-w-md overflow-hidden rounded-[1.4rem] border border-white/15 bg-white shadow-[0_28px_70px_rgba(0,0,0,0.36)]">
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,_#10241b,_#0f8139_62%,_#1aa24f)] px-4 py-4 text-white">
+          <div className="pointer-events-none absolute inset-0 opacity-20 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.28)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.16)_58%_60%,transparent_60%)]" />
+          <div className="relative flex items-center justify-between gap-3">
+            <h2 id="live-match-title" className="rounded-full bg-white/14 px-3 py-1 text-[10px] font-black uppercase tracking-wide ring-1 ring-white/20">Live match</h2>
+            <p data-testid="live-minute" className="rounded-full bg-emerald-950/60 px-3 py-1 text-sm font-black ring-1 ring-white/15">{minute}&apos;</p>
+          </div>
+          <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <p className="min-w-0 text-right text-sm font-black leading-tight">{home.name}</p>
+            <p className="rounded-2xl bg-white px-4 py-3 text-3xl font-black text-emerald-950 shadow-[0_12px_26px_rgba(0,0,0,0.18)]">{homeGoals}-{awayGoals}</p>
+            <p className="min-w-0 text-left text-sm font-black leading-tight">{away.name}</p>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-          <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{result.possessionHome}%</b><span className="block text-xs text-neutral-500">Possession</span></p>
-          <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{Math.round(result.homeShots * progress)}-{Math.round(result.awayShots * progress)}</b><span className="block text-xs text-neutral-500">Shots</span></p>
-          <p className="rounded-lg bg-surface-muted px-2 py-3"><b>{Math.round(result.homeOnTarget * progress)}-{Math.round(result.awayOnTarget * progress)}</b><span className="block text-xs text-neutral-500">On target</span></p>
-        </div>
-        <div className="mt-4 space-y-2">
-          {visibleEvents.length === 0 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-500">The match is settling into rhythm.</p> : visibleEvents.map((matchEvent, index) => (
-            <div key={`${matchEvent.minute}-${index}`} className="flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm">
-              <PersonAvatar name={matchEvent.playerName} className="h-8 w-8 rounded-md text-[10px]" />
-              <p>{matchEvent.minute}&apos; {matchEvent.description}</p>
+        <div className="max-h-[calc(100svh-10rem)] overflow-y-auto p-4">
+          <div className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-[linear-gradient(180deg,_#0e8f43,_#0b6f35)] p-4 text-white shadow-[0_12px_30px_rgba(16,36,27,0.14)]">
+            <div className="pointer-events-none absolute inset-3 rounded-xl border border-white/35" />
+            <div className="pointer-events-none absolute left-1/2 top-3 h-[calc(100%-1.5rem)] w-px bg-white/30" />
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35" />
+            <div className="relative">
+              <div className="flex items-center justify-between text-[10px] font-black uppercase text-white/75">
+                <span>Kickoff</span>
+                <span>Final whistle</span>
+              </div>
+              <div className="mt-12 h-3 rounded-full bg-emerald-950/45 ring-1 ring-white/25">
+                <div className="h-3 rounded-full bg-white transition-all" style={{ width: `${progress * 100}%` }} />
+              </div>
             </div>
-          ))}
-          {minute >= 90 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm font-bold">90&apos; Final whistle.</p> : null}
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+            <p className="rounded-xl bg-surface-muted px-2 py-3"><b>{result.possessionHome}%</b><span className="block text-[10px] font-bold uppercase text-neutral-500">Possession</span></p>
+            <p className="rounded-xl bg-surface-muted px-2 py-3"><b>{visibleHomeShots}-{visibleAwayShots}</b><span className="block text-[10px] font-bold uppercase text-neutral-500">Shots</span></p>
+            <p className="rounded-xl bg-surface-muted px-2 py-3"><b>{visibleHomeOnTarget}-{visibleAwayOnTarget}</b><span className="block text-[10px] font-bold uppercase text-neutral-500">On target</span></p>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f5faf6)] p-3">
+            <p className="mb-2 text-xs font-black uppercase text-neutral-500">Match feed</p>
+            <div className="space-y-2">
+              {visibleEvents.length === 0 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-500">No major events yet.</p> : visibleEvents.slice(-6).map((matchEvent, index) => (
+                <div key={`${matchEvent.minute}-${index}`} className={cn("flex items-center gap-2 rounded-xl px-3 py-2 text-sm", matchEvent.type === "goal" ? "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-100" : "bg-surface-muted")}>
+                  <PersonAvatar name={matchEvent.playerName} className="h-8 w-8 shrink-0 rounded-md text-[10px]" />
+                  <p className="min-w-0"><b>{matchEvent.minute}&apos;</b> {matchEvent.description}</p>
+                </div>
+              ))}
+              {minute >= 90 ? <p className="rounded-xl bg-emerald-950 px-3 py-2 text-sm font-bold text-white">90&apos; Final whistle.</p> : null}
+            </div>
+          </div>
+          {minute >= 90 ? <Button className="mt-5 w-full shadow-card" onClick={() => finishLiveMatch()}>Continue</Button> : null}
         </div>
-        {minute >= 90 ? <Button className="sticky bottom-0 mt-5 w-full shadow-card" onClick={() => finishLiveMatch()}>Continue</Button> : null}
       </div>
     </div>
   );

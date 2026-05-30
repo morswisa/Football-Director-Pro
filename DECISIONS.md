@@ -133,6 +133,7 @@
 - Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.
 - Player morale, form, and fitness are part of the planned Roster inspection surface because contract and match decisions can change player state.
 - Live match playback is a blocking opaque full-screen state: club navigation resumes after the match result is completed, and the dashboard must not leak the final score behind the live view.
+- Live match presentation should feel like a match surface, not a generic modal: use a scoreboard header, pitch/timeline visual, compact stat tiles, and a match feed while preserving the no-control playback contract.
 - Match feedback areas must render a fallback message when there are no major events, rather than leaving empty space.
 - Wage/fee option builders must always return visible selectable options, even for very small or missing base values.
 - Final mobile QA should be enforced in browser acceptance, not left as a manual-only check: core V1 surfaces must not create horizontal overflow or visible broken numeric/copy output on the Pixel-sized Playwright viewport.

@@ -613,7 +613,7 @@ test("play match runs live before returning to the result", async ({ page }) => 
 
   const liveDialog = page.getByRole("dialog");
   await expect(liveDialog).toContainText("Live match");
-  await expect(liveDialog).toContainText("Match is in progress");
+  await expect(liveDialog).toContainText("Match feed");
   await expect(page.getByTestId("live-minute")).toContainText("0'");
   await expect(liveDialog.getByRole("button", { name: "Continue" })).toHaveCount(0);
 
