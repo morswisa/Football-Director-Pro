@@ -83,7 +83,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 
 ## Portraits
 
-- `PersonAvatar` in `src/components/game-client.tsx` renders all player and manager portraits.
+- `PersonAvatar` in `src/components/person-avatar.tsx` renders all player and manager portraits. Game screens and `/portrait-lab` import that shared renderer instead of depending on the large game client module.
 - Portraits are generated as inline SVG from deterministic seeds; entity IDs are used when available, with names as fallback for match events that only store scorer names.
 - The shared face template varies skin tone, hair color, hair style, face shape, eye/brow details, nose, mouth, glasses, shirt color, and manager styling.
 - No bitmap portrait assets are stored in V1; the portrait system is deterministic and local-only.
