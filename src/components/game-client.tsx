@@ -7,11 +7,12 @@ import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
 import { Card, StatCard } from "./ui/card";
+import { buildEventPresentation } from "./event-presentation";
 import { PersonAvatar } from "./person-avatar";
 import { calculateSaleImpact, evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, managerRating } from "@/game/economy";
 import { cupRoundName, monthForWeek, nextUpgradeCost, seasonLabel } from "@/game/calendar";
-import type { ContractTerms, FinancialSnapshot, GameEventType, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
+import type { ContractTerms, FinancialSnapshot, GameSave, MatchResult, Player, Position, SeasonHistory, TransferBudgetMode } from "@/game/types";
 import { cn, formatMoney, ordinal, pct } from "@/lib/utils";
 import { useGameStore } from "@/store/game-store";
 
@@ -88,39 +89,6 @@ function positionOrder(position: Position | string) {
 
 function formatWeeklyWage(value: number) {
   return `${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(Math.round(value))}/w`;
-}
-
-function eventCategory(type: GameEventType) {
-  if (["match_preview", "match_result"].includes(type)) return "Match day";
-  if (["financial_report", "bank_warning", "transfer_budget"].includes(type)) return "Club finance";
-  if (["contract_offer", "contract_response", "incoming_bid", "sale_ready", "sale_confirmed"].includes(type)) return "Squad business";
-  if (["manager_frustrated", "manager_retirement_hint", "manager_contract_decision"].includes(type)) return "Manager office";
-  if (["youth_contract", "youth_promoted"].includes(type)) return "Academy";
-  if (["season_intro", "season_summary", "transfer_window_open", "average_crowd_report"].includes(type)) return "Season desk";
-  if (type === "hall_of_fame") return "Club legacy";
-  return "Club update";
-}
-
-function eventToneClasses(variant?: "positive" | "negative" | "neutral") {
-  if (variant === "negative") {
-    return {
-      header: "bg-[linear-gradient(135deg,_#331116,_#9f1d32)] text-white",
-      chip: "bg-white/14 text-white ring-white/20",
-      accent: "bg-red-50 text-danger ring-red-100",
-    };
-  }
-  if (variant === "positive") {
-    return {
-      header: "bg-[linear-gradient(135deg,_#10241b,_#108842_60%,_#2bbf64)] text-white",
-      chip: "bg-white/14 text-white ring-white/20",
-      accent: "bg-emerald-50 text-primary ring-emerald-100",
-    };
-  }
-  return {
-    header: "bg-[linear-gradient(135deg,_#10241b,_#155f3a_58%,_#295e9c)] text-white",
-    chip: "bg-white/14 text-white ring-white/20",
-    accent: "bg-surface-muted text-neutral-700 ring-line",
-  };
 }
 
 function uniqueMoneyOptions(base: number, multipliers: number[], nearest = 50) {
@@ -1940,34 +1908,30 @@ function EventModal({ save }: { save: GameSave }) {
   const requestedYears = proposal?.requestedYears ?? 3;
   const result = event.type === "match_result" && save.lastMatch?.result ? save.lastMatch.result : undefined;
   const nextFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
-  const tone = eventToneClasses(event.variant);
-  const statusLabel = event.requiresDecision ? "Decision required" : event.type === "match_preview" ? "Match choice" : "Club update";
-  const periodLabel = `${seasonLabel(save.season)} · ${monthForWeek(event.createdWeek || save.week)} · Period ${event.createdWeek || save.week}`;
-  const queueLabel = save.eventQueue.length > 0 ? `${save.eventQueue.length} queued` : "Current item";
-  const showEventNote = Boolean(event.note && event.type !== "season_summary" && !(event.type === "contract_offer" && proposal));
+  const presentation = buildEventPresentation(save)!;
 
   if (result && save.liveMatch && !save.liveMatch.finished) return <LiveMatchModal save={save} result={result} />;
 
   return (
     <div className="absolute inset-0 z-30 grid place-items-center bg-[radial-gradient(circle_at_top,_rgba(15,129,57,0.24),_rgba(16,36,27,0.7))] p-4 backdrop-blur-[2px]">
       <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="max-h-[calc(100svh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[1.35rem] border border-white/40 bg-white shadow-[0_28px_70px_rgba(16,36,27,0.32)]">
-        <div className={cn("relative overflow-hidden px-5 py-4", tone.header)}>
+        <div className={cn("relative overflow-hidden px-5 py-4", presentation.tone.header)}>
           <div className="pointer-events-none absolute inset-0 opacity-20 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.35)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.18)_58%_60%,transparent_60%)]" />
           <div className="relative flex flex-wrap items-center gap-2">
-            <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", tone.chip)}>{statusLabel}</span>
-            <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", tone.chip)}>{eventCategory(event.type)}</span>
-            <span className="ml-auto rounded-full bg-black/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white/85 ring-1 ring-white/15">{queueLabel}</span>
+            <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", presentation.tone.chip)}>{presentation.statusLabel}</span>
+            <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", presentation.tone.chip)}>{presentation.category}</span>
+            <span className="ml-auto rounded-full bg-black/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white/85 ring-1 ring-white/15">{presentation.queueLabel}</span>
           </div>
           <h2 id="event-title" className="relative mt-3 text-2xl font-black leading-tight">{event.title}</h2>
-          <p className="relative mt-1 text-xs font-semibold text-white/75">{periodLabel}</p>
+          <p className="relative mt-1 text-xs font-semibold text-white/75">{presentation.periodLabel}</p>
         </div>
 
         <div className="p-5">
           <EventEntityHeader save={save} />
-          <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm leading-6 ring-1", tone.accent)}>
+          <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm leading-6 ring-1", presentation.tone.accent)}>
             {event.body}
           </div>
-          {showEventNote ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
+          {presentation.showEventNote ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
           <SpecialEventPanel save={save} />
 
         {event.type === "season_intro" ? (
