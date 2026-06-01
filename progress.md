@@ -180,3 +180,4 @@ Original prompt: The Goal is to create an MVP of the game, a fully playable one 
 - 2026-06-01 05:16 IDT: Git upload status verified. Local `main` is clean and aligned with `origin/main`; latest pushed commit is `432b766 Document Git upload verification`.
 - 2026-06-01 05:20 IDT: Architecture review report generated and opened for the active `improve-codebase-architecture` goal. Temporary report path: `/var/folders/md/n6drmgs14rs19ygxqqtmzzlr0000gn/T//architecture-review-20260601-051948.html`. Top recommendation is to explore a deeper Continue loop module; no code refactor has been started.
 - 2026-06-01 05:21 IDT: Architecture review remains at candidate-selection stage. The report exists and Git is clean; implementation should wait for the selected candidate.
+- 2026-06-01 05:22 IDT: Architecture review marked blocked pending user selection of one report candidate. No code refactor was started.

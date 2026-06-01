@@ -171,3 +171,4 @@
 - Git synchronization remains part of the completion gate for gameplay/design changes. As of 2026-06-01 05:16 IDT, `main` is verified clean and aligned with `origin/main` at `432b766 Document Git upload verification`.
 - No architecture refactor decision has been accepted yet from the 2026-06-01 architecture-review report. The report's top recommendation is to explore deepening the Continue loop module first, but implementation should wait until the user chooses a candidate.
 - Until the user chooses one architecture-review candidate, do not implement the report recommendations or design new module interfaces.
+- Blocking rule recorded: after repeated automatic continuations with no candidate selection, architecture-review implementation remains intentionally paused rather than inventing a candidate on the user's behalf.
