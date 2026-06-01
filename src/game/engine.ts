@@ -1,6 +1,7 @@
 import { clubPrefixes, clubSuffixes, firstNames, lastNames, personalities, starterAchievements } from "./data";
 import { cupPrize, cupRoundName, cupRoundWeeks, isTransferWindow, monthForWeek, nextUpgradeCost, seasonPrize } from "./calendar";
 import { calculateManagerCompensation, calculateRecommendedManagerWage, calculateRecommendedPlayerWage, managerRating } from "./economy";
+import { activateNextContinueEvent, enqueueContinueEvent as enqueue, isContinueEventKnown, markContinueEventHandled, normalizeContinueLoopState as ensureEventState, prioritizeEventsQueuedAfter } from "./continue-loop";
 import { chance, pickOne, randomFloat, randomInt } from "./random";
 import { createNewGame as createWorldGame, generateManagerCandidates, generateSeasonFixtures, resetClubRecords } from "./world";
 import type {
@@ -108,22 +109,6 @@ function refreshUserWageBill(save: GameSave) {
 
 function getManager(save: GameSave, club: Club) {
   return club.managerId ? save.managers[club.managerId] : undefined;
-}
-
-function ensureEventState(save: GameSave) {
-  save.eventQueue ??= [];
-  save.seenEventKeys ??= [];
-  save.pendingDeals ??= [];
-  save.managerCandidates ??= [];
-  save.managerActionLockUntilWeek ??= 0;
-  save.cup ??= { name: "Chairman's Cup", round: 1, maxRounds: 5, eliminated: false, won: false, results: [] };
-  save.cup.name ??= "Chairman's Cup";
-  save.cup.round = Math.max(1, save.cup.round ?? 1);
-  save.cup.maxRounds = Math.max(5, save.cup.maxRounds ?? 5);
-  save.cup.results ??= [];
-  save.cup.eliminated ??= false;
-  save.cup.won ??= false;
-  return save;
 }
 
 function currentDivisionLevel(save: GameSave) {
@@ -381,24 +366,6 @@ export function normalizeGameState(input: GameSave) {
   ensureUniqueDisplayNames(save);
   ensureAllSquadDepth(save);
   return withUpdate(save);
-}
-
-function eventSeen(save: GameSave, key: string) {
-  return save.seenEventKeys.includes(key) || save.eventQueue.some((event) => event.id === key) || save.currentEvent?.id === key;
-}
-
-function markEventSeen(save: GameSave, eventId: string) {
-  if (!save.seenEventKeys.includes(eventId)) save.seenEventKeys.push(eventId);
-  save.seenEventKeys = save.seenEventKeys.slice(-260);
-}
-
-function popNextEvent(save: GameSave) {
-  save.currentEvent = save.eventQueue.shift();
-  return save;
-}
-
-function enqueue(save: GameSave, event: GameEvent) {
-  if (!eventSeen(save, event.id)) save.eventQueue.push(event);
 }
 
 function transferBudgetAmount(save: GameSave, mode: TransferBudgetMode) {
@@ -970,7 +937,7 @@ function pushStandardEvents(save: GameSave) {
   const transferWindowOpen = isTransferWindow(save.week);
   if (!transferWindowOpen) save.transferBudget = undefined;
   const lastHistory = save.history[0];
-  if (lastHistory && !eventSeen(save, `season_summary_${lastHistory.season}`)) {
+  if (lastHistory && !isContinueEventKnown(save, `season_summary_${lastHistory.season}`)) {
     const outcomeCopy =
       lastHistory.outcome === "promoted"
         ? `Promotion secured. Next season: ${lastHistory.nextDivisionName ?? "a higher division"}.`
@@ -1026,7 +993,7 @@ function pushStandardEvents(save: GameSave) {
     });
   }
   const windowLabel = monthForWeek(save.week);
-  if (transferWindowOpen && !eventSeen(save, `transfer_window_open_${seasonKey}_${windowLabel}`)) {
+  if (transferWindowOpen && !isContinueEventKnown(save, `transfer_window_open_${seasonKey}_${windowLabel}`)) {
     enqueue(save, {
       id: `transfer_window_open_${seasonKey}_${windowLabel}`,
       type: "transfer_window_open",
@@ -1169,7 +1136,7 @@ export function generateNextEvents(input: GameSave) {
   if (save.gameOver || save.currentEvent) return withUpdate(save);
   if (!userClub(save).managerId) return withUpdate(save);
   if (save.eventQueue.length === 0) pushStandardEvents(save);
-  popNextEvent(save);
+  activateNextContinueEvent(save);
   return withUpdate(save);
 }
 
@@ -1210,7 +1177,7 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       managerId: manager?.id,
       variant: mode === "strict" || mode === "zero" ? "negative" : "positive",
     };
-    markEventSeen(save, event.id);
+    markContinueEventHandled(save, event.id);
     return withUpdate(updateAchievements(save));
   } else if (event.type === "contract_offer" && event.proposal && player) {
     const proposal = event.proposal;
@@ -1611,14 +1578,14 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
       };
     }
     save.currentEvent = followUp;
-    markEventSeen(save, event.id);
+    markContinueEventHandled(save, event.id);
     return withUpdate(updateAchievements(save));
   } else if (event.type === "match_preview") {
     const playLive = action === "play";
     const previewFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
     const relationshipBefore = relationshipSnapshot(save);
     save.currentEvent = undefined;
-    markEventSeen(save, event.id);
+    markContinueEventHandled(save, event.id);
     save = previewFixture?.competition === "cup" ? advanceCupMatch(save, previewFixture.id) : advanceToNextMatch(save);
     ensureEventState(save);
     ensureManagerState(save);
@@ -1644,13 +1611,10 @@ export function resolveEvent(input: GameSave, eventId: string, decision?: { acti
 
   save.currentEvent = undefined;
   if (event.type === "match_result") save.liveMatch = undefined;
-  markEventSeen(save, event.id);
-  const newlyQueuedEvents = save.eventQueue.slice(queueLengthBeforeResolution);
-  if (newlyQueuedEvents.length > 0) {
-    save.eventQueue = [...newlyQueuedEvents, ...save.eventQueue.slice(0, queueLengthBeforeResolution)];
-  }
+  markContinueEventHandled(save, event.id);
+  prioritizeEventsQueuedAfter(save, queueLengthBeforeResolution);
   if (!userClub(save).managerId) return withUpdate(updateAchievements(save));
-  popNextEvent(save);
+  activateNextContinueEvent(save);
   return withUpdate(updateAchievements(save));
 }
 
