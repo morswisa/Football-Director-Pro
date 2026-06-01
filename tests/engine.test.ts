@@ -302,9 +302,49 @@ describe("game engine", () => {
     const save = createNewGame(setup);
     save.managerActionLockUntilWeek = 7;
     save.liveMatch = { fixtureId: save.fixtures[0].id, currentMinute: 42, revealedEventCount: 2, finished: false };
+    save.currentEvent = {
+      id: "migration_match_preview",
+      type: "match_preview",
+      title: "Migration fixture",
+      body: "Validate a queued match event.",
+      requiresDecision: true,
+      createdSeason: save.season,
+      createdWeek: save.week,
+      fixtureId: save.fixtures[0].id,
+    };
     const migrated = migrateSave(JSON.parse(JSON.stringify(save)));
     expect(migrated.managerActionLockUntilWeek).toBe(7);
     expect(migrated.liveMatch?.currentMinute).toBe(42);
+    expect(migrated.currentEvent?.type).toBe("match_preview");
+    expect(migrated.currentEvent?.fixtureId).toBe(save.fixtures[0].id);
+  });
+
+  it("rejects saved events with unknown event types during migration", () => {
+    const save = createNewGame(setup);
+    save.currentEvent = {
+      id: "corrupt_event",
+      type: "mystery_event",
+      title: "Corrupt",
+      body: "This event should not cross the persistence seam.",
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+    } as typeof save.currentEvent;
+    expect(() => migrateSave(JSON.parse(JSON.stringify(save)))).toThrow();
+  });
+
+  it("rejects saved financial report events without typed snapshot payloads", () => {
+    const save = createNewGame(setup);
+    save.eventQueue = [{
+      id: "corrupt_financial_report",
+      type: "financial_report",
+      title: "Financial report",
+      body: "Missing the snapshot payload.",
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+    }];
+    expect(() => migrateSave(JSON.parse(JSON.stringify(save)))).toThrow();
   });
 
   it("generates manager-led proposals without manual scouting", () => {
