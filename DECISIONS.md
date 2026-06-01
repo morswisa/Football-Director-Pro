@@ -170,3 +170,4 @@
 - Long-run season simulation tests are allowed a 120s timeout because they exercise multiple event-queue seasons, human-style decisions, balance bands, promotion/history boundaries, and direct engine seasons. The timeout is a test-stability budget only; assertions and simulation behavior must remain unchanged.
 - Git synchronization remains part of the completion gate for gameplay/design changes. As of 2026-06-01 05:16 IDT, `main` is verified clean and aligned with `origin/main` at `432b766 Document Git upload verification`.
 - No architecture refactor decision has been accepted yet from the 2026-06-01 architecture-review report. The report's top recommendation is to explore deepening the Continue loop module first, but implementation should wait until the user chooses a candidate.
+- Until the user chooses one architecture-review candidate, do not implement the report recommendations or design new module interfaces.
