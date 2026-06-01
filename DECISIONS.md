@@ -172,3 +172,4 @@
 - No architecture refactor decision has been accepted yet from the 2026-06-01 architecture-review report. The report's top recommendation is to explore deepening the Continue loop module first, but implementation should wait until the user chooses a candidate.
 - Until the user chooses one architecture-review candidate, do not implement the report recommendations or design new module interfaces.
 - Blocking rule recorded: after repeated automatic continuations with no candidate selection, architecture-review implementation remains intentionally paused rather than inventing a candidate on the user's behalf.
+- `PersonAvatar` belongs in a dedicated portrait module, not in `game-client.tsx`. The portrait renderer seam is now `src/components/person-avatar.tsx`, with `src/game/portraits.ts` remaining the renderer-agnostic FaceGenome source.

@@ -1,6 +1,6 @@
 "use client";
 
-import { PersonAvatar } from "./game-client";
+import { PersonAvatar } from "./person-avatar";
 
 const portraitSamples = [
   "Daniel Foster",
