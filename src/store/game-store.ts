@@ -1,21 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import {
-  advanceToNextMatch,
-  confirmFireManager,
-  createNewGame,
-  downgradeTraining,
-  downgradeYouthAcademy,
-  generateNextEvents,
-  normalizeGameState,
-  repairStadium,
-  resolveEvent,
-  submitManagerHireOffer,
-  upgradeStand,
-  upgradeTraining,
-  upgradeYouthAcademy,
-} from "@/game/engine";
+import { createCareer, importCareer, loadCareer, runCareerCommand } from "@/game/career-commands";
 import { deleteSave, importSave, loadGame, saveGame } from "@/game/persistence";
 import type { ClubSetupInput, GameSave, TransferBudgetMode } from "@/game/types";
 import type { ContractTerms } from "@/game/types";
@@ -49,118 +35,82 @@ async function persistSave(save?: GameSave) {
   if (save) await saveGame(save.slotId, save);
 }
 
+async function commitCareerResult(result: { save: GameSave; message?: string } | undefined, set: (state: Partial<GameStore>) => void) {
+  if (!result) return;
+  await persistSave(result.save);
+  set({ save: result.save, message: result.message });
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   hydrated: false,
   async create(input) {
-    const save = normalizeGameState(createNewGame(input));
-    await persistSave(save);
-    set({ save, hydrated: true, message: "Club created and saved." });
+    const result = createCareer(input);
+    await persistSave(result.save);
+    set({ save: result.save, hydrated: true, message: result.message });
   },
   async load(slotId = "slot-1") {
     const loaded = await loadGame(slotId);
-    const save = loaded ? normalizeGameState(loaded) : undefined;
-    if (save) await persistSave(save);
-    set({ save, hydrated: true, message: save ? "Save loaded." : "No local save found." });
+    const result = loadCareer(loaded);
+    if (result) await persistSave(result.save);
+    set({ save: result?.save, hydrated: true, message: result?.message ?? "No local save found." });
   },
   async persist() {
     await persistSave(get().save);
   },
   async advance() {
     const current = get().save;
-    if (!current) return;
-    const save = advanceToNextMatch(current);
-    await persistSave(save);
-    set({ save, message: save.lastMatch ? "Match day complete." : "Season advanced." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "advance" }), set);
   },
   async continueGame() {
     const current = get().save;
-    if (!current) return;
-    const save = generateNextEvents(current);
-    await persistSave(save);
-    set({ save });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "continue" }), set);
   },
   async finishLiveMatch() {
     const current = get().save;
-    if (!current?.liveMatch) return;
-    const save: GameSave = {
-      ...current,
-      liveMatch: { ...current.liveMatch, currentMinute: 90, finished: true },
-      updatedAt: new Date().toISOString(),
-    };
-    await persistSave(save);
-    set({ save });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "finish_live_match" }), set);
   },
   async resolveCurrentEvent(decision) {
     const current = get().save;
-    if (!current?.currentEvent) return;
-    const save = resolveEvent(current, current.currentEvent.id, decision);
-    await persistSave(save);
-    set({ save });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "resolve_current_event", decision }), set);
   },
   async hire(managerId, terms) {
     const current = get().save;
-    if (!current) return;
-    const beforeManager = current.clubs[current.userClubId].managerId;
-    const save = submitManagerHireOffer(current, managerId, terms);
-    await persistSave(save);
-    set({ save, message: save.clubs[save.userClubId].managerId !== beforeManager ? "Manager hired." : "Manager offer was not accepted." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "hire_manager", managerId, terms }), set);
   },
   async fire() {
     const current = get().save;
-    if (!current) return;
-    const save = confirmFireManager(current);
-    await persistSave(save);
-    set({ save, message: "Manager dismissed. New candidates are available." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "fire_manager" }), set);
   },
   async upgradeStand(standId) {
     const current = get().save;
-    if (!current) return;
-    const before = current.clubs[current.userClubId].finances.balance;
-    const save = upgradeStand(current, standId);
-    await persistSave(save);
-    set({ save, message: save.clubs[save.userClubId].finances.balance === before ? "Not enough funds." : "Stand upgraded." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "upgrade_stand", standId }), set);
   },
   async repair() {
     const current = get().save;
-    if (!current) return;
-    const save = repairStadium(current);
-    await persistSave(save);
-    set({ save, message: "Stadium repaired if funds were available." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "repair_stadium" }), set);
   },
   async upgradeTraining(levels = 1) {
     const current = get().save;
-    if (!current) return;
-    const save = upgradeTraining(current, levels);
-    await persistSave(save);
-    set({ save, message: "Training investment processed." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "upgrade_training", levels }), set);
   },
   async upgradeYouth(levels = 1) {
     const current = get().save;
-    if (!current) return;
-    const save = upgradeYouthAcademy(current, levels);
-    await persistSave(save);
-    set({ save, message: "Youth academy investment processed." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "upgrade_youth", levels }), set);
   },
   async downgradeTraining(levels = 1) {
     const current = get().save;
-    if (!current) return;
-    const save = downgradeTraining(current, levels);
-    await persistSave(save);
-    set({ save, message: "Training upkeep reduced." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "downgrade_training", levels }), set);
   },
   async downgradeYouth(levels = 1) {
     const current = get().save;
-    if (!current) return;
-    const save = downgradeYouthAcademy(current, levels);
-    await persistSave(save);
-    set({ save, message: "Youth academy upkeep reduced." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "downgrade_youth", levels }), set);
   },
   async importFromJson(json) {
     try {
       const imported = await importSave(json, "slot-1");
-      const save = normalizeGameState(imported);
-      await persistSave(save);
-      set({ save, hydrated: true, message: "Save imported." });
+      const result = importCareer(imported);
+      await persistSave(result.save);
+      set({ save: result.save, hydrated: true, message: result.message });
       return true;
     } catch {
       set({ message: "Import failed. Check the save JSON." });
@@ -173,14 +123,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   async updateSettings(settings) {
     const current = get().save;
-    if (!current) return;
-    const save: GameSave = {
-      ...current,
-      settings: { ...current.settings, ...settings },
-      updatedAt: new Date().toISOString(),
-    };
-    await persistSave(save);
-    set({ save, message: "Settings updated." });
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "update_settings", settings }), set);
   },
   clearMessage() {
     set({ message: undefined });

@@ -16,6 +16,7 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 - Direct follow-up events created while resolving a chairman decision now take priority over older queued context, so the player sees the consequence of the choice before unrelated reports or matches.
 - Legacy `activeProposal` proposal handling has been removed; manager-led proposals now enter the same save-backed `eventQueue/currentEvent` path as every other chairman decision.
 - Current architecture pass has extracted the Continue event presentation read model into `src/components/event-presentation.ts`. Event-modal category, status, period, queue, tone, and note-visibility rules now live outside the main game client and are covered by `tests/event-presentation.test.ts`.
+- Current architecture pass has extracted the Career command seam into `src/game/career-commands.ts`. Store actions now delegate career mutations to command results and remain focused on persistence/state commits, with direct coverage in `tests/career-commands.test.ts`.
 
 ## Implemented Milestone
 
