@@ -296,6 +296,7 @@ export function createNewGame(input: ClubSetupInput): GameSave {
     achievements: structuredClone(starterAchievements),
     hallOfFame: [],
     settings: { sound: true, textSize: "normal" },
+    ui: { activeTab: "home", pages: {}, panels: {} },
   };
 }
 

@@ -35,49 +35,53 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 10. `npm run mobile:doctor` verifies Capacitor native project health; `npm run mobile:build:android` and `npm run mobile:build:ios` are the intended local binary build commands once Java Runtime/JDK and full Xcode are installed.
 11. Dashboard `Continue` calls the event generator. It either shows an existing event, pops the next queued event, or generates the next period's event chain.
 12. Required user decisions are represented in save state, rendered as blocking UI, and must be resolved before match/week progression can be triggered from the UI.
+13. `GameSave.ui` stores the active tab, page indexes, and compact panel selections so UI context can survive save/load normalization without mutating simulation state.
 
 ## Navigation
 
 - `/game` is a single client-side career surface.
-- Primary sections are selected by local tab state from dashboard metric buttons: Dashboard, Standings, Roster, Manager, Finances, Stadium, History, and Settings.
-- There is no separate top section grid or bottom navigation; non-dashboard sections provide a Back to Dashboard action.
+- `/game` uses a fixed one-screen mobile shell: compact top header, overflow-hidden central stage, and per-screen action/pagination bars.
+- Primary sections are selected through save-backed `GameSave.ui.activeTab` from dashboard metric buttons: Dashboard, Standings, Roster, Manager, Finances, Stadium, Training, Youth, History, and Settings.
+- There is no separate top section grid, header navigation, or bottom navigation; non-dashboard sections provide a Back to Dashboard action inside their fixed action bar.
 - Standings are derived from `leagueTable(save)` and rendered from the current division records.
 - The Standings tab renders mobile-first league rows instead of a compact table. Each row shows rank, club, points, played, W-D-L, and goal difference, keeping the full competition context visible on phone widths.
 - League fixtures are generated with a round-robin scheduler: each club in the user's division appears once per league round, then fixtures repeat with reversed home/away legs.
 - League fixture IDs include the season as well as division, round, and slot, preventing persisted `seenEventKeys` from suppressing next-season match previews.
-- Roster rows use fixed Pos/Player/Rate columns with sticky sort controls to keep list context visible while scrolling.
+- Roster rows use fixed Pos/Player/Rate columns with sort controls and pagination instead of vertical scrolling.
 - Roster rows also show Morale, Form, and Fitness so decision-driven player state changes can be inspected without leaving the roster surface.
 - Dashboard owns the main save-backed event flow: season intro, average crowd report, transfer window opening, transfer budget, financial report, bank warning, manager frustration/retirement hints, manager contract expiry, contract offers/responses, incoming bids, sale events, youth decisions, Hall of Fame, match preview, match result, and season summaries.
 - Dashboard layout prioritizes a polished chairman summary followed immediately by the next-match/Continue action, then secondary metric buttons. This keeps the primary event queue action visible before deeper inspection controls on mobile.
 - After `finishSeason`, the next generated queue presents the previous season's `season_summary` before the new season intro, so the player sees rewards, movement, and history before starting the next campaign.
-- `SeasonHistory.seasonImpact` stores the before/after values for balance, board confidence, manager trust, and club reputation, allowing the season-summary event and History screen to explain season-level relationship/economy movement.
+- `SeasonHistory.seasonImpact` stores the before/after values for balance, board confidence, manager trust, and club reputation, allowing the UI to explain season-level relationship/economy movement qualitatively while preserving exact values internally.
 - `SeasonSummaryPanel` is a presentation layer over `SeasonHistory`: it renders the season review as hero, record strip, money/outcome tiles, cup/trophy card, and season-impact tiles while leaving season-transition logic in the engine.
-- The History screen renders season-impact point deltas with explicit `Season impact`, `Board`, `Trust`, and `Reputation` labels so relationship movement remains inspectable after the Continue modal is closed.
+- The History screen renders paginated season, trophy, and achievement panels so season context remains inspectable without vertical scrolling.
 - The History tab is a presentation layer over existing save history, cup, hall-of-fame, and achievement data. It summarizes legacy counts at the top, then renders current-season state, trophy/cup progress, season records, Hall of Fame, and achievement progress cards without mutating game state.
 - Achievement rows expose stable test IDs and progress hooks so browser acceptance can prove gameplay-triggered unlocks, such as stadium upgrades unlocking `Concrete Plans`.
 - Match preview resolves through `resolveEvent`: `See Match` creates the result event immediately, while `Play Match` simulates once, stores `GameSave.liveMatch`, and lets the UI reveal the already-created result progressively.
 - Match preview/result modal presentation uses fixture and score cards derived from the saved fixture/result. The controls still resolve through the same `see`/`play` actions and do not add tactical input.
 - Match-result event creation captures the user club's relationship/facility snapshot before simulation and compares it with the post-simulation state, then writes the actual board confidence, manager trust, and stadium condition deltas into the event note.
+- Match-result notes are generated as short qualitative Board/Manager/Stadium phrases. The engine remains authoritative for numeric state changes, while the modal renders only concise sentiment/context text to preserve the one-screen card.
 - Live match playback renders as the only active career surface while it is running and advances one minute per tick, preventing background dashboard controls or final-result data from being visible before final whistle.
 - The live-match React surface is presentation-only over the already-simulated `MatchResult`: it reveals score, stat estimates, pitch timeline, and event feed progressively from `result.events` while leaving fixture simulation and final result persistence in the engine/store path.
 - Live match completion is a two-step UI flow: `finishLiveMatch` marks the saved live playback as finished at 90 minutes, then the still-current `match_result` event renders its normal summary before `resolveEvent` clears the result.
 - `normalizeGameState` converts an unfinished `liveMatch` with an existing `match_result` event into a finished live state, so a refresh during playback returns to the result summary instead of replaying or resimulating the fixture.
 - Blocking event decisions are stored in `currentEvent` and take priority over ordinary page interaction.
-- Decision controls render local impact summaries from the same values passed into `resolveEvent`, so the player sees expected trust, morale, balance, wage-bill, board, or replacement consequences before confirming.
+- Decision controls render compact local summaries from the same values passed into `resolveEvent`, so the player sees economy/replacement context and qualitative relationship sentiment before confirming.
 - Contract and paid-transfer negotiation controls are compact subcomponents inside event cards. They render larger option grids, selected-state styling, selected impact summaries, and grouped decision actions in the content flow so footers do not obscure selectable terms.
+- Paid-transfer and loan negotiation controls are intentionally dense one-screen subcomponents. They keep source/target attribution, selected fee/wage/contract summaries, and action buttons in the event card by tightening padding and option-group layout instead of introducing internal scroll.
 - Dense event decisions share a `DecisionActionRow` presentation helper inside `GameClient`. It does not alter event resolution; it standardizes the non-sticky confirm/reject action area after loan, sale, youth, contract, and manager-contract impact summaries.
 - Event entity headers are subject-driven: `playerId` renders player context, manager headers render only for manager-subject events, and all other club updates render the club header even if an older queued event still carries incidental manager metadata.
-- Event modal presentation is a React-only layer over `currentEvent`. It derives visual category, tone, queue count, period context, and subject cards from saved event state without mutating the engine queue. Club update cards surface club metrics, while manager trust remains reserved for manager-subject cards and decision impact copy.
-- Event actions distinguish blocking decisions from informational updates: decision controls can stay sticky for reachability, while ordinary Continue actions remain inline to avoid covering long report rows.
+- Event modal presentation is a React-only layer over `currentEvent`. It derives visual category, tone, queue count, period context, and subject cards from saved event state without mutating the engine queue. Club update cards surface club metrics, while relationship math is translated into qualitative mood labels.
+- Event actions distinguish blocking decisions from informational updates through compact action groups; event cards are designed to fit the phone screen without internal scrolling.
 - Roster sorting is client-local UI state; it supports position, player-name, and rating sorts and does not mutate save data.
 - Facility management is launched from dashboard cards via local modal state.
 - Training and Youth facility upgrades write same-period finance transactions, appear in infrastructure spending, and refresh current/queued financial reports. Downgrades do not refund cash but refresh reports because they alter weekly upkeep.
 - Training and Youth facility management is launched from their dashboard metric cards only.
-- Settings is reachable from the header gear button and returns to the Dashboard through the same secondary-page back pattern.
+- Settings is reachable from the Dashboard metric grid and returns to the Dashboard through the same secondary-page back pattern.
 - The Settings tab remains a presentation/control layer over local Zustand persistence and settings actions. It summarizes the current local career and routes manual save, export, import, text size, sound, and reset through existing store methods without introducing remote persistence.
-- Secondary pages share `PageBack`, a compact accessible Dashboard chip. This keeps return navigation consistent without consuming the vertical space of a full card.
-- Secondary tab changes call the local tab setter and reset the shared scrollable content container to the top on the next animation frame, preventing a new section from opening midway down the page.
-- Store status messages render inside the scrollable content area, before the active tab content, so feedback remains visible without covering lower-page action buttons.
+- Secondary pages share `PageBack`, a compact accessible Dashboard chip, and use pagination/tabs when content exceeds one phone screen.
+- Secondary tab changes write `GameSave.ui.activeTab`; paginated page indexes and panel choices are explicit UI state, not scroll position.
+- Store status messages render as short top toasts so they do not consume the fixed one-screen layout or cover lower-page action buttons.
 - Status banners are suppressed while event or facility modals are active, keeping the blocking decision layer visually focused.
 - `GameClient` wraps tab changes with status-message clearing. This keeps transient save/action messages scoped to the current surface and prevents stale banners from following quick navigation into secondary sections.
 
@@ -100,6 +104,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - The Finances tab presents the latest snapshot through mobile metric tiles rather than a narrow label/value table, while preserving stable `finance-summary-*` test IDs for reconciliation tests.
 - Financial report cards show period total income, total expenses, and report result beside opening/closing balance. Browser acceptance compares those values against Dashboard and the Finances screen after several Continue periods.
 - Financial report modal presentation groups the same snapshot data into a report-period profit/loss summary card plus income/expense line-item cards. This is UI-only and preserves the existing `event-finance-*` test IDs and snapshot reconciliation path.
+- Compact financial report line-item cards prioritize high-impact non-zero rows such as prize money, fees in, sponsorship, fees out, and infrastructure spending before ordinary operating lines. The underlying `FinancialSnapshot` still stores the complete income/expense breakdown.
 - `SpecialEventPanel` in `GameClient` is a UI-only presentation layer for lower-frequency Continue events. It derives context from the current save and event record for bank warnings, manager hints, Hall of Fame, sale confirmations, youth promotions, contract responses, transfer-window openings, and crowd reports; it does not mutate engine state or event queue order.
 - `buildFinancialLines` is the shared weekly finance line-item model for both balance mutation and financial snapshots. Weekly operations use the operating subset, while report snapshots also fold in same-week transfer, loan, manager, prize, and cup transactions that already changed the balance.
 - Transfer-fee transactions are written into club finance transactions and used to refresh queued financial reports so fees appear in `feesOut` or `feesIn`.
@@ -119,7 +124,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Events created as direct follow-ups during `resolveEvent` are promoted ahead of older queued events before `popNextEvent`, preserving decision-response continuity inside the Continue loop.
 - Engine function `normalizeGameState` is used by the store to normalize older or generated saves before UI hydration.
 - Paid buy proposals are resolved inside `resolveEvent` with fee, wage, and years terms. Selling clubs may reject low fees, and players may reject weak contracts.
-- UI impact summaries for transfer, loan, contract, sale, youth, and manager-contract decisions are previews only; the engine remains authoritative and applies the final deltas through `resolveEvent`.
+- UI impact summaries for transfer, loan, contract, sale, youth, and manager-contract decisions are presentation previews only; the engine remains authoritative and applies the final deltas through `resolveEvent`.
 - Buy-proposal rejection resolves to a target-specific response event, while squad contract rejection uses squad-specific language.
 - Sale proposals carry `toClubId` and staged `PendingDeal.buyerClubId` so bid, sale-ready, and sale-confirmed events can attribute the bidding club.
 - Sale confirmation transfers the player record to `PendingDeal.buyerClubId`, removes the player from the user club, adds him to the buyer's squad, and clears loan state before refreshing the user wage bill.
@@ -217,7 +222,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - Manager acceptance coverage also verifies that dismissal compensation remains inspectable in the Finances screen as a recent transaction after a replacement is hired.
 - Stadium acceptance coverage verifies upgrade/repair from the browser, including capacity/condition changes and matching financial transaction/infrastructure visibility.
 - Multi-period finance acceptance coverage runs several Continue periods, checks financial report balance movement/copy for `NaN`, and verifies the latest report values match Dashboard and Finances surfaces.
-- Mobile-surface acceptance coverage opens Dashboard, League, Roster, Manager, Finances, Stadium, History, Training, Youth, Settings, and a Continue event on the Pixel-sized Playwright project, asserting no page-level horizontal overflow and no visible `NaN`/`undefined` text.
+- Mobile-surface acceptance coverage opens Dashboard, League, Roster, Manager, Finances, Stadium, History, Training, Youth, Settings, and a Continue event on the Pixel-sized Playwright project, asserting no page-level horizontal or vertical scrolling and no visible `NaN`/`undefined` text.
 - Long-run balance coverage now runs several human-style careers across three seasons, asserting playable debt headroom, bounded wage pressure, finite financial snapshots, stable relationships, viable squads, and stable division sizes.
 - Clean-save season-boundary acceptance verifies that a browser career reaches repeated season reviews, shows season awards and impact, continues into later season intros without queue stalls, and then shows multiple completed seasons with impact labels in History.
 - Youth-contract browser acceptance verifies the academy decision path from event card to promoted Roster player state.
@@ -237,7 +242,7 @@ Football Director Pro is a Next.js web app with a client-side deterministic simu
 - `PersonAvatar` is now a renderer over `FaceGenome`: it destructures genome channels and converts them into the existing inline SVG paths. This keeps all current UI integration points intact while removing the seed/random selection logic from the React renderer.
 - `tests/portraits.test.ts` covers deterministic identity, variant separation, manager/player styling differences, and variation across stable ids.
 - `/portrait-lab` renders a grid of seeded player and manager portraits for visual QA of the current renderer and future genome-backed renderers.
-- `DecisionActionRow` is now a sticky in-modal action surface for dense Continue decisions. It is React/UI-only state and does not change the event queue or engine resolution contract.
+- `DecisionActionRow` is now a non-sticky in-modal action group for dense Continue decisions. Event cards must fit the phone screen without internal scrolling; if content is too long, the UI shortens or paginates the presentation.
 - `PersonAvatar` still renders from `FaceGenome`, but the renderer now uses softer facial ink, lighter shadow/highlight opacity, smaller eye/mouth/nose strokes, and a gentler portrait zoom to improve mobile portrait readability. The save schema remains unchanged because portrait identity is still derived from stable ids through `createFaceGenome`.
 - `createFaceGenome` now biases player facial-hair selection toward clean/stubble while preserving richer facial-hair options for managers. This is deterministic from the same seed and does not require migrations or stored portrait assets.
 - Long-run engine verification remains assertion-driven in `tests/engine.test.ts`, but several multi-season tests now use a 120s timeout to avoid false negatives when the full suite is run under local CPU load. This does not change engine code, save schema, or gameplay behavior.

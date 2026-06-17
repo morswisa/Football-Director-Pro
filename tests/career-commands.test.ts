@@ -51,6 +51,36 @@ describe("career command seam", () => {
     expect(result.message).toBe("Manager hired.");
   });
 
+  it("preserves current tab, page, panel and event state through save/load normalization", () => {
+    const save = createNewGame(setup);
+    save.currentEvent = {
+      id: "state_preservation_event",
+      type: "season_intro",
+      title: "League Path",
+      body: "A saved decision is waiting.",
+      requiresDecision: false,
+      createdSeason: save.season,
+      createdWeek: save.week,
+    };
+
+    const updated = runCareerCommand(save, {
+      type: "update_ui_state",
+      ui: {
+        activeTab: "squad",
+        pages: { squad: 2, history_seasons: 1 },
+        panels: { history: "trophies", finances: "income" },
+      },
+    })!;
+    const loaded = loadCareer(JSON.parse(JSON.stringify(updated.save)))!;
+
+    expect(loaded.save.ui.activeTab).toBe("squad");
+    expect(loaded.save.ui.pages.squad).toBe(2);
+    expect(loaded.save.ui.pages.history_seasons).toBe(1);
+    expect(loaded.save.ui.panels.history).toBe("trophies");
+    expect(loaded.save.currentEvent?.id).toBe("state_preservation_event");
+    expect(loaded.save.currentEvent?.type).toBe("season_intro");
+  });
+
   it("returns undefined for commands that are invalid in the current career state", () => {
     const save = createNewGame(setup);
 

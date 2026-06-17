@@ -28,6 +28,7 @@ interface GameStore {
   importFromJson: (json: string) => Promise<boolean>;
   resetCareer: () => Promise<void>;
   updateSettings: (settings: Partial<GameSave["settings"]>) => Promise<void>;
+  updateUiState: (ui: Partial<GameSave["ui"]>) => Promise<void>;
   clearMessage: () => void;
 }
 
@@ -124,6 +125,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   async updateSettings(settings) {
     const current = get().save;
     if (current) await commitCareerResult(runCareerCommand(current, { type: "update_settings", settings }), set);
+  },
+  async updateUiState(ui) {
+    const current = get().save;
+    if (current) await commitCareerResult(runCareerCommand(current, { type: "update_ui_state", ui }), set);
   },
   clearMessage() {
     set({ message: undefined });

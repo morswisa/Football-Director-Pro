@@ -13,10 +13,39 @@ async function createAcceptanceCareer(page: import("@playwright/test").Page, clu
   await expect(page.getByText(clubName)).toBeVisible();
 }
 
+async function openSettings(page: import("@playwright/test").Page) {
+  if (!(await page.getByRole("heading", { name: "Settings" }).isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: "Settings" }).click();
+  }
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+}
+
+async function readExportedSave(page: import("@playwright/test").Page) {
+  await openSettings(page);
+  await page.getByRole("button", { name: "Export Save" }).click();
+  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  await page.getByRole("button", { name: "Close" }).click();
+  return exportedSave;
+}
+
+async function openImportSave(page: import("@playwright/test").Page) {
+  await openSettings(page);
+  await page.getByRole("button", { name: "Import Save" }).click();
+  await expect(page.getByPlaceholder("Paste exported save JSON here")).toBeVisible();
+}
+
+async function importSaveThroughSettings(page: import("@playwright/test").Page, saveJson: string) {
+  await openImportSave(page);
+  await page.getByPlaceholder("Paste exported save JSON here").fill(saveJson);
+  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+}
+
 async function expectMobileSurfaceHealthy(page: import("@playwright/test").Page, label: string) {
   const result = await page.evaluate(() => {
     const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
     const documentWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
+    const documentHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
     const text = document.body.innerText;
     const overflowing = Array.from(document.querySelectorAll<HTMLElement>("body *"))
       .filter((element) => {
@@ -24,7 +53,7 @@ async function expectMobileSurfaceHealthy(page: import("@playwright/test").Page,
         if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
         const rect = element.getBoundingClientRect();
         if (rect.width <= 1 || rect.height <= 1) return false;
-        return rect.left < -1 || rect.right > viewportWidth + 1;
+        return rect.left < -1 || rect.right > viewportWidth + 1 || rect.top < -1 || rect.bottom > viewportHeight + 1;
       })
       .slice(0, 5)
       .map((element) => ({
@@ -32,10 +61,14 @@ async function expectMobileSurfaceHealthy(page: import("@playwright/test").Page,
         text: element.textContent?.trim().slice(0, 80) ?? "",
         left: Math.round(element.getBoundingClientRect().left),
         right: Math.round(element.getBoundingClientRect().right),
+        top: Math.round(element.getBoundingClientRect().top),
+        bottom: Math.round(element.getBoundingClientRect().bottom),
       }));
     return {
       viewportWidth,
+      viewportHeight,
       documentWidth,
+      documentHeight,
       hasBrokenText: /\bNaN\b|\bundefined\b/.test(text),
       overflowing,
     };
@@ -43,6 +76,7 @@ async function expectMobileSurfaceHealthy(page: import("@playwright/test").Page,
 
   expect(result.hasBrokenText, `${label} should not show NaN or undefined`).toBe(false);
   expect(result.documentWidth, `${label} should not create page-level horizontal overflow`).toBeLessThanOrEqual(result.viewportWidth + 1);
+  expect(result.documentHeight, `${label} should not create page-level vertical scrolling`).toBeLessThanOrEqual(result.viewportHeight + 1);
   expect(result.overflowing, `${label} should not have visible elements outside the viewport`).toEqual([]);
 }
 
@@ -251,6 +285,8 @@ async function resolveEventsUntilSeasonReview(page: import("@playwright/test").P
     if (await dialog.getByText(/season review/i).count()) {
       await expect(dialog).toContainText("Season award");
       await expect(dialog).toContainText("Season impact");
+      await expect(dialog).toContainText("Manager mood");
+      await expect(dialog).not.toContainText(/Trust [+-]?\d+ pts/);
       await expect(dialog).toContainText("Next");
       await expectMobileSurfaceHealthy(page, "Season review modal");
       return;
@@ -272,7 +308,7 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await expect(page.getByRole("status")).toHaveCount(0);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
   await expect(page.getByText("ROSTER")).toBeVisible();
   await expect(page.getByText(/players/)).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
@@ -283,8 +319,8 @@ test("new career reaches playable dashboard", async ({ page }) => {
   await expect(page.getByText("Fire Manager")).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Finances/i }).click();
-  await expect(page.getByText("Report period").first()).toBeVisible();
+  await page.getByRole("button", { name: /Finance/i }).click();
+  await expect(page.getByTestId("finance-summary-period")).toBeVisible();
   await expect(page.getByText("Latest report breakdown")).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
@@ -295,28 +331,31 @@ test("new career reaches playable dashboard", async ({ page }) => {
 
   await page.getByRole("button", { name: /Training/i }).click();
   await expect(page.getByRole("dialog")).toContainText("Training Ground");
-  await expect(page.getByRole("dialog")).toContainText("Selected change");
+  await expect(page.getByRole("dialog")).toContainText("Selected");
   await page.getByRole("button", { name: "Close" }).click();
 
   await page.getByRole("button", { name: /Youth/i }).click();
   await expect(page.getByRole("dialog")).toContainText("Youth Academy");
-  await expect(page.getByRole("dialog")).toContainText("Cost to upgrade");
+  await expect(page.getByRole("dialog")).toContainText("Upgrade cost");
   await page.getByRole("button", { name: "Close" }).click();
 
-  await page.getByRole("button", { name: /Record/i }).click();
+  await page.getByRole("button", { name: /History/i }).click();
   await expect(page.getByText("Current Season")).toBeVisible();
-  await expect(page.getByText("Achievements")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Achieved" })).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: "Settings" }).click();
+  await openSettings(page);
   await expect(page.getByText("Export Save")).toBeVisible();
   await expect(page.getByText("Import Save")).toBeVisible();
   await expect(page.getByText("Reset Career")).toBeVisible();
   await page.getByRole("button", { name: "Large Text" }).click();
-  await expect(page.getByRole("button", { name: "Sound On" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sound" })).toBeVisible();
+  await page.getByRole("button", { name: "Export Save" }).click();
   const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  await page.getByRole("button", { name: "Close" }).click();
   const importedSave = JSON.parse(exportedSave);
   importedSave.clubs[importedSave.userClubId].name = "Imported FC";
+  await page.getByRole("button", { name: "Import Save" }).click();
   await page.getByPlaceholder("Paste exported save JSON here").fill("{ invalid save");
   await page.getByRole("button", { name: "Import Into Slot 1" }).click();
   await expect(page.getByText("Import failed. Paste a valid Football Director Pro save.")).toBeVisible();
@@ -353,24 +392,20 @@ test("financial reports stay consistent across several continue periods", async 
   await clearCurrentDialog(page);
   await expect(page.getByTestId("dashboard-latest-report")).toContainText(latestReport.result);
 
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByTestId("finance-summary-period")).toHaveText(latestReport.period);
   await expect(page.getByTestId("finance-summary-income")).toHaveText(latestReport.income);
   await expect(page.getByTestId("finance-summary-expenses")).toHaveText(latestReport.expenses);
   await expect(page.getByTestId("finance-summary-result")).toHaveText(latestReport.result);
   await expect(page.getByTestId("finance-summary-opening")).toHaveText(latestReport.opening);
   await expect(page.getByTestId("finance-summary-closing")).toHaveText(latestReport.closing);
-  await expect(page.getByTestId("finance-breakdown-income")).toHaveText(latestReport.income);
-  await expect(page.getByTestId("finance-breakdown-expenses")).toHaveText(latestReport.expenses);
-  await expect(page.getByTestId("finance-breakdown-result")).toHaveText(latestReport.result);
 });
 
 test("domestic cup flow shows match, prize money, and history", async ({ page }) => {
   test.setTimeout(45_000);
   await createAcceptanceCareer(page, "Cupford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const importedSave = JSON.parse(exportedSave);
   const userClub = importedSave.clubs[importedSave.userClubId];
   const opponentId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId);
@@ -433,8 +468,7 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
     note: "Cup matches do not affect league points, but prize money and a cup run can change the season.",
   }];
 
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(importedSave));
 
   const drawDialog = page.getByRole("dialog");
   await expect(drawDialog).toContainText("Chairman's Cup draw");
@@ -462,10 +496,9 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Record/i }).click();
-  await expect(page.getByRole("heading", { name: "Chairman's Cup" })).toBeVisible();
-  await expect(page.getByText("First Round", { exact: true })).toBeVisible();
-  await expect(page.getByText("Cupshire Rovers")).toBeVisible();
+  await page.getByRole("button", { name: /History/i }).click();
+  await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
+  await expect(page.getByText(/First Round/).first()).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
   await page.getByRole("button", { name: /League/i }).click();
@@ -473,7 +506,7 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
   await expect(page.getByText("P 0 · W-D-L 0-0-0 · GD 0").first()).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText(/Cup prize: First Round/)).toBeVisible();
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
@@ -481,8 +514,7 @@ test("domestic cup flow shows match, prize money, and history", async ({ page })
 test("debt warning and bankruptcy explain the financial limit", async ({ page }) => {
   await createAcceptanceCareer(page, "Debtford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const warningSave = JSON.parse(exportedSave);
   const warningClub = warningSave.clubs[warningSave.userClubId];
   warningClub.finances.balance = -250_000;
@@ -500,8 +532,7 @@ test("debt warning and bankruptcy explain the financial limit", async ({ page })
   };
   warningSave.eventQueue = [];
   warningSave.financialSnapshot = undefined;
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(warningSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(warningSave));
 
   const warningDialog = page.getByRole("dialog");
   await expect(warningDialog).toContainText("Bank balance in the red");
@@ -520,8 +551,7 @@ test("debt warning and bankruptcy explain the financial limit", async ({ page })
   gameOverSave.currentEvent = undefined;
   gameOverSave.eventQueue = [];
   gameOverSave.gameOver = "The board has removed you after the club exceeded its debt limit. Balance -£1,150,000; debt limit -£1,000,000; over limit by £150,000.";
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(gameOverSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(gameOverSave));
 
   const gameOverDialog = page.getByRole("dialog");
   await expect(gameOverDialog).toContainText("Career stopped");
@@ -533,17 +563,17 @@ test("debt warning and bankruptcy explain the financial limit", async ({ page })
   await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
 });
 
-test("mobile V1 surfaces stay readable without horizontal overflow", async ({ page }) => {
+test("mobile V1 surfaces stay readable without page scrolling", async ({ page }) => {
   await createAcceptanceCareer(page, "Mobileford FC");
   await expectMobileSurfaceHealthy(page, "Dashboard");
 
   const surfaces: { button: RegExp | string; expected: string; label: string }[] = [
     { button: /League/i, expected: "Standings", label: "League" },
-    { button: /Roster/i, expected: "ROSTER", label: "Roster" },
+    { button: /Squad/i, expected: "ROSTER", label: "Squad" },
     { button: /Manager/i, expected: "Fire Manager", label: "Manager" },
-    { button: /Finances/i, expected: "Latest report breakdown", label: "Finances" },
+    { button: /Finance/i, expected: "Latest report breakdown", label: "Finance" },
     { button: /Stadium/i, expected: "Repair Stadium", label: "Stadium" },
-    { button: /Record/i, expected: "Current Season", label: "History" },
+    { button: /History/i, expected: "Current Season", label: "History" },
   ];
 
   for (const surface of surfaces) {
@@ -574,6 +604,19 @@ test("mobile V1 surfaces stay readable without horizontal overflow", async ({ pa
   await expectMobileSurfaceHealthy(page, "Continue event modal");
 });
 
+test("required phone viewports keep dashboard and event modal one-screen", async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 430, height: 932 }]) {
+    await test.step(`${viewport.width}x${viewport.height}`, async () => {
+      await page.setViewportSize(viewport);
+      await createAcceptanceCareer(page, `Phone${viewport.width} FC`);
+      await expectMobileSurfaceHealthy(page, `Dashboard ${viewport.width}x${viewport.height}`);
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expectMobileSurfaceHealthy(page, `Event modal ${viewport.width}x${viewport.height}`);
+    });
+  }
+});
+
 test("clean save reaches repeated season reviews and history in browser", async ({ page }) => {
   test.setTimeout(140_000);
   await createAcceptanceCareer(page, "Seasonford FC");
@@ -590,17 +633,15 @@ test("clean save reaches repeated season reviews and history in browser", async 
   await expectMobileSurfaceHealthy(page, "Second next season intro modal");
   await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await clearCurrentDialog(page);
-  await page.getByRole("button", { name: /Record/i }).click();
-  await expect(page.getByText("Season History")).toBeVisible();
+  await page.getByRole("button", { name: /History/i }).click();
+  await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
+  await expect(page.getByText("Current Season")).toBeVisible();
   await expect(page.getByText("Seasonford FC")).toBeVisible();
   await expect(page.getByText("2030/31")).toBeVisible();
   await expect(page.getByText("2031/32")).toBeVisible();
   await expect(page.getByText("Award").first()).toBeVisible();
   await expect(page.getByText("Balance").first()).toBeVisible();
-  await expect(page.getByText(/Board [+-]?\d+ pts/).first()).toBeVisible();
-  await expect(page.getByText(/Trust [+-]?\d+ pts/).first()).toBeVisible();
-  await expect(page.getByText(/Reputation [+-]?\d+ pts/).first()).toBeVisible();
-  await expect(page.locator("p", { hasText: /Season impact: Board/ })).toHaveCount(2);
+  await expect(page.getByText(/Trust [+-]?\d+ pts/)).toHaveCount(0);
   await expectMobileSurfaceHealthy(page, "Post-season history surface");
 });
 
@@ -679,7 +720,7 @@ test("manager dismissal still allows emergency replacement", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Negotiate" }).first()).toBeDisabled();
 
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText(/Manager compensation:/)).toBeVisible();
   await expect(page.getByText("Infrastructure spending")).toBeVisible();
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
@@ -688,8 +729,7 @@ test("manager dismissal still allows emergency replacement", async ({ page }) =>
 test("manager contract expiry can extend or force replacement", async ({ page }) => {
   await createAcceptanceCareer(page, "Expiryford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const extensionSave = JSON.parse(exportedSave);
   const extensionClub = extensionSave.clubs[extensionSave.userClubId];
   const extensionManager = extensionSave.managers[extensionClub.managerId];
@@ -711,14 +751,12 @@ test("manager contract expiry can extend or force replacement", async ({ page })
     managerId: extensionManager.id,
     variant: "neutral",
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(extensionSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(extensionSave));
 
   const extensionDialog = page.getByRole("dialog");
   await expect(extensionDialog).toContainText("Manager contract expired");
   await expect(extensionDialog).toContainText("Acceptance Manager");
-  await expect(extensionDialog).toContainText("Decision impact");
-  await expect(extensionDialog).toContainText("manager should feel backed");
+  await expect(extensionDialog).toContainText("A stronger offer makes the club look committed");
   await extensionDialog.getByRole("button", { name: "Extend Contract" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Manager contract extended");
@@ -729,7 +767,7 @@ test("manager contract expiry can extend or force replacement", async ({ page })
 
   await page.getByRole("button", { name: /Manager/i }).click();
   await expect(page.getByRole("heading", { name: "Acceptance Manager" })).toBeVisible();
-  await expect(page.getByText(/2 years left/)).toBeVisible();
+  await expect(page.getByText(/2y/).first()).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
   await page.getByRole("button", { name: "Settings" }).click();
@@ -754,8 +792,7 @@ test("manager contract expiry can extend or force replacement", async ({ page })
     managerId: releaseManager.id,
     variant: "neutral",
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(releaseSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(releaseSave));
 
   const releaseDialog = page.getByRole("dialog");
   await expect(releaseDialog).toContainText("Manager contract expired");
@@ -785,8 +822,7 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
   test.setTimeout(45_000);
   await createAcceptanceCareer(page, "Transferford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const importedSave = JSON.parse(exportedSave);
   const userClub = importedSave.clubs[importedSave.userClubId];
   const sellerId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId);
@@ -833,14 +869,13 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
       requestedYears: 3,
     },
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(importedSave));
 
   const transferDialog = page.getByRole("dialog");
   await expect(transferDialog).toContainText("Manager target identified");
   await expect(transferDialog).toContainText("Acceptance Target");
-  await expect(transferDialog).toContainText("Selected offer impact");
-  await expect(transferDialog).toContainText("The manager has put this player forward");
+  await expect(transferDialog).toContainText("Selling club");
+  await expect(transferDialog).toContainText("Offer:");
   await transferDialog.getByRole("button", { name: "Submit Offer" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Signing completed");
@@ -849,12 +884,14 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
+  await page.getByRole("button", { name: "Player" }).click();
   await expect(page.getByText("Acceptance Target")).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText("Transfer fee paid: Acceptance Target")).toBeVisible();
+  await page.getByRole("button", { name: "Expenses" }).click();
   await expect(page.getByText("Fees out")).toBeVisible();
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
@@ -862,8 +899,7 @@ test("paid transfer signing shows player and finance trail", async ({ page }) =>
 test("loan decisions show roster and finance impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Loanford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const loanInSave = JSON.parse(exportedSave);
   const loanInClub = loanInSave.clubs[loanInSave.userClubId];
   const parentClubId = Object.keys(loanInSave.clubs).find((clubId) => clubId !== loanInSave.userClubId);
@@ -912,14 +948,13 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
       requestedYears: 1,
     },
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(loanInSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(loanInSave));
 
   const loanInDialog = page.getByRole("dialog");
   await expect(loanInDialog).toContainText("Manager suggests loan signing");
   await expect(loanInDialog).toContainText("Acceptance Loan In");
-  await expect(loanInDialog).toContainText("Selected loan impact");
-  await expect(loanInDialog).toContainText("manager wants short-term cover");
+  await expect(loanInDialog).toContainText("Parent club");
+  await expect(loanInDialog).toContainText("Selected:");
   await loanInDialog.getByRole("button", { name: "Submit Loan" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Loan signing completed");
@@ -928,15 +963,17 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
+  await page.getByRole("button", { name: "Player" }).click();
   const loanInRow = page.locator("section").filter({ hasText: "Acceptance Loan In" }).first();
   await expect(loanInRow).toBeVisible();
   await expect(loanInRow).toContainText("Loan in");
   await expect(loanInRow).toContainText("£500/w");
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText("Loan fee paid: Acceptance Loan In")).toBeVisible();
+  await page.getByRole("button", { name: "Expenses" }).click();
   await expect(page.getByText("Fees out")).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
@@ -986,14 +1023,13 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
       requestedYears: 1,
     },
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(loanOutSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(loanOutSave));
 
   const loanOutDialog = page.getByRole("dialog");
   await expect(loanOutDialog).toContainText("Loan offer received");
   await expect(loanOutDialog).toContainText("Acceptance Loan Out");
-  await expect(loanOutDialog).toContainText("Accept loan impact");
-  await expect(loanOutDialog).toContainText("comfortable letting him leave temporarily");
+  await expect(loanOutDialog).toContainText("comfortable with a temporary move");
+  await expect(loanOutDialog).toContainText("wage pressure falls");
   await loanOutDialog.getByRole("button", { name: "Accept Loan" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Loan agreed");
@@ -1002,12 +1038,13 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
   await expect(page.getByText("Acceptance Loan Out")).toHaveCount(0);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText("Loan fee received: Acceptance Loan Out")).toBeVisible();
+  await page.getByRole("button", { name: "Income" }).click();
   await expect(page.getByText("Fees in")).toBeVisible();
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
@@ -1015,8 +1052,7 @@ test("loan decisions show roster and finance impact", async ({ page }) => {
 test("player sale shows replacement pressure, roster removal, and finance trail", async ({ page }) => {
   await createAcceptanceCareer(page, "Saleford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const importedSave = JSON.parse(exportedSave);
   const userClub = importedSave.clubs[importedSave.userClubId];
   const bidderId = Object.keys(importedSave.clubs).find((clubId) => clubId !== importedSave.userClubId);
@@ -1091,15 +1127,14 @@ test("player sale shows replacement pressure, roster removal, and finance trail"
       expiresWeek: importedSave.week + 2,
     },
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(importedSave));
 
   const bidDialog = page.getByRole("dialog");
   await expect(bidDialog).toContainText("Bid received");
   await expect(bidDialog).toContainText("Acceptance Sale");
   await expect(bidDialog).toContainText("Bidding club");
   await expect(bidDialog).toContainText(bidder.name);
-  await expect(bidDialog).toContainText("Sale decision impact");
+  await expect(bidDialog).toContainText("Sale decision");
   await bidDialog.getByRole("button", { name: "Accept Bid" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("sale ready");
@@ -1118,20 +1153,22 @@ test("player sale shows replacement pressure, roster removal, and finance trail"
 
   await expect(page.getByRole("dialog")).toContainText("Manager target identified");
   await expect(page.getByRole("dialog")).toContainText("Target identity F");
-  await expect(page.getByRole("dialog")).toContainText("fits the squad plan");
+  await expect(page.getByRole("dialog")).toContainText("Offer:");
   await page.getByRole("dialog").getByRole("button", { name: "Walk Away" }).click();
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
+  await page.getByRole("button", { name: "Player" }).click();
   await expect(page.getByText("Acceptance Sale")).toHaveCount(0);
   const teammateRow = page.locator("section").filter({ hasText: "Acceptance Teammate" }).first();
   await expect(teammateRow).toBeVisible();
   await expect(teammateRow).toContainText("Morale 66%");
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText("Transfer fee received: Acceptance Sale")).toBeVisible();
+  await page.getByRole("button", { name: "Income" }).click();
   await expect(page.getByText("Fees in")).toBeVisible();
   await expect(page.getByTestId("finance-summary-closing")).toBeVisible();
 });
@@ -1139,8 +1176,7 @@ test("player sale shows replacement pressure, roster removal, and finance trail"
 test("contract rejection shows trust and morale impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Contractford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const importedSave = JSON.parse(exportedSave);
   const userClub = importedSave.clubs[importedSave.userClubId];
   const playerId = userClub.playerIds[0];
@@ -1183,16 +1219,14 @@ test("contract rejection shows trust and morale impact", async ({ page }) => {
       requestedYears: 3,
     },
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(importedSave));
 
   const contractDialog = page.getByRole("dialog");
   await expect(contractDialog).toContainText("Manager suggests new deal");
   await expect(contractDialog).toContainText("Acceptance Contract");
-  await expect(contractDialog).toContainText("Selected offer impact");
+  await expect(contractDialog).toContainText("Wants");
   await contractDialog.getByRole("button", { name: "£1,700/w" }).click();
-  await expect(contractDialog).toContainText("Likely response: reject");
-  await expect(contractDialog).toContainText("could irritate the player");
+  await expect(contractDialog).toContainText("The offer may feel light");
   await contractDialog.getByRole("button", { name: "Submit Offer" }).click();
 
   await expect(page.getByRole("dialog")).toContainText("Contract turned down");
@@ -1201,19 +1235,19 @@ test("contract rejection shows trust and morale impact", async ({ page }) => {
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
+  await page.getByRole("button", { name: "Player" }).click();
   await expect(page.getByText("Acceptance Contract")).toBeVisible();
   await expect(page.getByText("Morale 60%")).toBeVisible();
   await expect(page.getByText("Form 64%")).toBeVisible();
   await expect(page.getByText("Fit 91%")).toBeVisible();
-  await expectMobileSurfaceHealthy(page, "Roster after contract rejection");
+  await expectMobileSurfaceHealthy(page, "Squad after contract rejection");
 });
 
 test("youth contract promotion shows player and roster impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Youthford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const importedSave = JSON.parse(exportedSave);
   const userClub = importedSave.clubs[importedSave.userClubId];
   const youthPlayerId = "youth_acceptance_prospect";
@@ -1251,8 +1285,7 @@ test("youth contract promotion shows player and roster impact", async ({ page })
     managerId: userClub.managerId,
     variant: "neutral",
   };
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(importedSave));
 
   const youthDialog = page.getByRole("dialog");
   await expect(youthDialog).toContainText("Youth contract decision");
@@ -1267,27 +1300,25 @@ test("youth contract promotion shows player and roster impact", async ({ page })
   await clearCurrentDialog(page);
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Roster/i }).click();
+  await page.getByRole("button", { name: /Squad/i }).click();
   const prospectRow = page.locator("section").filter({ hasText: "Acceptance Prospect" }).first();
   await expect(prospectRow).toBeVisible();
   await expect(prospectRow).toContainText("Morale 68%");
   await expect(prospectRow).toContainText("Form 58%");
   await expect(prospectRow).toContainText("Fit 88%");
-  await expectMobileSurfaceHealthy(page, "Roster after youth promotion");
+  await expectMobileSurfaceHealthy(page, "Squad after youth promotion");
 });
 
 test("stadium upgrades and repairs show clear financial impact", async ({ page }) => {
   await createAcceptanceCareer(page, "Standford FC");
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  const exportedSave = await page.locator("textarea[readonly]").inputValue();
+  const exportedSave = await readExportedSave(page);
   const importedSave = JSON.parse(exportedSave);
   const importedClub = importedSave.clubs[importedSave.userClubId];
   importedClub.finances.balance = 2_000_000;
   importedClub.stadium.condition = 72;
   delete importedSave.financialSnapshot;
-  await page.getByPlaceholder("Paste exported save JSON here").fill(JSON.stringify(importedSave));
-  await page.getByRole("button", { name: "Import Into Slot 1" }).click();
+  await importSaveThroughSettings(page, JSON.stringify(importedSave));
   await expect(page.getByText("Imported into Slot 1.")).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
@@ -1303,13 +1334,14 @@ test("stadium upgrades and repairs show clear financial impact", async ({ page }
   await expect(page.getByTestId("stadium-condition")).toContainText("100%");
 
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
-  await page.getByRole("button", { name: /Finances/i }).click();
+  await page.getByRole("button", { name: /Finance/i }).click();
   await expect(page.getByText("Infrastructure spending")).toBeVisible();
   await expect(page.getByText("Stadium repair", { exact: true })).toBeVisible();
   await expect(page.getByText(/Stadium upgrade:/)).toBeVisible();
   await page.getByRole("button", { name: "Back to Dashboard" }).click();
 
-  await page.getByRole("button", { name: /Record/i }).click();
+  await page.getByRole("button", { name: /History/i }).click();
+  await page.getByRole("button", { name: "Achieved" }).click();
   const stadiumAchievement = page.getByTestId("achievement-stadium_upgrade");
   await expect(stadiumAchievement).toContainText("Concrete Plans");
   await expect(stadiumAchievement).toContainText("Unlocked");
@@ -1330,7 +1362,7 @@ test("clean career coherence audit keeps events readable and explainable", async
   for (let step = 0; step < 90; step += 1) {
     const dialog = page.getByRole("dialog");
     if (!(await dialog.count())) {
-      await page.getByRole("button", { name: /Continue|Open Decision/ }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
       await expect(dialog).toBeVisible();
     }
 
@@ -1378,9 +1410,9 @@ test("clean career coherence audit keeps events readable and explainable", async
   await expect(page.getByTestId("dashboard-latest-report")).toBeVisible();
   await expectMobileSurfaceHealthy(page, "Coherence dashboard after audit");
 
-  await page.getByRole("button", { name: /Finances/i }).click();
-  await expect(page.getByText("Report period").first()).toBeVisible();
-  await expect(page.getByText("Opening balance").first()).toBeVisible();
-  await expect(page.getByText("Closing balance").first()).toBeVisible();
+  await page.getByRole("button", { name: /Finance/i }).click();
+  await expect(page.getByTestId("finance-summary-period")).toBeVisible();
+  await expect(page.getByText("Opening").first()).toBeVisible();
+  await expect(page.getByText("Closing").first()).toBeVisible();
   await expectMobileSurfaceHealthy(page, "Coherence finances after audit");
 });

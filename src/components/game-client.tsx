@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Award, CalendarDays, Copy, Download, Dumbbell, FileJson, Landmark, ListOrdered, Play, Save, Settings, ShieldCheck, Sprout, Trash2, Trophy, Type, Upload, UserCog, UsersRound, Volume2, Wallet } from "lucide-react";
+import { ArrowLeft, Award, CalendarDays, ChevronLeft, ChevronRight, Copy, Download, Dumbbell, FileJson, Landmark, ListOrdered, Play, Save, Settings, Sprout, Trash2, Trophy, Type, Upload, UserCog, UsersRound, Volume2, Wallet } from "lucide-react";
 import { AppFrame } from "./app-frame";
 import { BrandMark } from "./brand-mark";
 import { Button } from "./ui/button";
-import { Card, StatCard } from "./ui/card";
+import { Card } from "./ui/card";
 import { buildEventPresentation } from "./event-presentation";
 import { PersonAvatar } from "./person-avatar";
 import { calculateSaleImpact, evaluateManager, generateManagerHireOffer, latestFinancialSnapshot, leagueTable, managerActionLocked } from "@/game/engine";
@@ -19,6 +19,101 @@ import { useGameStore } from "@/store/game-store";
 type Tab = "home" | "standings" | "squad" | "manager" | "finances" | "stadium" | "history" | "settings";
 type SquadSort = "position" | "name" | "rating";
 type FacilityKind = "youth" | "training";
+type FinancePanel = "summary" | "expenses" | "income";
+type HistoryPanel = "seasons" | "trophies" | "achievements";
+
+const tabs: Tab[] = ["home", "standings", "squad", "manager", "finances", "stadium", "history", "settings"];
+
+function normalizeTab(tab?: string): Tab {
+  return tabs.includes(tab as Tab) ? tab as Tab : "home";
+}
+
+function clampPage(page: number, totalPages: number) {
+  return Math.max(0, Math.min(Math.max(0, totalPages - 1), page));
+}
+
+function usePagedItems<T>(save: GameSave, key: string, items: T[], pageSize: number, preferredIndex?: number) {
+  const updateUiState = useGameStore((state) => state.updateUiState);
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const preferredPage = preferredIndex === undefined ? 0 : Math.floor(preferredIndex / pageSize);
+  const page = clampPage(save.ui?.pages?.[key] ?? preferredPage, totalPages);
+  const setPage = (nextPage: number) => {
+    void updateUiState({ pages: { [key]: clampPage(nextPage, totalPages) } });
+  };
+  return {
+    page,
+    totalPages,
+    start: page * pageSize,
+    pageItems: items.slice(page * pageSize, page * pageSize + pageSize),
+    setPage,
+  };
+}
+
+function useUiPanel<T extends string>(save: GameSave, key: string, fallback: T) {
+  const updateUiState = useGameStore((state) => state.updateUiState);
+  const panel = (save.ui?.panels?.[key] as T | undefined) ?? fallback;
+  const setPanel = (nextPanel: T) => {
+    void updateUiState({ panels: { [key]: nextPanel }, pages: { [key]: 0 } });
+  };
+  return [panel, setPanel] as const;
+}
+
+function shortCopy(text?: string, max = 150, sentenceCount = 2) {
+  if (!text) return "";
+  const sentence = text.split(/(?<=[.!?])\s+/u).slice(0, sentenceCount).join(" ").trim();
+  const source = sentence || text.trim();
+  return source.length > max ? `${source.slice(0, max - 1).trim()}...` : source;
+}
+
+function moodLabel(value: number) {
+  if (value >= 75) return "Strong";
+  if (value >= 55) return "Steady";
+  if (value >= 40) return "Uneasy";
+  return "Fragile";
+}
+
+function OneScreen({ children, footer, className }: { children: ReactNode; footer?: ReactNode; className?: string }) {
+  return (
+    <div className={cn("flex h-full min-h-0 flex-col gap-2 overflow-hidden", className)}>
+      <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      {footer ? <div className="shrink-0 rounded-xl border border-line/80 bg-white px-3 py-2 shadow-[0_-12px_26px_rgba(16,36,27,0.08)]">{footer}</div> : null}
+    </div>
+  );
+}
+
+function CompactPageTitle({ eyebrow, title, action }: { eyebrow: string; title: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-line/80 bg-white px-3 py-2 shadow-[0_8px_18px_rgba(23,33,27,0.04)]">
+      <div className="min-w-0">
+        <p className="text-[10px] font-black uppercase text-primary">{eyebrow}</p>
+        <h2 className="truncate text-base font-black leading-tight">{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function PagerBar({ page, totalPages, setPage, label }: { page: number; totalPages: number; setPage: (page: number) => void; label?: string }) {
+  return (
+    <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
+      <Button variant="secondary" className="min-h-10 px-0" disabled={page <= 0} onClick={() => setPage(page - 1)} aria-label="Previous page"><ChevronLeft size={18} /></Button>
+      <p className="text-center text-xs font-black uppercase text-neutral-500">{label ?? "Page"} {page + 1}/{totalPages}</p>
+      <Button variant="secondary" className="min-h-10 px-0" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} aria-label="Next page"><ChevronRight size={18} /></Button>
+    </div>
+  );
+}
+
+function SegmentTabs<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (value: T) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-white p-1">
+      {options.map((option) => (
+        <button key={option.value} type="button" onClick={() => onChange(option.value)} className={cn("rounded-lg px-2 py-2 text-[10px] font-black uppercase", value === option.value ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function useCurrent(save?: GameSave) {
   return useMemo(() => {
@@ -42,23 +137,27 @@ function cupStatus(save: GameSave) {
   return cupRoundName(save.cup.round);
 }
 
-function Header({ save, tab, setTab }: { save: GameSave; tab: Tab; setTab: (tab: Tab) => void }) {
+function cupHistoryLabel(save: GameSave) {
+  const last = save.cup.results.at(-1);
+  if (!last) return cupStatus(save);
+  return `${last.roundName} ${last.won ? "won" : "lost"}`;
+}
+
+function Header({ save }: { save: GameSave }) {
   const current = useCurrent(save)!;
   return (
-    <header className="relative overflow-hidden border-b border-emerald-950/10 bg-[linear-gradient(135deg,_#10241b,_#0f8139_56%,_#1aa24f)] px-4 py-4 text-white">
+    <header className="relative shrink-0 overflow-hidden border-b border-emerald-950/10 bg-[linear-gradient(135deg,_#10241b,_#0f8139_56%,_#1aa24f)] px-4 py-3 text-white">
       <div className="pointer-events-none absolute inset-0 opacity-18 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.26)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.18)_58%_60%,transparent_60%)]" />
       <div className="relative flex items-center gap-3">
-        <BrandMark className="h-12 w-12 rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.2)]" />
+        <BrandMark className="h-10 w-10 rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.2)]" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-black">{current.club.name}</p>
           <p className="text-xs text-white/75">{seasonLabel(save.season)} Season · {monthForWeek(save.week)} · Period {save.week}</p>
         </div>
-        <button aria-label="History" onClick={() => setTab(tab === "history" ? "home" : "history")} className="rounded-full bg-white/12 p-2 text-white ring-1 ring-white/15 hover:bg-white/20">
-          <Trophy size={20} />
-        </button>
-        <button aria-label="Settings" onClick={() => setTab(tab === "settings" ? "home" : "settings")} className="rounded-full bg-white/12 p-2 text-white ring-1 ring-white/15 hover:bg-white/20">
-          <Settings size={20} />
-        </button>
+        <div className="rounded-xl bg-white px-3 py-2 text-right text-emerald-950">
+          <p className="text-[9px] font-black uppercase text-neutral-500">Balance</p>
+          <b className="block text-sm">{formatMoney(current.club.finances.balance)}</b>
+        </div>
       </div>
     </header>
   );
@@ -109,12 +208,6 @@ function formatSignedMoney(value: number) {
   return formatMoney(0);
 }
 
-function formatSignedPoints(value: number) {
-  if (value > 0) return `+${value}`;
-  if (value < 0) return `${value}`;
-  return "0";
-}
-
 function ImpactBox({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cn("rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-950", className)}>
@@ -125,7 +218,7 @@ function ImpactBox({ children, className }: { children: ReactNode; className?: s
 
 function DecisionActionRow({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("sticky bottom-0 z-10 -mx-5 grid grid-cols-2 gap-3 border-t border-line bg-white/96 px-5 pb-1 pt-3 shadow-[0_-16px_30px_rgba(16,36,27,0.08)] backdrop-blur", className)}>
+    <div className={cn("grid shrink-0 grid-cols-2 gap-3 border-t border-line bg-white pt-3", className)}>
       {children}
     </div>
   );
@@ -186,196 +279,148 @@ function HomeTab({ save, continueGame, openFacility, setTab }: { save: GameSave;
     D: lastTen.filter((item) => item === "D").length,
     L: lastTen.filter((item) => item === "L").length,
   };
+  const lastResult = save.lastMatch?.result;
+  const continueLabel = !current.manager ? "Hire Manager" : "Continue";
+  const continueAction = () => {
+    if (!save.currentEvent && !current.manager) {
+      setTab("manager");
+      return;
+    }
+    continueGame();
+  };
   return (
-    <div className="space-y-4">
-      <Card className="relative overflow-hidden border-emerald-900/10 bg-[linear-gradient(135deg,_#10241b,_#0f8139_58%,_#1aa24f)] p-0 text-white">
-        <div className="pointer-events-none absolute inset-0 opacity-18 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.28)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.16)_58%_60%,transparent_60%)]" />
-        <div className="relative p-4">
-          <div className="flex items-start justify-between gap-3">
+    <OneScreen footer={<Button className="w-full" onClick={continueAction} disabled={Boolean(save.gameOver)}>{continueLabel}</Button>}>
+      <div className="grid h-full grid-rows-[auto_auto_1fr_auto] gap-2 overflow-hidden">
+        <Card className="relative overflow-hidden border-emerald-900/10 bg-[linear-gradient(135deg,_#10241b,_#0f8139_58%,_#1aa24f)] p-3 text-white">
+          <div className="pointer-events-none absolute inset-0 opacity-18 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.28)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.16)_58%_60%,transparent_60%)]" />
+          <div className="relative grid grid-cols-[1fr_auto] gap-3">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase text-white/65">Chairman&apos;s desk</p>
-              <h2 className="mt-1 text-3xl font-black">{current.position ? ordinal(current.position) : "-"}</h2>
-              <p className="mt-0.5 truncate text-sm font-bold text-white/85">{divisionName}</p>
-              <p className="mt-1 text-xs text-white/65">Board {current.club.boardConfidence}% · Trust {current.club.managerTrust}% · Cup {cupStatus(save)}</p>
+              <div className="mt-1 flex items-end gap-2">
+                <h2 className="text-3xl font-black leading-none">{current.position ? ordinal(current.position) : "-"}</h2>
+                <p className="min-w-0 truncate pb-1 text-sm font-bold text-white/82">{divisionName}</p>
+              </div>
+              <p className="mt-2 text-xs text-white/65">Board {moodLabel(current.club.boardConfidence)} · Manager {moodLabel(current.club.managerTrust)} · Cup {cupStatus(save)}</p>
             </div>
             <div className="rounded-xl bg-white px-3 py-2 text-right text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
               <p className="text-[10px] font-bold uppercase text-neutral-500">Balance</p>
               <p data-testid="dashboard-balance" className="text-lg font-black">{formatMoney(current.club.finances.balance)}</p>
+              <p className="text-[10px] font-bold uppercase text-neutral-500">This period</p>
+              <p data-testid="dashboard-latest-report" className={cn("text-xs font-black", latestFinance.profit >= 0 ? "text-primary" : "text-danger")}>{formatMoney(latestFinance.profit)}</p>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-4 rounded-2xl border border-white/15 bg-emerald-950/28 text-center text-xs backdrop-blur">
-            <div className="border-r border-white/10 px-2 py-3">
-              <span className="text-white/60">P</span>
-              <b className="block text-base">{current.club.record.played}</b>
-            </div>
-            <div className="border-r border-white/10 px-2 py-3">
-              <span className="text-white/60">W-D-L</span>
-              <b className="block text-base">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b>
-            </div>
-            <div className="border-r border-white/10 px-2 py-3">
-              <span className="text-white/60">GD</span>
-              <b className="block text-base">{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b>
-            </div>
-            <div className="px-2 py-3">
-              <span className="text-white/60">Pts</span>
-              <b className="block text-base">{current.club.record.points}</b>
-            </div>
+          <div className="relative mt-3 grid grid-cols-4 rounded-xl border border-white/15 bg-emerald-950/28 text-center text-xs backdrop-blur">
+            <span className="border-r border-white/10 px-2 py-2"><small className="block text-white/60">P</small><b>{current.club.record.played}</b></span>
+            <span className="border-r border-white/10 px-2 py-2"><small className="block text-white/60">W-D-L</small><b>{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b></span>
+            <span className="border-r border-white/10 px-2 py-2"><small className="block text-white/60">GD</small><b>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b></span>
+            <span className="px-2 py-2"><small className="block text-white/60">Pts</small><b>{current.club.record.points}</b></span>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-            <div className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10">
-              <span className="text-white/60">Roster</span>
-              <b className="block text-base">{squadRating || "-"}</b>
-            </div>
-            <div className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10">
-              <span className="text-white/60">Manager</span>
-              <b className="block text-base">{currentManagerRating || "-"}</b>
-            </div>
-            <div className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10">
-              <span className="text-white/60">Latest</span>
-              <b data-testid="dashboard-latest-report" className={cn("block text-base", latestFinance.profit >= 0 ? "text-emerald-100" : "text-red-100")}>{formatMoney(latestFinance.profit)}</b>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <p className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10"><span className="text-white/60">Completed seasons</span><b className="block text-sm">{completedSeasons}</b></p>
-            <p className="rounded-lg bg-white/12 px-3 py-2 ring-1 ring-white/10"><span className="text-white/60">Trophies</span><b className="block text-sm">{trophyCount}</b></p>
-          </div>
-        </div>
-      </Card>
-      <Card className="overflow-hidden border-emerald-100 bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)] p-0">
-        <div className="flex items-center justify-between gap-3 px-4 py-4">
-          <div className="min-w-0">
-            <p className="text-xs font-black uppercase text-primary">Next up</p>
-            <p className="truncate text-xl font-black">{nextOpponent ? `${nextOpponent.name}` : "Season complete"}</p>
-            <p className="text-sm text-neutral-500">{current.nextFixture ? current.nextFixture.homeClubId === current.club.id ? "Home" : "Away" : latestSeason ? `Last season: ${latestSeason.outcome ?? "completed"}` : "Awaiting schedule"}</p>
-          </div>
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-primary"><CalendarDays size={22} /></span>
-        </div>
-        <div className="border-t border-line bg-white px-4 py-3">
-          <Button className="w-full" onClick={() => {
-            if (!save.currentEvent && !current.manager) {
-              setTab("manager");
-              return;
-            }
-            continueGame();
-          }} disabled={Boolean(save.gameOver)}>
-            {save.currentEvent ? "Open Decision" : !current.manager ? "Hire Manager" : "Continue"}
-          </Button>
-        </div>
-      </Card>
-      <div className="grid grid-cols-3 gap-2">
-        <MiniMetric icon={<ListOrdered size={15} />} label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} accent="emerald" />
-        <MiniMetric icon={<UsersRound size={15} />} label="Roster" value={squadRating || "-"} onClick={() => setTab("squad")} accent="blue" />
-        <MiniMetric icon={<UserCog size={15} />} label="Manager" value={currentManagerRating || "-"} onClick={() => setTab("manager")} accent="emerald" />
-        <MiniMetric icon={<Dumbbell size={15} />} label="Training" value={current.club.trainingLevel} onClick={() => openFacility("training")} accent="amber" />
-        <MiniMetric icon={<Sprout size={15} />} label="Youth" value={current.club.youthLevel} onClick={() => openFacility("youth")} accent="emerald" />
-        <MiniMetric icon={<Wallet size={15} />} label="Finances" value={formatMoney(current.club.finances.balance)} onClick={() => setTab("finances")} accent="blue" />
-        <MiniMetric icon={<ShieldCheck size={15} />} label="Board" value={`${current.club.boardConfidence}%`} accent="amber" />
-        <MiniMetric icon={<Landmark size={15} />} label="Stadium" value={current.club.stadium.condition} onClick={() => setTab("stadium")} accent="emerald" />
-        <MiniMetric icon={<Trophy size={15} />} label="Record" value={`${current.club.record.won}-${current.club.record.drawn}-${current.club.record.lost}`} onClick={() => setTab("history")} accent="blue" />
-        <MiniMetric icon={<Award size={15} />} label="Cup" value={cupStatus(save)} onClick={() => setTab("history")} accent="amber" />
-      </div>
-      <Card className="space-y-3 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase text-neutral-500">Recent form</p>
-            <p className="text-sm font-bold">{formRecord.W}W · {formRecord.D}D · {formRecord.L}L</p>
-          </div>
-          <button type="button" onClick={() => setTab("history")} className="rounded-full bg-surface-muted px-3 py-1.5 text-xs font-black text-neutral-600">History</button>
-        </div>
-        <div className="grid grid-cols-10 gap-1">
-          {(lastTen.length ? lastTen : ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]).map((result, index) => (
-            <span key={`${result}_${index}`} className={cn("grid h-8 min-w-0 place-items-center rounded-lg text-[11px] font-black text-white shadow-[0_6px_14px_rgba(23,33,27,0.08)]", result === "W" ? "bg-primary" : result === "D" ? "bg-warning" : result === "L" ? "bg-danger" : "bg-neutral-300")}>{result}</span>
-          ))}
-        </div>
-      </Card>
-      {save.lastMatch?.result ? (
-        <Card className="overflow-hidden p-0">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] text-center">
-            <div className="p-4">
-              <p className="text-[10px] font-black uppercase text-neutral-500">Home</p>
-              <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.homeClubId].name}</p>
-            </div>
-            <div className="px-3 py-4">
-              <p className="rounded-2xl bg-emerald-950 px-4 py-3 text-2xl font-black text-white">{save.lastMatch.result.homeGoals}-{save.lastMatch.result.awayGoals}</p>
-            </div>
-            <div className="p-4">
-              <p className="text-[10px] font-black uppercase text-neutral-500">Away</p>
-              <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.awayClubId].name}</p>
-            </div>
-          </div>
-          <div className="border-t border-line px-4 py-3">
-            <p className="text-xs font-black uppercase text-neutral-500">Last result</p>
-          </div>
-          <div className="space-y-2 px-4 pb-4">
-            {save.lastMatch.result.events.length === 0 ? (
-              <div className="rounded-md bg-surface-muted px-3 py-2 text-sm text-neutral-600">No major match events recorded.</div>
-            ) : save.lastMatch.result.events.slice(0, 5).map((event, index) => (
-              <div key={`${event.minute}_${index}`} className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2 text-sm">
-                <PersonAvatar name={event.playerName} className="h-8 w-8 rounded-md text-[10px]" />
-                <p>{event.minute}&apos; {event.description}</p>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="min-h-0 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase text-primary">Next match</p>
+                <p className="mt-1 truncate text-base font-black">{nextOpponent ? nextOpponent.name : "Season complete"}</p>
+                <p className="text-xs text-neutral-500">{current.nextFixture ? current.nextFixture.homeClubId === current.club.id ? "Home" : "Away" : latestSeason ? `Last: ${latestSeason.outcome ?? "done"}` : "Awaiting schedule"}</p>
               </div>
+              <CalendarDays className="shrink-0 text-primary" size={20} />
+            </div>
+          </Card>
+          <Card className="min-h-0 p-3">
+            <p className="text-[10px] font-black uppercase text-neutral-500">Last result</p>
+            {lastResult && save.lastMatch ? (
+              <>
+                <p className="mt-1 truncate text-xs font-bold">{save.clubs[save.lastMatch.homeClubId].name}</p>
+                <p className="text-2xl font-black text-emerald-950">{lastResult.homeGoals}-{lastResult.awayGoals}</p>
+                <p className="truncate text-xs font-bold">{save.clubs[save.lastMatch.awayClubId].name}</p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm font-bold text-neutral-500">No match yet</p>
+            )}
+          </Card>
+        </div>
+
+        <div className="grid min-h-0 grid-cols-5 gap-1.5 overflow-hidden">
+          <MiniMetric icon={<ListOrdered size={14} />} label="League" value={current.position ? ordinal(current.position) : "-"} onClick={() => setTab("standings")} />
+          <MiniMetric icon={<UsersRound size={14} />} label="Squad" value={squadRating || "-"} onClick={() => setTab("squad")} accent="blue" />
+          <MiniMetric icon={<UserCog size={14} />} label="Manager" value={currentManagerRating || "-"} onClick={() => setTab("manager")} />
+          <MiniMetric icon={<Wallet size={14} />} label="Finance" value={formatMoney(current.club.finances.balance)} onClick={() => setTab("finances")} accent="blue" />
+          <MiniMetric icon={<Landmark size={14} />} label="Stadium" value={current.club.stadium.condition} onClick={() => setTab("stadium")} />
+          <MiniMetric icon={<Dumbbell size={14} />} label="Training" value={current.club.trainingLevel} onClick={() => openFacility("training")} accent="amber" />
+          <MiniMetric icon={<Sprout size={14} />} label="Youth" value={current.club.youthLevel} onClick={() => openFacility("youth")} />
+          <MiniMetric icon={<Trophy size={14} />} label="History" value={completedSeasons} onClick={() => setTab("history")} accent="blue" />
+          <MiniMetric icon={<Award size={14} />} label="Trophies" value={trophyCount} onClick={() => setTab("history")} accent="amber" />
+          <MiniMetric icon={<Settings size={14} />} label="Settings" value={save.settings.sound ? "On" : "Off"} onClick={() => setTab("settings")} accent="blue" />
+        </div>
+
+        <Card className="p-2">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <p className="font-black uppercase text-neutral-500">Last 10</p>
+            <p className="font-bold">{formRecord.W}W · {formRecord.D}D · {formRecord.L}L</p>
+          </div>
+          <div className="grid grid-cols-10 gap-1">
+            {(lastTen.length ? lastTen : ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]).map((result, index) => (
+              <span key={`${result}_${index}`} className={cn("grid h-7 min-w-0 place-items-center rounded-md text-[10px] font-black text-white", result === "W" ? "bg-primary" : result === "D" ? "bg-warning" : result === "L" ? "bg-danger" : "bg-neutral-300")}>{result}</span>
             ))}
           </div>
         </Card>
-      ) : null}
-      {save.gameOver ? <Card className="border-danger text-danger">{save.gameOver}</Card> : null}
-    </div>
+        {save.gameOver ? <Card className="border-danger p-2 text-xs text-danger">{save.gameOver}</Card> : null}
+      </div>
+    </OneScreen>
   );
 }
 
 function MiniMetric({ icon, label, value, onClick, accent = "emerald" }: { icon?: ReactNode; label: string; value: string | number; onClick?: () => void; accent?: "emerald" | "blue" | "amber" }) {
   const accentClass = accent === "blue" ? "text-club-blue bg-blue-50" : accent === "amber" ? "text-amber-700 bg-amber-50" : "text-primary bg-emerald-50";
   return (
-    <button onClick={onClick} className={cn("min-h-[70px] rounded-lg border border-line/90 bg-[linear-gradient(180deg,_#ffffff,_#f9fbf9)] px-2 py-3 text-left shadow-[0_8px_18px_rgba(23,33,27,0.05)]", onClick && "transition hover:-translate-y-0.5 hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary")}>
-      <span className={cn("mb-2 grid h-6 w-6 place-items-center rounded-md", accentClass)}>{icon}</span>
-      <p className="truncate text-[10px] font-black uppercase text-neutral-500">{label}</p>
-      <p className="mt-1 truncate text-lg font-black">{value}</p>
+    <button onClick={onClick} className={cn("min-h-[54px] rounded-lg border border-line/90 bg-[linear-gradient(180deg,_#ffffff,_#f9fbf9)] px-1.5 py-2 text-left shadow-[0_8px_18px_rgba(23,33,27,0.05)]", onClick && "transition hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary")}>
+      <span className={cn("mb-1 grid h-5 w-5 place-items-center rounded-md", accentClass)}>{icon}</span>
+      <p className="truncate text-[8.5px] font-black uppercase leading-tight text-neutral-500">{label}</p>
+      <p className="mt-0.5 truncate text-xs font-black">{value}</p>
     </button>
   );
 }
 
 function StandingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void }) {
   const current = useCurrent(save)!;
+  const userIndex = current.table.findIndex((club) => club.id === current.club.id);
+  const { page, totalPages, pageItems, start, setPage } = usePagedItems(save, "league", current.table, 8, userIndex);
   return (
-    <div className="space-y-4">
-      <PageBack setTab={setTab} />
-      <Card>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase text-neutral-500">Standings</p>
-            <h2 className="text-lg font-bold">{save.divisions.find((division) => division.id === current.club.divisionId)?.name}</h2>
-          </div>
-          <ListOrdered className="text-primary" />
-        </div>
-      </Card>
-      <Card className="space-y-2 p-2">
-        {current.table.map((club, index) => {
+    <OneScreen footer={<div className="grid grid-cols-[auto_1fr] gap-2"><PageBack setTab={setTab} /><PagerBar page={page} totalPages={totalPages} setPage={setPage} label="League" /></div>}>
+      <div className="grid h-full grid-rows-[auto_1fr] gap-2 overflow-hidden">
+        <CompactPageTitle eyebrow="Standings" title={save.divisions.find((division) => division.id === current.club.divisionId)?.name} action={<ListOrdered className="text-primary" size={20} />} />
+        <Card className="grid min-h-0 grid-rows-8 gap-1.5 p-2">
+        {pageItems.map((club, localIndex) => {
+          const index = start + localIndex;
           const goalDifference = club.record.gf - club.record.ga;
           const isUser = club.id === current.club.id;
           return (
             <div
               key={club.id}
               className={cn(
-                "grid grid-cols-[34px_1fr_auto] items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm",
+                "grid min-h-0 grid-cols-[30px_1fr_auto] items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-xs",
                 isUser ? "border-emerald-200 bg-emerald-50 font-bold text-primary shadow-[0_8px_18px_rgba(21,153,71,0.08)]" : "bg-white",
               )}
             >
-              <span className={cn("grid h-8 w-8 place-items-center rounded-lg bg-surface-muted font-black", isUser && "bg-primary text-white")}>{index + 1}</span>
+              <span className={cn("grid h-7 w-7 place-items-center rounded-lg bg-surface-muted font-black", isUser && "bg-primary text-white")}>{index + 1}</span>
               <div className="min-w-0">
                 <p className="truncate font-black">{club.name}</p>
-                <p className={cn("mt-1 text-xs text-neutral-500", isUser && "text-primary/75")}>
+                <p className={cn("truncate text-[10px] text-neutral-500", isUser && "text-primary/75")}>
                   P {club.record.played} · W-D-L {club.record.won}-{club.record.drawn}-{club.record.lost} · GD {goalDifference > 0 ? `+${goalDifference}` : goalDifference}
                 </p>
               </div>
-              <div className={cn("min-w-12 rounded-lg bg-surface-muted px-2 py-1 text-right", isUser && "bg-white text-primary")}>
+              <div className={cn("min-w-10 rounded-lg bg-surface-muted px-2 py-1 text-right", isUser && "bg-white text-primary")}>
                 <span className="block text-[10px] font-black uppercase text-neutral-500">Pts</span>
-                <span className="text-base font-black">{club.record.points}</span>
+                <span className="text-sm font-black">{club.record.points}</span>
               </div>
             </div>
           );
         })}
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </OneScreen>
   );
 }
 
@@ -389,39 +434,37 @@ function SquadTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => void
       return positionOrder(a.position) - positionOrder(b.position) || b.rating - a.rating || a.name.localeCompare(b.name);
     });
   }, [current.players, sort]);
+  const { page, totalPages, pageItems, setPage } = usePagedItems(save, `squad_${sort}`, players, 6);
   const averageRating = Math.round(players.reduce((sum, player) => sum + player.rating, 0) / Math.max(1, players.length));
   return (
-    <div className="space-y-3">
-      <PageBack setTab={setTab} />
-      <Card className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase text-neutral-500">Roster</p>
-          <h2 className="text-lg font-bold">{players.length} players</h2>
+    <OneScreen footer={<div className="grid grid-cols-[auto_1fr] gap-2"><PageBack setTab={setTab} /><PagerBar page={page} totalPages={totalPages} setPage={setPage} label="Squad" /></div>}>
+      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-2 overflow-hidden">
+        <CompactPageTitle eyebrow="ROSTER" title={`${players.length} players`} action={<p className="rounded-lg bg-surface-muted px-3 py-2 text-xs font-black">Avg {averageRating}</p>} />
+        <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-white p-1 text-center text-xs font-semibold text-neutral-500">
+          <button onClick={() => { setSort("position"); setPage(0); }} className={cn("rounded-md px-2 py-2 text-xs font-bold", sort === "position" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Pos</button>
+          <button onClick={() => { setSort("name"); setPage(0); }} className={cn("rounded-md px-2 py-2 text-xs font-bold", sort === "name" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Player</button>
+          <button onClick={() => { setSort("rating"); setPage(0); }} className={cn("rounded-md px-2 py-2 text-xs font-bold", sort === "rating" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Rate</button>
         </div>
-        <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm font-bold">Avg {averageRating}</p>
-      </Card>
-      <div className="sticky top-0 z-10 grid grid-cols-[48px_1fr_56px] gap-2 bg-background pb-2 text-center text-xs font-semibold text-neutral-500">
-        <button onClick={() => setSort("position")} className={cn("rounded-md px-2 py-1 text-xs font-bold", sort === "position" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Pos</button>
-        <button onClick={() => setSort("name")} className={cn("rounded-md px-2 py-1 text-left text-xs font-bold", sort === "name" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Player</button>
-        <button onClick={() => setSort("rating")} className={cn("rounded-md px-2 py-1 text-xs font-bold", sort === "rating" ? "bg-primary text-white" : "bg-surface-muted text-neutral-600")}>Rate</button>
-      </div>
-      {players.map((player) => (
-        <Card key={player.id} className="grid grid-cols-[48px_1fr_48px] items-center gap-3 p-3">
-          <span className={cn("grid h-9 w-9 place-items-center rounded-md text-center text-xs font-black text-white", positionClass(player.position))}>{displayPosition(player.position)}</span>
+        <div className="grid min-h-0 grid-rows-6 gap-1.5 overflow-hidden">
+      {pageItems.map((player) => (
+        <Card key={player.id} className="grid min-h-0 grid-cols-[38px_1fr_42px] items-center gap-2 p-2">
+          <span className={cn("grid h-8 w-8 place-items-center rounded-md text-center text-xs font-black text-white", positionClass(player.position))}>{displayPosition(player.position)}</span>
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <PersonAvatar name={player.name} seedKey={player.id} className="h-12 w-12 shrink-0 rounded-lg text-[10px] ring-2 ring-white" />
-              <p className="truncate text-sm font-bold">{player.name}</p>
+            <div className="flex items-center gap-2">
+              <PersonAvatar name={player.name} seedKey={player.id} className="h-9 w-9 shrink-0 rounded-lg text-[10px] ring-2 ring-white" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">{player.name}</p>
+                <p className="truncate text-[10px] text-neutral-500">Age {player.age} · {player.loan ? `Loan ${player.loan.direction === "in" ? "in" : "out"}` : `${player.contractYears}y`} · {formatWeeklyWage(player.loan ? player.loan.wageShare : player.wage)}</p>
+                <p className="truncate text-[9px] font-semibold text-neutral-400">Morale {pct(player.morale)} · Form {pct(player.form)} · Fit {pct(player.fitness)}</p>
+              </div>
             </div>
-            <p className="truncate text-xs text-neutral-500">
-              Age {player.age} · {player.loan ? `Loan ${player.loan.direction === "in" ? "in" : "out"} · ${formatWeeklyWage(player.loan.wageShare)}` : `${player.contractYears}y · ${formatWeeklyWage(player.wage)}`}
-            </p>
-            <p className="truncate text-xs text-neutral-500">Morale {player.morale}% · Form {player.form}% · Fit {player.fitness}%</p>
           </div>
           <span className={cn("justify-self-end rounded-md px-2 py-1 text-xs font-bold text-white", player.rating >= 70 ? "bg-primary" : player.rating >= 55 ? "bg-warning" : "bg-neutral-500")}>{player.rating}</span>
         </Card>
       ))}
-    </div>
+        </div>
+      </div>
+    </OneScreen>
   );
 }
 
@@ -442,6 +485,7 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const fireCost = current.manager ? calculateManagerCompensation(current.manager) : 0;
   const balanceAfterFire = current.club.finances.balance - fireCost;
   const hireOffer = hireId ? generateManagerHireOffer(save, hireId) : undefined;
+  const { page, totalPages, pageItems, setPage } = usePagedItems(save, "manager_candidates", save.managerCandidates, 3);
   const managerAttributes = current.manager
     ? [
         ["Training", current.manager.training],
@@ -452,138 +496,81 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       ] as const
     : [];
   return (
-    <div className="space-y-4">
-      <PageBack setTab={setTab} />
+    <OneScreen footer={<div className="grid grid-cols-[auto_1fr] gap-2"><PageBack setTab={setTab} /><PagerBar page={page} totalPages={totalPages} setPage={setPage} label="Managers" /></div>}>
+      <div className="grid h-full grid-rows-[auto_1fr] gap-2 overflow-hidden">
       {current.manager ? (
         <Card className="overflow-hidden p-0">
-          <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
+          <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-3 text-white">
             <div className="flex items-center gap-3">
-              <PersonAvatar name={current.manager.name} seedKey={current.manager.id} kind="manager" variant="portrait" className="h-28 w-24 rounded-2xl text-xl shadow-[0_12px_24px_rgba(0,0,0,0.22)]" />
+              <PersonAvatar name={current.manager.name} seedKey={current.manager.id} kind="manager" variant="portrait" className="h-20 w-16 rounded-xl text-base shadow-[0_12px_24px_rgba(0,0,0,0.22)]" />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-black uppercase tracking-normal text-white/65">Current manager</p>
-                <h2 className="truncate text-xl font-black">{current.manager.name}</h2>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span className="rounded-full bg-white/13 px-2 py-1 text-[10px] font-bold text-white ring-1 ring-white/15">{current.manager.style}</span>
-                  <span className="rounded-full bg-white/13 px-2 py-1 text-[10px] font-bold text-white ring-1 ring-white/15">{current.manager.personality}</span>
-                </div>
+                <h2 className="truncate text-lg font-black">{current.manager.name}</h2>
+                <p className="truncate text-xs text-white/70">{current.manager.style} · {current.manager.personality}</p>
+                <p className="mt-1 text-xs text-white/70">{formatWeeklyWage(current.manager.wage)} · {current.manager.contractYears}y · Fire {formatMoney(fireCost)}</p>
               </div>
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-center text-primary shadow-[0_12px_24px_rgba(0,0,0,0.16)]">
-                <span className="text-lg font-black leading-none">{managerRating(current.manager)}</span>
-                <span className="text-[9px] font-black uppercase leading-none text-neutral-500">Rate</span>
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-center text-primary">
+                <span className="text-base font-black leading-none">{managerRating(current.manager)}</span>
+                <span className="text-[8px] font-black uppercase leading-none text-neutral-500">Rate</span>
               </div>
             </div>
           </div>
-          <div className="space-y-3 p-4">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-xl bg-surface-muted px-3 py-3">
-                <p className="font-black uppercase text-neutral-500">Wage</p>
-                <b className="mt-1 block text-sm text-foreground">{formatWeeklyWage(current.manager.wage)}</b>
-              </div>
-              <div className="rounded-xl bg-surface-muted px-3 py-3">
-                <p className="font-black uppercase text-neutral-500">Contract</p>
-                <b className="mt-1 block text-sm text-foreground">{current.manager.contractYears} years left</b>
-              </div>
-              <div className="rounded-xl bg-surface-muted px-3 py-3">
-                <p className="font-black uppercase text-neutral-500">Fire cost</p>
-                <b className="mt-1 block text-sm text-danger">{formatMoney(fireCost)}</b>
-              </div>
-              <div className="rounded-xl bg-surface-muted px-3 py-3">
-                <p className="font-black uppercase text-neutral-500">Status</p>
-                <b className="mt-1 block text-sm text-foreground">Appointed</b>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {managerAttributes.map(([label, value]) => (
-                <div key={label} className="grid grid-cols-[74px_1fr_30px] items-center gap-2">
-                  <span className="text-xs font-bold text-neutral-600">{label}</span>
-                  <div className="h-2 rounded-full bg-surface-muted">
-                    <div className="h-2 rounded-full bg-primary" style={{ width: `${value}%` }} />
-                  </div>
-                  <span className="text-right text-xs font-black">{value}</span>
-                </div>
-              ))}
-            </div>
-            <p className="rounded-xl bg-emerald-50 px-3 py-3 text-sm leading-5 text-emerald-950">{evaluateManager(save)}</p>
-            {lockMessage ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-500">{lockMessage}</p> : null}
-            <Button variant="danger" className="w-full" disabled={locked} onClick={() => setFireOpen(true)}>Fire Manager</Button>
+          <div className="grid grid-cols-5 gap-1.5 p-2 text-center text-[10px]">
+            {managerAttributes.map(([label, value]) => (
+              <p key={label} className="rounded-lg bg-surface-muted px-1.5 py-2"><span className="block font-black uppercase text-neutral-500">{label.slice(0, 4)}</span><b>{value}</b></p>
+            ))}
           </div>
+          <div className="grid grid-cols-[1fr_auto] gap-2 border-t border-line p-2">
+            <p className="min-w-0 truncate rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-950">{shortCopy(evaluateManager(save), 90)}</p>
+            <Button variant="danger" className="min-h-10 px-3" disabled={locked} onClick={() => setFireOpen(true)}>Fire Manager</Button>
+          </div>
+          {lockMessage ? <p className="px-3 pb-2 text-[10px] font-bold text-neutral-500">{lockMessage}</p> : null}
         </Card>
       ) : (
-        <Card className="space-y-3">
+        <Card className="p-3">
           <p className="font-bold">No manager appointed</p>
-          <p className="text-sm text-neutral-500">Hire a manager to run the squad and propose transfers.</p>
-          {lockMessage ? <p className="rounded-md bg-surface-muted px-3 py-2 text-xs text-neutral-500">{lockMessage}</p> : null}
+          <p className="text-sm text-neutral-500">Hire a manager to continue.</p>
+          {lockMessage ? <p className="mt-2 rounded-md bg-surface-muted px-3 py-2 text-xs text-neutral-500">{lockMessage}</p> : null}
         </Card>
       )}
-      <div className="space-y-3">
-        <h3 className="text-sm font-bold">Available Managers</h3>
-        {save.managerCandidates.map((manager) => {
+      <div className="grid min-h-0 grid-rows-[auto_1fr] gap-2 overflow-hidden">
+        <CompactPageTitle eyebrow="Available Managers" title={`${save.managerCandidates.length} candidates`} />
+        <div className="grid min-h-0 grid-rows-3 gap-1.5 overflow-hidden">
+        {pageItems.map((manager) => {
           const expectedWage = calculateRecommendedManagerWage(manager, divisionLevel);
           const compensation = manager.status === "contracted" ? manager.compensationFee ?? calculateManagerCompensation(manager) : 0;
           return (
-            <Card key={manager.id} className="space-y-3 p-3">
-              <div className="flex items-start gap-3">
-                <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-14 w-14 shrink-0 rounded-xl text-sm" />
+            <Card key={manager.id} className="grid min-h-0 grid-cols-[44px_1fr_auto] items-center gap-2 p-2">
+                <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" className="h-11 w-11 shrink-0 rounded-xl text-sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-black">{manager.name}</p>
-                      <p className="truncate text-xs text-neutral-500">{manager.style} · {manager.personality}</p>
-                    </div>
-                    <span className="shrink-0 rounded-xl bg-primary px-2.5 py-1.5 text-xs font-black text-white">{managerRating(manager)}</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase", manager.status === "contracted" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")}>
-                      {manager.status === "contracted" ? "Under Contract" : "Free Agent"}
-                    </span>
-                    <span className="rounded-full bg-surface-muted px-2 py-1 text-[10px] font-black uppercase text-neutral-600">Expected {formatWeeklyWage(expectedWage)}</span>
-                  </div>
+                  <p className="truncate text-sm font-black">{manager.name}</p>
+                  <p className="truncate text-[10px] text-neutral-500">{manager.style} · {manager.status === "contracted" ? `Fee ${formatMoney(compensation)}` : "Free Agent"}</p>
+                  <p className="truncate text-[10px] font-bold text-neutral-600">Expected {formatWeeklyWage(expectedWage)} · T{manager.training} Ta{manager.tactics} Y{manager.youthPreference}</p>
                 </div>
+              <div className="grid gap-1">
+                <span className="justify-self-end rounded-lg bg-primary px-2 py-1 text-xs font-black text-white">{managerRating(manager)}</span>
+                <Button className="min-h-9 px-2 text-xs" disabled={!canNegotiate} onClick={() => setHireId(manager.id)}>Negotiate</Button>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-xl bg-surface-muted px-3 py-2">
-                  <p className="font-black uppercase text-neutral-500">Training</p>
-                  <b className="mt-0.5 block">{manager.training}</b>
-                </div>
-                <div className="rounded-xl bg-surface-muted px-3 py-2">
-                  <p className="font-black uppercase text-neutral-500">Tactics</p>
-                  <b className="mt-0.5 block">{manager.tactics}</b>
-                </div>
-                <div className="rounded-xl bg-surface-muted px-3 py-2">
-                  <p className="font-black uppercase text-neutral-500">Transfers</p>
-                  <b className="mt-0.5 block">{manager.transferTaste}</b>
-                </div>
-                <div className="rounded-xl bg-surface-muted px-3 py-2">
-                  <p className="font-black uppercase text-neutral-500">Youth</p>
-                  <b className="mt-0.5 block">{manager.youthPreference}</b>
-                </div>
-              </div>
-              {manager.status === "contracted" ? (
-                <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                  <p className="font-black uppercase">Club compensation</p>
-                  <b className="mt-1 block text-sm">{formatMoney(compensation)}</b>
-                </div>
-              ) : null}
-              <Button className="w-full" disabled={!canNegotiate} onClick={() => setHireId(manager.id)}>Negotiate</Button>
             </Card>
           );
         })}
       </div>
+      </div>
       {fireOpen && current.manager ? (
         <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
-          <div role="dialog" aria-modal="true" aria-labelledby="fire-manager-title" className="w-full rounded-xl bg-white p-5 shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-labelledby="fire-manager-title" className="w-full rounded-xl bg-white p-4 shadow-2xl">
             <p className="text-xs font-semibold uppercase text-danger">Confirm dismissal</p>
-            <h2 id="fire-manager-title" className="mt-1 text-xl font-bold">{current.manager.name}</h2>
-            <div className="mt-4 space-y-2 text-sm">
-              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Weekly wage</span><b>{formatMoney(current.manager.wage)}</b></p>
-              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Contract left</span><b>{current.manager.contractYears * 12} months</b></p>
-              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Compensation</span><b className="text-danger">{formatMoney(fireCost)}</b></p>
-              <p className="flex justify-between rounded-lg bg-surface-muted px-3 py-2"><span>Balance after</span><b>{formatMoney(balanceAfterFire)}</b></p>
+            <h2 id="fire-manager-title" className="mt-1 text-lg font-bold">{current.manager.name}</h2>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly wage <b className="block">{formatMoney(current.manager.wage)}</b></p>
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Contract left <b className="block">{current.manager.contractYears * 12} months</b></p>
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Compensation <b className="block text-danger">{formatMoney(fireCost)}</b></p>
+              <p className="rounded-lg bg-surface-muted px-3 py-2">Balance after <b className="block">{formatMoney(balanceAfterFire)}</b></p>
             </div>
             <div className="mt-3">
               <DebtImpactBox balance={balanceAfterFire} debtLimit={current.club.finances.debtLimit} />
             </div>
-            <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+            <div className="mt-4 grid grid-cols-2 gap-3 bg-white">
               <Button variant="danger" onClick={async () => { await fire(); setFireOpen(false); }}>Confirm</Button>
               <Button variant="secondary" onClick={() => setFireOpen(false)}>Cancel</Button>
             </div>
@@ -593,7 +580,8 @@ function ManagerTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
       {hireOffer ? (
         <ManagerHireModal save={save} managerId={hireOffer.candidate.id} close={() => setHireId(undefined)} submit={async (terms) => { await hire(hireOffer.candidate.id, terms); setHireId(undefined); }} />
       ) : null}
-    </div>
+      </div>
+    </OneScreen>
   );
 }
 
@@ -610,28 +598,24 @@ function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; 
   const balanceAfterCost = current.club.finances.balance - immediateCost;
   const wageBillAfterHire = current.club.finances.weeklyWages - (current.manager?.wage ?? 0) + wage;
   return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-5">
-      <div role="dialog" aria-modal="true" aria-labelledby="hire-manager-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+    <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-2">
+      <div role="dialog" aria-modal="true" aria-labelledby="hire-manager-title" className="flex h-full max-h-full w-full flex-col overflow-hidden rounded-xl bg-white p-4 shadow-2xl">
         <p className="text-xs font-semibold uppercase text-primary">Manager negotiation</p>
         <div className="mt-2 flex items-center gap-3">
-          <PersonAvatar name={candidate.name} seedKey={candidate.id} kind="manager" className="h-16 w-16 text-base" />
-          <div>
-            <h2 id="hire-manager-title" className="text-xl font-black">{candidate.name}</h2>
+          <PersonAvatar name={candidate.name} seedKey={candidate.id} kind="manager" className="h-14 w-14 text-base" />
+          <div className="min-w-0">
+            <h2 id="hire-manager-title" className="truncate text-lg font-black">{candidate.name}</h2>
             <p className="text-xs text-neutral-500">{candidate.status === "contracted" ? "Under Contract" : "Free Agent"} · Rating {managerRating(candidate)}</p>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
           <p className="rounded-lg bg-surface-muted px-3 py-2">Expected wage <b className="block">{formatWeeklyWage(offer.expectedWage)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-2">Immediate cost <b className="block">{formatMoney(immediateCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">New club fee <b className="block">{formatMoney(offer.candidateCompensation)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Current manager payoff <b className="block">{formatMoney(offer.outgoingCompensation)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-2">Balance after cost <b className="block">{formatMoney(balanceAfterCost)}</b></p>
           <p className="rounded-lg bg-surface-muted px-3 py-2">New wage bill <b className="block">{formatMoney(wageBillAfterHire)}/w</b></p>
         </div>
+        <p className="mt-2 rounded-lg bg-surface-muted px-3 py-2 text-[10px] font-bold text-neutral-600">Candidate fee {formatMoney(offer.candidateCompensation)} · current manager payoff {formatMoney(offer.outgoingCompensation)}</p>
         <div className="mt-3">
-          <DebtImpactBox balance={balanceAfterCost} debtLimit={current.club.finances.debtLimit} />
-        </div>
-        <div className="mt-4">
           <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
           <div className="grid grid-cols-5 gap-2">
             {wageOptions.map((option) => (
@@ -639,7 +623,7 @@ function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; 
             ))}
           </div>
         </div>
-        <div className="mt-4">
+        <div className="mt-3">
           <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
           <div className="grid grid-cols-5 gap-2">
             {yearOptions.map((option) => (
@@ -647,7 +631,7 @@ function ManagerHireModal({ save, managerId, close, submit }: { save: GameSave; 
             ))}
           </div>
         </div>
-        <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+        <div className="mt-4 grid grid-cols-2 gap-3 bg-white">
           <Button onClick={() => submit({ wage, years, compensationFee: offer.candidateCompensation })}>Submit Offer</Button>
           <Button variant="secondary" onClick={close}>Cancel</Button>
         </div>
@@ -660,58 +644,79 @@ function FinancesTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   const current = useCurrent(save)!;
   const finance = current.club.finances;
   const latestFinance = latestFinancialSnapshot(save);
-  const summaryItems = [
-    { label: "Report income", value: formatMoney(latestFinance.totalIncome), testId: "finance-summary-income", tone: "positive" },
-    { label: "Report expenses", value: formatMoney(latestFinance.totalExpenses), testId: "finance-summary-expenses", tone: "negative" },
-    { label: "Report result", value: formatMoney(latestFinance.profit), testId: "finance-summary-result", tone: latestFinance.profit >= 0 ? "positive" : "negative" },
-    { label: "Weekly wages", value: formatMoney(finance.weeklyWages) },
-    { label: "Opening balance", value: formatMoney(latestFinance.balanceBefore), testId: "finance-summary-opening" },
-    { label: "Closing balance", value: formatMoney(latestFinance.balanceAfter), testId: "finance-summary-closing" },
-    { label: "Sponsorship", value: formatMoney(finance.sponsorship), detail: "annual" },
-    { label: "Board", value: pct(current.club.boardConfidence), detail: "confidence" },
+  const [panel, setPanel] = useUiPanel<FinancePanel>(save, "finances", "summary");
+  const expenses: [string, number][] = [
+    ["Wages", latestFinance.expenses.wages],
+    ["Stadium", latestFinance.expenses.stadiumRunning],
+    ["Youth", latestFinance.expenses.youthAcademy],
+    ["Training", latestFinance.expenses.trainingFacilities],
+    ["Infrastructure", latestFinance.expenses.infrastructure],
+    ["Fees out", latestFinance.expenses.feesOut],
   ];
+  const income: [string, number][] = [
+    ["Fees in", latestFinance.income.feesIn],
+    ["Tickets", latestFinance.income.ticketSales],
+    ["Food/drink", latestFinance.income.foodDrink],
+    ["Merch", latestFinance.income.merchandise],
+    ["VIP", latestFinance.income.vip],
+    ["Prize", latestFinance.income.prizeMoney],
+    ["Sponsor", latestFinance.income.sponsorship],
+    ["TV", latestFinance.income.tv],
+  ];
+  const visibleLines = panel === "expenses" ? expenses : income;
+  const recentTransactions = current.club.finances.transactions.slice(0, 3);
   return (
-    <div className="space-y-4">
-      <PageBack setTab={setTab} />
-      <StatCard label="Balance" value={formatMoney(finance.balance)} detail={`Debt limit ${formatMoney(finance.debtLimit)}`} />
-      <Card className="space-y-3">
-        <div className="rounded-xl bg-surface-muted px-3 py-3">
-          <p className="text-[10px] font-black uppercase text-neutral-500">Report period</p>
-          <b data-testid="finance-summary-period" className="mt-1 block text-base">{latestFinance.month} · Period {latestFinance.week}</b>
+    <OneScreen footer={<PageBack setTab={setTab} />}>
+      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-2 overflow-hidden">
+        <CompactPageTitle
+          eyebrow="Finances"
+          title="This period"
+          action={<b data-testid="finance-summary-period" className="rounded-lg bg-surface-muted px-3 py-2 text-xs">{latestFinance.month} · Period {latestFinance.week}</b>}
+        />
+        <Card className="grid grid-cols-2 gap-2 p-2">
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Balance <b className="block text-base">{formatMoney(finance.balance)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Result <b data-testid="finance-summary-result" className={cn("block text-base", latestFinance.profit >= 0 ? "text-primary" : "text-danger")}>{formatMoney(latestFinance.profit)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Income <b data-testid="finance-summary-income" className="block text-base text-primary">{formatMoney(latestFinance.totalIncome)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Expenses <b data-testid="finance-summary-expenses" className="block text-base text-danger">{formatMoney(latestFinance.totalExpenses)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Opening <b data-testid="finance-summary-opening" className="block">{formatMoney(latestFinance.balanceBefore)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs">Closing <b data-testid="finance-summary-closing" className="block">{formatMoney(latestFinance.balanceAfter)}</b></p>
+        </Card>
+        <div className="grid min-h-0 grid-rows-[auto_1fr] gap-2 overflow-hidden">
+          <SegmentTabs<FinancePanel> value={panel} onChange={setPanel} options={[{ value: "summary", label: "Summary" }, { value: "expenses", label: "Expenses" }, { value: "income", label: "Income" }]} />
+          <Card className="min-h-0 p-3">
+            <h3 className="mb-2 text-sm font-bold">Latest report breakdown</h3>
+            {panel === "summary" ? (
+              <div className="grid h-full grid-rows-[auto_1fr] gap-2 overflow-hidden text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly wages <b className="block">{formatMoney(finance.weeklyWages)}</b></p>
+                  <p className="rounded-lg bg-surface-muted px-3 py-2">Debt limit <b className="block">{formatMoney(finance.debtLimit)}</b></p>
+                </div>
+                <div className="min-h-0 rounded-lg bg-surface-muted px-3 py-2">
+                  <p className="mb-1 text-[10px] font-black uppercase text-neutral-500">Infrastructure spending</p>
+                  <div className="grid grid-rows-3 gap-1 overflow-hidden">
+                    {(recentTransactions.length ? recentTransactions : [{ id: "no_activity", label: "No recent ledger activity", amount: 0 }]).map((transaction) => (
+                      <p key={transaction.id} className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-white px-2 py-1 text-[10px]">
+                        <span className="truncate">{transaction.label}</span>
+                        <b className={transaction.amount < 0 ? "text-danger" : "text-primary"}>{formatSignedMoney(transaction.amount)}</b>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-rows-6 gap-1">
+                {visibleLines.slice(0, 6).map(([label, amount]) => (
+                  <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2 text-xs">
+                    <span>{label}</span>
+                    <b className={panel === "expenses" ? "text-danger" : "text-primary"}>{panel === "expenses" ? "-" : ""}{formatMoney(amount as number)}</b>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {summaryItems.map((item) => (
-            <div key={item.label} className="min-h-[74px] rounded-xl border border-line/80 bg-white px-3 py-3 shadow-[0_8px_18px_rgba(23,33,27,0.04)]">
-              <p className="text-[10px] font-black uppercase text-neutral-500">{item.label}</p>
-              <b
-                data-testid={item.testId}
-                className={cn(
-                  "mt-1 block text-base",
-                  item.tone === "positive" && "text-primary",
-                  item.tone === "negative" && "text-danger",
-                )}
-              >
-                {item.value}
-              </b>
-              {item.detail ? <p className="mt-1 text-[10px] font-semibold uppercase text-neutral-400">{item.detail}</p> : null}
-            </div>
-          ))}
-        </div>
-      </Card>
-      <Card>
-        <h3 className="mb-3 text-sm font-bold">Latest report breakdown</h3>
-        <FinancialRows snapshot={latestFinance} testIdPrefix="finance-breakdown" />
-      </Card>
-      <Card>
-        <h3 className="mb-3 text-sm font-bold">Recent transactions</h3>
-        {finance.transactions.length === 0 ? <p className="text-sm text-neutral-500">No transactions yet.</p> : finance.transactions.map((tx) => (
-          <div key={tx.id} className="flex justify-between border-t border-line py-2 text-sm first:border-t-0">
-            <span>{tx.label}</span>
-            <b className={tx.amount >= 0 ? "text-primary" : "text-danger"}>{formatMoney(tx.amount)}</b>
-          </div>
-        ))}
-      </Card>
-    </div>
+      </div>
+    </OneScreen>
   );
 }
 
@@ -721,26 +726,20 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const repair = useGameStore((state) => state.repair);
   const repairCost = Math.round((100 - current.club.stadium.condition) * 4_500);
   const repairGain = 100 - current.club.stadium.condition;
+  const { page, totalPages, pageItems, setPage } = usePagedItems(save, "stadium_stands", current.club.stadium.stands, 1);
+  const stand = pageItems[0];
   return (
-    <div className="space-y-4">
-      <PageBack setTab={setTab} />
-      <Card className="overflow-hidden p-0">
-        <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
-          <p className="text-[10px] font-black uppercase text-white/65">Stadium</p>
-          <h2 className="mt-1 truncate text-xl font-black">{current.club.stadium.name}</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-white/13 px-3 py-3 ring-1 ring-white/15">
-              <p className="text-[10px] font-black uppercase text-white/65">Capacity</p>
-              <b data-testid="stadium-capacity" className="mt-1 block text-lg">{current.club.stadium.capacity.toLocaleString()}</b>
-            </div>
-            <div className="rounded-2xl bg-white px-3 py-3 text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.13)]">
-              <p className="text-[10px] font-black uppercase text-neutral-500">Condition</p>
-              <b data-testid="stadium-condition" className={cn("mt-1 block text-lg", current.club.stadium.condition < 55 ? "text-danger" : "text-primary")}>{pct(current.club.stadium.condition)}</b>
-            </div>
-          </div>
-        </div>
-        <div className="space-y-3 p-4">
-          <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-[linear-gradient(140deg,_#174b2e,_#1d8b48_42%,_#e8efe9_43%,_#29533b_100%)] p-4 shadow-inner">
+    <OneScreen footer={<div className="grid grid-cols-[auto_1fr] gap-2"><PageBack setTab={setTab} /><PagerBar page={page} totalPages={totalPages} setPage={setPage} label="Stand" /></div>}>
+      <div className="grid h-full grid-rows-[auto_auto_1fr_auto] gap-2 overflow-hidden">
+        <CompactPageTitle eyebrow="Stadium" title={current.club.stadium.name} action={<Landmark className="text-primary" size={20} />} />
+        <Card className="grid grid-cols-2 gap-2 p-2 text-xs">
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Capacity <b data-testid="stadium-capacity" className="block text-base">{current.club.stadium.capacity.toLocaleString()}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Condition <b data-testid="stadium-condition" className={cn("block text-base", current.club.stadium.condition < 55 ? "text-danger" : "text-primary")}>{pct(current.club.stadium.condition)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Repair need <b className="block">{repairGain > 0 ? `+${repairGain}%` : "None"}</b></p>
+        </Card>
+        <Card className="grid min-h-0 grid-rows-[1fr_auto] gap-2 p-2">
+          <div className="relative min-h-0 overflow-hidden rounded-xl bg-[linear-gradient(140deg,_#174b2e,_#1d8b48_42%,_#e8efe9_43%,_#29533b_100%)] p-4 shadow-inner">
             <div className="absolute inset-x-6 top-4 h-8 rounded-t-2xl border-x-[18px] border-t-[14px] border-emerald-950/35" />
             <div className="absolute inset-x-6 bottom-4 h-8 rounded-b-2xl border-x-[18px] border-b-[14px] border-emerald-950/35" />
             <div className="absolute inset-y-7 left-4 w-8 rounded-l-2xl border-y-[14px] border-l-[14px] border-emerald-950/35" />
@@ -752,65 +751,26 @@ function StadiumTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
               <div className="absolute inset-y-8 right-0 w-10 border-y-2 border-l-2 border-white/80" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-xl bg-surface-muted px-3 py-3">
-              <p className="font-black uppercase text-neutral-500">Bank balance</p>
-              <b className="mt-1 block text-sm">{formatMoney(current.club.finances.balance)}</b>
+          {stand ? (
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black">{stand.name}</p>
+                <p className="text-xs text-neutral-500">Level {stand.level} · {stand.capacity.toLocaleString()} seats · +850 seats</p>
+              </div>
+              <Button className="min-h-10 px-3" onClick={() => upgrade(stand.id)}>Upgrade</Button>
             </div>
-            <div className="rounded-xl bg-surface-muted px-3 py-3">
-              <p className="font-black uppercase text-neutral-500">Repair need</p>
-              <b className="mt-1 block text-sm">{repairGain > 0 ? `+${repairGain}%` : "None"}</b>
-            </div>
-          </div>
-        </div>
-      </Card>
-      {current.club.stadium.stands.map((stand) => (
-        <Card key={stand.id} className="space-y-3 p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-base font-black">{stand.name}</p>
-              <p className="text-xs text-neutral-500">Level {stand.level} · {stand.capacity.toLocaleString()} seats</p>
-            </div>
-            <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-800">+850 seats</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="rounded-xl bg-surface-muted px-3 py-2">
-              <p className="font-black uppercase text-neutral-500">Cost</p>
-              <b className="mt-1 block">{formatMoney(stand.level * 180_000)}</b>
-            </div>
-            <div className="rounded-xl bg-surface-muted px-3 py-2">
-              <p className="font-black uppercase text-neutral-500">New cap.</p>
-              <b className="mt-1 block">{(stand.capacity + 850).toLocaleString()}</b>
-            </div>
-            <div className="rounded-xl bg-surface-muted px-3 py-2">
-              <p className="font-black uppercase text-neutral-500">Level</p>
-              <b className="mt-1 block">{stand.level + 1}</b>
-            </div>
-          </div>
-          <Button className="w-full" onClick={() => upgrade(stand.id)}>Upgrade</Button>
+          ) : null}
         </Card>
-      ))}
-      <Card className="space-y-3 p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-black">Repair to 100%</p>
-            <p className="text-xs text-neutral-500">Improves condition by {repairGain}% and reduces stadium-risk pressure.</p>
+        {stand ? (
+          <Card className="grid grid-cols-4 gap-2 p-2 text-xs">
+            <p className="rounded-lg bg-surface-muted px-2 py-2">Cost <b className="block">{formatMoney(stand.level * 180_000)}</b></p>
+            <p className="rounded-lg bg-surface-muted px-2 py-2">New cap <b className="block">{(stand.capacity + 850).toLocaleString()}</b></p>
+            <p className="rounded-lg bg-surface-muted px-2 py-2">Repair <b className="block text-danger">{formatMoney(repairCost)}</b></p>
+            <Button variant="secondary" className="min-h-full px-2 text-xs" onClick={repair} disabled={repairCost <= 0}>Repair Stadium</Button>
+          </Card>
+        ) : null}
           </div>
-          <b className="shrink-0 text-danger">{formatMoney(repairCost)}</b>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-xl bg-surface-muted px-3 py-2">
-            <p className="font-black uppercase text-neutral-500">Current</p>
-            <b className="mt-1 block">{pct(current.club.stadium.condition)}</b>
-          </div>
-          <div className="rounded-xl bg-surface-muted px-3 py-2">
-            <p className="font-black uppercase text-neutral-500">After repair</p>
-            <b className="mt-1 block">100%</b>
-          </div>
-        </div>
-        <Button variant="secondary" className="w-full" onClick={repair} disabled={repairCost <= 0}>Repair Stadium</Button>
-      </Card>
-    </div>
+    </OneScreen>
   );
 }
 
@@ -819,164 +779,87 @@ function HistoryTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => vo
   const goalDifference = current.club.record.gf - current.club.record.ga;
   const trophies = save.history.flatMap((item) => item.trophies.map((trophy) => `${item.season}: ${trophy}`));
   const unlockedAchievements = save.achievements.filter((achievement) => achievement.unlockedAt).length;
-  const latestSeason = save.history.at(-1);
+  const [panel, setPanel] = useUiPanel<HistoryPanel>(save, "history", "seasons");
+  const seasonPages = usePagedItems(save, "history_seasons", save.history, 2);
+  const trophyPages = usePagedItems(save, "history_trophies", trophies, 5);
+  const achievementPages = usePagedItems(save, "history_achievements", save.achievements, 4);
+  const activePager = panel === "seasons" ? seasonPages : panel === "trophies" ? trophyPages : achievementPages;
   return (
-    <div className="space-y-4">
-      <PageBack setTab={setTab} />
-      <Card className="overflow-hidden p-0">
-        <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
-          <p className="text-[10px] font-black uppercase text-white/65">Club legacy</p>
-          <h2 className="mt-1 text-xl font-black">History</h2>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
-              <b className="block text-lg">{save.history.length}</b>
-              <span className="text-[10px] font-black uppercase text-white/65">Seasons</span>
-            </div>
-            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
-              <b className="block text-lg">{trophies.length}</b>
-              <span className="text-[10px] font-black uppercase text-white/65">Trophies</span>
-            </div>
-            <div className="rounded-2xl bg-white px-2 py-3 text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.13)]">
-              <b className="block text-lg text-primary">{unlockedAchievements}/{save.achievements.length}</b>
-              <span className="text-[10px] font-black uppercase text-neutral-500">Achieved</span>
-            </div>
-          </div>
+    <OneScreen footer={<div className="grid grid-cols-[auto_1fr] gap-2"><PageBack setTab={setTab} /><PagerBar page={activePager.page} totalPages={activePager.totalPages} setPage={activePager.setPage} label={panel} /></div>}>
+      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-2 overflow-hidden">
+        <CompactPageTitle eyebrow="Club legacy" title="History" action={<b className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-primary">{unlockedAchievements}/{save.achievements.length}</b>} />
+        <div className="grid grid-cols-3 gap-1.5">
+          <p className="rounded-xl bg-white px-3 py-2 text-xs shadow-[0_8px_18px_rgba(23,33,27,0.04)]">Seasons <b className="block text-base">{save.history.length}</b></p>
+          <p className="rounded-xl bg-white px-3 py-2 text-xs shadow-[0_8px_18px_rgba(23,33,27,0.04)]">Trophies <b className="block text-base">{trophies.length}</b></p>
+          <p className="rounded-xl bg-white px-3 py-2 text-xs shadow-[0_8px_18px_rgba(23,33,27,0.04)]">Cup <b className="block truncate text-base">{cupHistoryLabel(save)}</b></p>
         </div>
-        <div className="grid grid-cols-2 gap-2 p-4 text-xs">
-          <div className="rounded-xl bg-surface-muted px-3 py-3">
-            <p className="font-black uppercase text-neutral-500">Latest outcome</p>
-            <b className="mt-1 block text-sm">{latestSeason ? latestSeason.outcome ?? "stayed" : "In progress"}</b>
-          </div>
-          <div className="rounded-xl bg-surface-muted px-3 py-3">
-            <p className="font-black uppercase text-neutral-500">Cup status</p>
-            <b className="mt-1 block text-sm">{cupStatus(save)}</b>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-black">Current Season</h2>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-800">{save.divisions.find((division) => division.id === current.club.divisionId)?.name ?? "League"}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">Position</p><b className="mt-1 block text-lg">{current.position ? ordinal(current.position) : "-"}</b></div>
-          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">Played</p><b className="mt-1 block text-lg">{current.club.record.played}</b></div>
-          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">Record</p><b className="mt-1 block text-lg">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b></div>
-          <div className="rounded-xl bg-surface-muted px-3 py-3"><p className="text-xs font-black uppercase text-neutral-500">GD / Pts</p><b className="mt-1 block text-lg">{goalDifference > 0 ? `+${goalDifference}` : goalDifference} / {current.club.record.points}</b></div>
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-4">
-        <Card className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Trophy size={18} className="text-primary" />
-            <h2 className="text-lg font-black">Trophy Cabinet</h2>
-          </div>
-          {trophies.length === 0 ? (
-            <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">No trophies or promotions recorded.</p>
-          ) : (
-            <div className="grid gap-2">
-              {trophies.map((label) => (
-                <div key={label} className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-950">
-                  <Trophy size={15} className="shrink-0 text-primary" />
-                  <b>{label}</b>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <Card className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-black">{save.cup.name}</h2>
-            <span className="rounded-full bg-surface-muted px-2.5 py-1 text-[10px] font-black uppercase text-neutral-600">{cupStatus(save)}</span>
-          </div>
-          <div className="space-y-2">
-            {save.cup.results.length === 0 ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">The first cup tie has not been played yet.</p> : save.cup.results.map((result) => (
-              <div key={`${result.season}_${result.round}`} className="rounded-xl bg-surface-muted px-3 py-3 text-sm">
-                <div className="flex justify-between gap-3">
-                  <b>{result.roundName}</b>
-                  <b className={result.won ? "text-primary" : "text-danger"}>{result.won ? "Won" : "Lost"}</b>
-                </div>
-                <p className="mt-1 text-xs text-neutral-500">vs {result.opponentName} · {result.goalsFor}-{result.goalsAgainst} · Prize {formatMoney(result.prize)}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <Card className="space-y-3">
-        <h3 className="text-lg font-black">Season History</h3>
-        {save.history.length === 0 ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">Finish a season to create history.</p> : save.history.map((item) => (
-          <div key={item.season} className="rounded-xl border border-line bg-white p-3 text-sm shadow-[0_8px_18px_rgba(23,33,27,0.04)]">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <b className="text-base">{item.season}/{String(item.season + 1).slice(2)}</b>
-                <p className="text-xs text-neutral-500">{item.divisionName}</p>
-              </div>
-              <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase", item.outcome === "promoted" ? "bg-primary text-white" : item.outcome === "relegated" ? "bg-red-100 text-danger" : "bg-surface-muted text-neutral-600")}>{item.outcome ?? "stayed"}</span>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Finish</p><b className="mt-1 block">{ordinal(item.position)}</b></div>
-              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Record</p><b className="mt-1 block">{item.won ?? 0}-{item.drawn ?? 0}-{item.lost ?? 0}</b></div>
-              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Award</p><b className="mt-1 block">{formatMoney(item.prizeMoney ?? 0)}</b></div>
-              <div className="rounded-xl bg-surface-muted px-3 py-2"><p className="font-black uppercase text-neutral-500">Balance</p><b className="mt-1 block">{formatMoney(item.balance)}</b></div>
-            </div>
-            <p className="mt-3 rounded-xl bg-surface-muted px-3 py-2 text-xs text-neutral-600">Next: {item.nextDivisionName ?? item.divisionName} · {item.cupSummary ?? "No cup record"}</p>
-            {item.seasonImpact ? (
-              <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-950">
-                Season impact: Board {formatSignedPoints(item.seasonImpact.boardConfidenceAfter - item.seasonImpact.boardConfidenceBefore)} pts · Trust {formatSignedPoints(item.seasonImpact.managerTrustAfter - item.seasonImpact.managerTrustBefore)} pts · Reputation {formatSignedPoints(item.seasonImpact.reputationAfter - item.seasonImpact.reputationBefore)} pts
-              </p>
-            ) : null}
-          </div>
-        ))}
-      </Card>
-
-      <Card className="space-y-3">
-        <h3 className="text-lg font-black">Hall of Fame</h3>
-        {save.hallOfFame.length === 0 ? (
-          <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">Club legends will appear after long service.</p>
-        ) : (
-          <div className="grid gap-2">
-            {save.hallOfFame.map((name) => (
-              <div key={name} className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-950">{name}</div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-black">Achievements</h3>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-800">{unlockedAchievements}/{save.achievements.length} unlocked</span>
-        </div>
-        <div className="grid gap-2">
-          {save.achievements.map((achievement) => (
-            <div key={achievement.id} data-testid={`achievement-${achievement.id}`} className={cn("rounded-xl border px-3 py-3 text-sm", achievement.unlockedAt ? "border-emerald-100 bg-emerald-50" : "border-line bg-surface-muted")}>
-              <div className="flex items-start gap-3">
-                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-400")}>
-                  <Award size={17} />
-                </div>
-                <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                    <p className="font-black">{achievement.title}</p>
-                    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black uppercase", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-500")}>{achievement.unlockedAt ? "Unlocked" : "Locked"}</span>
+        <div className="grid min-h-0 grid-rows-[auto_1fr] gap-2 overflow-hidden">
+          <SegmentTabs<HistoryPanel> value={panel} onChange={setPanel} options={[{ value: "seasons", label: "Seasons" }, { value: "trophies", label: "Trophies" }, { value: "achievements", label: "Achieved" }]} />
+          <Card className="min-h-0 p-3">
+            {panel === "seasons" ? (
+              <div className="grid h-full grid-rows-[auto_1fr] gap-2 overflow-hidden">
+                <div>
+                  <h3 className="text-sm font-black">Current Season</h3>
+                  <div className="mt-2 grid grid-cols-4 gap-1.5 text-xs">
+                    <p className="rounded-lg bg-surface-muted px-2 py-2">Pos <b className="block">{current.position ? ordinal(current.position) : "-"}</b></p>
+                    <p className="rounded-lg bg-surface-muted px-2 py-2">Played <b className="block">{current.club.record.played}</b></p>
+                    <p className="rounded-lg bg-surface-muted px-2 py-2">Record <b className="block">{current.club.record.won}-{current.club.record.drawn}-{current.club.record.lost}</b></p>
+                    <p className="rounded-lg bg-surface-muted px-2 py-2">GD/Pts <b className="block">{goalDifference > 0 ? `+${goalDifference}` : goalDifference}/{current.club.record.points}</b></p>
                   </div>
-                  <p className="mt-1 text-xs text-neutral-500">{achievement.description}</p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="h-2 flex-1 rounded-full bg-white">
-                      <div data-testid={`achievement-progress-${achievement.id}`} className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
+                </div>
+                <div className="grid min-h-0 grid-rows-2 gap-1.5 overflow-hidden">
+                  {seasonPages.pageItems.length === 0 ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">Season History starts after the first completed season.</p> : seasonPages.pageItems.map((item) => (
+                    <div key={item.season} className="rounded-xl border border-line bg-white p-2 text-xs shadow-[0_8px_18px_rgba(23,33,27,0.04)]">
+                      <div className="flex items-center justify-between gap-2">
+                        <b>{item.season}/{String(item.season + 1).slice(2)}</b>
+                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black uppercase", item.outcome === "promoted" ? "bg-primary text-white" : item.outcome === "relegated" ? "bg-red-100 text-danger" : "bg-surface-muted text-neutral-600")}>{item.outcome ?? "stayed"}</span>
+                      </div>
+                      <p className="truncate text-neutral-500">{item.divisionName} · {ordinal(item.position)} · {item.points} pts</p>
+                      <p className="mt-1 truncate text-neutral-500">Award {formatMoney(item.prizeMoney ?? 0)} · Balance {formatMoney(item.balance)}</p>
                     </div>
-                    <b className="w-10 text-right text-[10px] text-neutral-500">{Math.min(100, Math.round((achievement.progress / Math.max(1, achievement.target)) * 100))}%</b>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            ) : null}
+            {panel === "trophies" ? (
+              <div className="grid h-full grid-rows-[auto_1fr] gap-2 overflow-hidden">
+                <h3 className="text-sm font-black">Trophy Cabinet</h3>
+                <div className="grid min-h-0 grid-rows-5 gap-1.5 overflow-hidden">
+                  {trophyPages.pageItems.length === 0 ? <p className="rounded-xl bg-surface-muted px-3 py-3 text-sm text-neutral-500">No trophies or promotions recorded.</p> : trophyPages.pageItems.map((label) => (
+                    <div key={label} className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-950">
+                      <Trophy size={15} className="shrink-0 text-primary" />
+                      <b className="truncate">{label}</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {panel === "achievements" ? (
+              <div className="grid h-full grid-rows-[auto_1fr] gap-2 overflow-hidden">
+                <h3 className="text-sm font-black">Achievements</h3>
+                <div className="grid min-h-0 grid-rows-4 gap-1.5 overflow-hidden">
+                  {achievementPages.pageItems.map((achievement) => (
+                    <div key={achievement.id} data-testid={`achievement-${achievement.id}`} className={cn("rounded-xl border px-3 py-2 text-xs", achievement.unlockedAt ? "border-emerald-100 bg-emerald-50" : "border-line bg-surface-muted")}>
+                      <div className="flex items-center justify-between gap-2">
+                        <b className="truncate">{achievement.title}</b>
+                        <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black uppercase", achievement.unlockedAt ? "bg-primary text-white" : "bg-white text-neutral-500")}>{achievement.unlockedAt ? "Unlocked" : "Locked"}</span>
+                      </div>
+                      <p className="mt-1 truncate text-neutral-500">{achievement.description}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 rounded-full bg-white">
+                          <div data-testid={`achievement-progress-${achievement.id}`} className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (achievement.progress / Math.max(1, achievement.target)) * 100)}%` }} />
+                        </div>
+                        <b className="w-8 text-right text-[10px] text-neutral-500">{Math.min(100, Math.round((achievement.progress / Math.max(1, achievement.target)) * 100))}%</b>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </Card>
         </div>
-      </Card>
-    </div>
+      </div>
+    </OneScreen>
   );
 }
 
@@ -988,6 +871,7 @@ function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
   const [importText, setImportText] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
+  const [dataModal, setDataModal] = useState<"export" | "import" | undefined>();
   const exportedSave = useMemo(() => JSON.stringify(save, null, 2), [save]);
   const current = useCurrent(save)!;
   const exportSizeKb = Math.max(1, Math.round(new Blob([exportedSave]).size / 1024));
@@ -1006,104 +890,84 @@ function SettingsTab({ save, setTab }: { save: GameSave; setTab: (tab: Tab) => v
     setImportStatus("Save file downloaded.");
   };
   const submitImport = async () => {
-    const ok = await importFromJson(importText);
+    const json = importText;
+    setDataModal(undefined);
+    const ok = await importFromJson(json);
     setImportStatus(ok ? "Imported into Slot 1." : "Import failed. Paste a valid Football Director Pro save.");
     if (ok) setImportText("");
+    else setDataModal("import");
   };
   return (
-    <div className="space-y-4">
-      <PageBack setTab={setTab} />
-      <Card className="overflow-hidden p-0">
-        <div className="bg-[linear-gradient(135deg,_#10241b,_#0f8139)] p-4 text-white">
-          <p className="text-[10px] font-black uppercase text-white/65">Local career</p>
-          <h2 className="mt-1 text-xl font-black">Settings</h2>
-          <p className="mt-2 text-sm text-white/72">Save, restore, and tune the offline chairman experience.</p>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
-              <b className="block truncate text-sm">{current.club.name}</b>
-              <span className="text-[10px] font-black uppercase text-white/65">Club</span>
-            </div>
-            <div className="rounded-2xl bg-white/13 px-2 py-3 ring-1 ring-white/15">
-              <b className="block text-sm">{save.settings.textSize}</b>
-              <span className="text-[10px] font-black uppercase text-white/65">Text</span>
-            </div>
-            <div className="rounded-2xl bg-white px-2 py-3 text-emerald-950 shadow-[0_12px_24px_rgba(0,0,0,0.13)]">
-              <b className="block text-sm text-primary">{save.settings.sound ? "On" : "Off"}</b>
-              <span className="text-[10px] font-black uppercase text-neutral-500">Sound</span>
-            </div>
-          </div>
-        </div>
-        <div className="p-4">
-          <Button className="w-full" onClick={persist}><Save size={16} /> Manual Save</Button>
-        </div>
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Type size={18} className="text-primary" />
-          <h3 className="text-lg font-black">Accessibility</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant={save.settings.textSize === "normal" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "normal" })}>Normal Text</Button>
-          <Button variant={save.settings.textSize === "large" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "large" })}>Large Text</Button>
-        </div>
-        <Button variant={save.settings.sound ? "primary" : "secondary"} className="w-full" onClick={() => updateSettings({ sound: !save.settings.sound })}>
-          <Volume2 size={16} /> Sound {save.settings.sound ? "On" : "Off"}
-        </Button>
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+    <OneScreen footer={<PageBack setTab={setTab} />}>
+      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-2 overflow-hidden">
+        <CompactPageTitle eyebrow="Local career" title="Settings" action={<b className="rounded-lg bg-surface-muted px-3 py-2 text-xs">{exportSizeKb}KB</b>} />
+        <Card className="grid grid-cols-3 gap-2 p-2 text-center text-xs">
+          <p className="rounded-xl bg-surface-muted px-2 py-3"><b className="block truncate text-sm">{current.club.name}</b><span className="text-[10px] font-black uppercase text-neutral-500">Club</span></p>
+          <p className="rounded-xl bg-surface-muted px-2 py-3"><b className="block text-sm">{save.settings.textSize}</b><span className="text-[10px] font-black uppercase text-neutral-500">Text</span></p>
+          <p className="rounded-xl bg-surface-muted px-2 py-3"><b className="block text-sm text-primary">{save.settings.sound ? "On" : "Off"}</b><span className="text-[10px] font-black uppercase text-neutral-500">Sound</span></p>
+        </Card>
+        <div className="grid min-h-0 grid-rows-[auto_auto_auto_1fr] gap-2 overflow-hidden">
+          <Card className="grid grid-cols-2 gap-2 p-3">
+            <Button onClick={persist}><Save size={16} /> Manual Save</Button>
+            <Button variant={save.settings.sound ? "primary" : "secondary"} onClick={() => updateSettings({ sound: !save.settings.sound })}><Volume2 size={16} /> Sound</Button>
+          </Card>
+          <Card className="grid grid-cols-2 gap-2 p-3">
+            <Button variant={save.settings.textSize === "normal" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "normal" })}><Type size={16} /> Normal</Button>
+            <Button variant={save.settings.textSize === "large" ? "primary" : "secondary"} onClick={() => updateSettings({ textSize: "large" })}>Large Text</Button>
+          </Card>
+          <Card className="grid grid-cols-2 gap-2 p-3">
+            <Button onClick={() => setDataModal("export")}><FileJson size={16} /> Export Save</Button>
+            <Button variant="secondary" onClick={() => setDataModal("import")}><Upload size={16} /> Import Save</Button>
+          </Card>
+          <Card className="border-red-100 bg-red-50/50 p-3">
             <div className="flex items-center gap-2">
-              <FileJson size={18} className="text-primary" />
-              <h3 className="text-lg font-black">Export Save</h3>
+              <Trash2 size={18} className="text-danger" />
+              <h3 className="text-sm font-black text-danger">Reset Career</h3>
             </div>
-            <p className="mt-1 text-xs text-neutral-500">Back up or share this local career.</p>
+            {confirmReset ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button variant="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
+                <Button onClick={resetCareer}>Confirm Reset</Button>
+              </div>
+            ) : (
+              <Button variant="secondary" className="mt-3 w-full" onClick={() => setConfirmReset(true)}>Reset Local Career</Button>
+            )}
+            {importStatus && !dataModal ? <p className="mt-2 rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{importStatus}</p> : null}
+          </Card>
+        </div>
+      </div>
+      {dataModal ? (
+        <div className="absolute inset-0 z-40 grid place-items-center bg-emerald-950/55 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="save-data-title" className="w-full rounded-xl bg-white p-4 shadow-2xl">
+            <p className="text-xs font-semibold uppercase text-primary">{dataModal === "export" ? "Export Save" : "Import Save"}</p>
+            <h2 id="save-data-title" className="mt-1 text-lg font-black">{dataModal === "export" ? "Save JSON" : "Restore Slot 1"}</h2>
+            {dataModal === "export" ? (
+              <>
+                <textarea readOnly value={exportedSave} className="mt-3 h-20 w-full resize-none rounded-xl border border-line bg-surface-muted p-3 font-mono text-[10px] leading-4 text-neutral-600" />
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <Button onClick={copyExport}><Copy size={16} /> Copy</Button>
+                  <Button variant="secondary" onClick={downloadExport}><Download size={16} /> File</Button>
+                  <Button variant="secondary" onClick={() => setDataModal(undefined)}>Close</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="Paste exported save JSON here" className="mt-3 h-24 w-full resize-none rounded-xl border border-line bg-white p-3 font-mono text-[10px] leading-4 outline-none focus:border-primary" />
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button onClick={submitImport} disabled={!importText.trim()}>Import Into Slot 1</Button>
+                  <Button variant="secondary" onClick={() => setDataModal(undefined)}>Cancel</Button>
+                </div>
+                {importStatus ? <p className="mt-2 rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{importStatus}</p> : null}
+              </>
+            )}
           </div>
-          <span className="shrink-0 rounded-full bg-surface-muted px-2.5 py-1 text-[10px] font-black uppercase text-neutral-600">{exportSizeKb}KB</span>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button onClick={copyExport}><Copy size={16} /> Copy JSON</Button>
-          <Button variant="secondary" onClick={downloadExport}><Download size={16} /> Download</Button>
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-black uppercase text-neutral-500">Save preview</p>
-          <textarea readOnly value={exportedSave} className="h-28 w-full resize-none rounded-xl border border-line bg-surface-muted p-3 font-mono text-[10px] leading-4 text-neutral-600" />
-        </div>
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Upload size={18} className="text-primary" />
-          <h3 className="text-lg font-black">Import Save</h3>
-        </div>
-        <p className="rounded-xl bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600">Pastes over Slot 1 after validation. Invalid saves are rejected.</p>
-        <textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="Paste exported save JSON here" className="h-32 w-full resize-none rounded-xl border border-line bg-white p-3 font-mono text-[10px] leading-4 outline-none focus:border-primary" />
-        <Button className="w-full" onClick={submitImport} disabled={!importText.trim()}>Import Into Slot 1</Button>
-      </Card>
-
-      <Card className="space-y-3 border-red-100 bg-red-50/50">
-        <div className="flex items-center gap-2">
-          <Trash2 size={18} className="text-danger" />
-          <h3 className="text-lg font-black text-danger">Reset Career</h3>
-        </div>
-        <p className="rounded-xl bg-white px-3 py-3 text-xs leading-5 text-neutral-600">Deletes the local Slot 1 save from this browser.</p>
-        {confirmReset ? (
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
-            <Button onClick={resetCareer}>Confirm Reset</Button>
-          </div>
-        ) : (
-          <Button variant="secondary" className="w-full" onClick={() => setConfirmReset(true)}>Reset Local Career</Button>
-        )}
-      </Card>
-      {importStatus ? <p className="rounded-lg bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white">{importStatus}</p> : null}
-    </div>
+      ) : null}
+    </OneScreen>
   );
 }
 
-function ContractOfferControls({ player, requestedWage, requestedYears, currentWageBill, approve, reject }: { player: Player; requestedWage: number; requestedYears: number; currentWageBill: number; approve: (terms: ContractTerms) => void; reject: () => void }) {
+function ContractOfferControls({ player, requestedWage, requestedYears, approve, reject }: { player: Player; requestedWage: number; requestedYears: number; approve: (terms: ContractTerms) => void; reject: () => void }) {
   const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 0.95, 1, 1.1, 1.2], 50);
   const yearOptions = contractYearOptions(requestedYears);
   const [wage, setWage] = useState(requestedWage);
@@ -1112,19 +976,19 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
   const wageBillDelta = wage - player.wage;
 
   return (
-    <div className="mt-4 space-y-4">
+    <div className="mt-3 space-y-2">
       <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage offer</p>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="mb-1 text-xs font-bold uppercase text-neutral-500">Weekly wage offer</p>
+        <div className="grid grid-cols-5 gap-1.5">
           {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>
               {formatWeeklyWage(option)}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
+        <p className="mb-1 text-xs font-bold uppercase text-neutral-500">Contract length</p>
         <div className="grid grid-cols-5 gap-2">
           {yearOptions.map((option) => (
             <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>
@@ -1134,15 +998,9 @@ function ContractOfferControls({ player, requestedWage, requestedYears, currentW
         </div>
       </div>
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
-        {player.name} wants {formatWeeklyWage(requestedWage)} for {requestedYears} years.
+        Wants {formatWeeklyWage(requestedWage)} for {requestedYears}y. Wage bill {formatSignedMoney(wageBillDelta)}/w. {likelyAccepted ? "The terms look credible." : "The offer may feel light."}
       </p>
-      <ImpactBox>
-        <b className="block">Selected offer impact</b>
-        <span>Likely response: {likelyAccepted ? "accept" : "reject"}.</span>
-        <span className="block">Weekly wage bill: {formatSignedMoney(wageBillDelta)}/w, from {formatMoney(currentWageBill)}/w to {formatMoney(currentWageBill + wageBillDelta)}/w.</span>
-        <span className="block">{likelyAccepted ? "The player and manager should react well to these terms." : "A weak offer could irritate the player and disappoint the manager."}</span>
-      </ImpactBox>
-      <DecisionActionRow>
+      <DecisionActionRow className="mt-2">
         <Button onClick={() => approve({ wage, years })}>Submit Offer</Button>
         <Button variant="secondary" onClick={reject}>Reject</Button>
       </DecisionActionRow>
@@ -1170,11 +1028,11 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
   if (!current.manager) {
     return (
       <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-5">
-        <div role="dialog" aria-modal="true" aria-labelledby="manager-decision-title" className="max-h-full w-full overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+        <div role="dialog" aria-modal="true" aria-labelledby="manager-decision-title" className="w-full overflow-hidden rounded-xl bg-white p-4 shadow-2xl">
           <p className="text-xs font-semibold uppercase text-primary">Decision required</p>
-          <h2 id="manager-decision-title" className="mt-1 text-xl font-bold">Hire a Manager</h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">The club cannot continue without a manager to run the squad and propose transfers.</p>
-          <div className="mt-4 space-y-3">
+          <h2 id="manager-decision-title" className="mt-1 text-lg font-bold">Hire a Manager</h2>
+          <p className="mt-2 text-sm leading-5 text-neutral-600">The club cannot continue without a manager.</p>
+          <div className="mt-3 grid gap-2">
             {save.managerCandidates.slice(0, 3).map((manager) => (
               <div key={manager.id} className="rounded-lg border border-line p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -1184,7 +1042,7 @@ function DecisionModal({ save, setTab, suppressed = false }: { save: GameSave; s
                   </div>
                   <p className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-white">{managerRating(manager)}</p>
                 </div>
-                <Button className="mt-3 w-full" onClick={() => setTab("manager")}>Negotiate</Button>
+                <Button className="mt-2 w-full" onClick={() => setTab("manager")}>Negotiate</Button>
               </div>
             ))}
           </div>
@@ -1221,20 +1079,20 @@ function EventEntityHeader({ save }: { save: GameSave }) {
       <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-emerald-950 text-white shadow-[0_18px_36px_rgba(16,36,27,0.18)]">
         <div className="relative p-3">
           <div className="pointer-events-none absolute inset-0 opacity-16 [background:linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.35)_38%_41%,transparent_41%_62%,rgba(255,255,255,0.16)_62%_64%,transparent_64%)]" />
-          <div className="relative grid grid-cols-[6.25rem_1fr] items-stretch gap-3">
+          <div className="relative grid grid-cols-[5rem_1fr] items-stretch gap-3">
             <div className="relative overflow-hidden rounded-2xl bg-emerald-900/60 shadow-[0_14px_28px_rgba(0,0,0,0.22)] ring-1 ring-white/20">
-              <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-32 w-full rounded-none border-0 text-base shadow-none" />
+              <PersonAvatar name={player.name} seedKey={player.id} variant="portrait" className="h-24 w-full rounded-none border-0 text-base shadow-none" />
               <span className={cn("absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-sm font-black text-white shadow-[0_8px_14px_rgba(0,0,0,0.22)]", positionClass(player.position))}>{displayPosition(player.position)}</span>
               <span className="absolute bottom-2 right-2 rounded-xl bg-white px-2.5 py-1 text-base font-black text-emerald-950 shadow-[0_8px_14px_rgba(0,0,0,0.18)]">{player.rating}</span>
             </div>
             <div className="min-w-0 py-1">
               <p className="text-[10px] font-black uppercase tracking-wide text-white/58">{context}</p>
-              <p className="mt-1 text-2xl font-black leading-none">{player.name}</p>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <p className="mt-1 truncate text-xl font-black leading-none">{player.name}</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                 <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Age</span><b>{player.age}</b></p>
                 <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Contract</span><b>{player.contractYears}y</b></p>
               </div>
-              <p className="mt-2 rounded-xl bg-white/10 px-2.5 py-2 text-xs ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Weekly wage</span><b>{formatWeeklyWage(player.wage)}</b></p>
+              <p className="mt-1 rounded-xl bg-white/10 px-2.5 py-1.5 text-xs ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Weekly wage</span><b>{formatWeeklyWage(player.wage)}</b></p>
             </div>
           </div>
         </div>
@@ -1251,28 +1109,28 @@ function EventEntityHeader({ save }: { save: GameSave }) {
       <div className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-emerald-950 text-white shadow-[0_18px_36px_rgba(16,36,27,0.18)]">
         <div className="relative p-3">
           <div className="pointer-events-none absolute inset-0 opacity-16 [background:linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.35)_38%_41%,transparent_41%_62%,rgba(255,255,255,0.16)_62%_64%,transparent_64%)]" />
-          <div className="relative grid grid-cols-[6.25rem_1fr] items-stretch gap-3">
+          <div className="relative grid grid-cols-[5rem_1fr] items-stretch gap-3">
             <div className="relative overflow-hidden rounded-2xl bg-emerald-900/60 shadow-[0_14px_28px_rgba(0,0,0,0.22)] ring-1 ring-white/20">
-              <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-32 w-full rounded-none border-0 text-base shadow-none" />
+              <PersonAvatar name={manager.name} seedKey={manager.id} kind="manager" variant="portrait" className="h-24 w-full rounded-none border-0 text-base shadow-none" />
               <span className="absolute bottom-2 right-2 rounded-xl bg-white px-2.5 py-1 text-base font-black text-emerald-950 shadow-[0_8px_14px_rgba(0,0,0,0.18)]">{managerRating(manager)}</span>
             </div>
             <div className="min-w-0 py-1">
               <p className="text-[10px] font-black uppercase tracking-wide text-white/58">Manager office</p>
-              <p className="mt-1 text-2xl font-black leading-none">{manager.name}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
+              <p className="mt-1 truncate text-xl font-black leading-none">{manager.name}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 <span className="rounded-full bg-white/12 px-2 py-1 text-[10px] font-black uppercase text-white/82 ring-1 ring-white/10">{manager.style}</span>
                 <span className="rounded-full bg-white/12 px-2 py-1 text-[10px] font-black uppercase text-white/82 ring-1 ring-white/10">{manager.personality}</span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                 <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Age</span><b>{manager.age}</b></p>
-                <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Trust</span><b>{current.club.managerTrust ?? 66}%</b></p>
+                <p className="rounded-xl bg-white/10 px-2.5 py-2 ring-1 ring-white/10"><span className="block text-[9px] font-black uppercase text-white/50">Mood</span><b>{moodLabel(current.club.managerTrust ?? 66)}</b></p>
               </div>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-3 border-t border-white/10 bg-white text-center text-xs text-neutral-900">
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Rating</small>{managerRating(manager)}</span>
-          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Trust</small>{current.club.managerTrust ?? 66}%</span>
+          <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Mood</small>{moodLabel(current.club.managerTrust ?? 66)}</span>
           <span className="px-2 py-2 font-black"><small className="block text-[9px] text-neutral-500">Wage</small>{formatWeeklyWage(manager.wage)}</span>
         </div>
       </div>
@@ -1281,7 +1139,7 @@ function EventEntityHeader({ save }: { save: GameSave }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
       <div className="flex items-center gap-3 p-3">
-        <BrandMark className="h-16 w-16 shrink-0 rounded-2xl shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
+        <BrandMark className="h-14 w-14 shrink-0 rounded-2xl shadow-[0_10px_22px_rgba(16,36,27,0.12)]" />
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-black uppercase text-primary">Chairman desk</p>
           <p className="truncate text-lg font-black leading-tight">{current.club.name}</p>
@@ -1300,7 +1158,13 @@ function EventEntityHeader({ save }: { save: GameSave }) {
 function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: FinancialSnapshot; testIdPrefix?: string }) {
   if (!snapshot) return null;
   const positive = snapshot.profit >= 0;
-  const expenses = [
+  const prioritizedRows = (rows: [string, number][], priorityLabels: string[], limit: number) => {
+    const nonZero = rows.filter(([, amount]) => Number(amount) !== 0);
+    const priority = priorityLabels.map((label) => nonZero.find(([rowLabel]) => rowLabel === label)).filter(Boolean) as [string, number][];
+    const rest = nonZero.filter(([label]) => !priorityLabels.includes(label));
+    return [...priority, ...rest].slice(0, limit);
+  };
+  const expenses: [string, number][] = [
     ["Player and manager wages", snapshot.expenses.wages],
     ["Stadium running costs", snapshot.expenses.stadiumRunning],
     ["Youth academy", snapshot.expenses.youthAcademy],
@@ -1308,7 +1172,7 @@ function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: Fi
     ["Infrastructure spending", snapshot.expenses.infrastructure],
     ["Fees out", snapshot.expenses.feesOut],
   ];
-  const income = [
+  const income: [string, number][] = [
     ["Fees in", snapshot.income.feesIn],
     ["Ticket sales", snapshot.income.ticketSales],
     ["Food and drink", snapshot.income.foodDrink],
@@ -1318,45 +1182,51 @@ function FinancialRows({ snapshot, testIdPrefix = "financial" }: { snapshot?: Fi
     ["Sponsorship", snapshot.income.sponsorship],
     ["TV", snapshot.income.tv],
   ];
+  const compactExpenses = prioritizedRows(expenses, ["Fees out", "Infrastructure spending"], 3);
+  const compactIncome = prioritizedRows(income, ["Prize money", "Fees in", "Sponsorship"], 3);
   return (
-    <div className="mt-4 space-y-4 text-sm">
-      <div className={cn("overflow-hidden rounded-2xl border shadow-[0_10px_24px_rgba(16,36,27,0.06)]", positive ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50")}>
-        <div className="flex items-center justify-between gap-3 border-b border-white/70 px-4 py-3">
-          <span className="text-xs font-black uppercase text-neutral-500">Report period</span>
-          <b data-testid={`${testIdPrefix}-period`} className="text-xs">{snapshot.month} · Period {snapshot.week}</b>
+    <div className="mt-2 grid gap-1.5 text-xs">
+      <div className={cn("overflow-hidden rounded-xl border shadow-[0_8px_18px_rgba(16,36,27,0.05)]", positive ? "border-emerald-100 bg-emerald-50" : "border-red-100 bg-red-50")}>
+        <div className="flex items-center justify-between gap-2 border-b border-white/70 px-2.5 py-1.5">
+          <span className="text-[10px] font-black uppercase text-neutral-500">Report period</span>
+          <b data-testid={`${testIdPrefix}-period`} className="text-[11px]">{snapshot.month} · Period {snapshot.week}</b>
         </div>
-        <div className="px-4 py-4">
-          <p className="text-xs font-black uppercase text-neutral-500">{positive ? "Period profit" : "Period loss"}</p>
-          <b data-testid={`${testIdPrefix}-result`} className={cn("mt-1 block text-4xl font-black", positive ? "text-primary" : "text-danger")}>{formatMoney(snapshot.profit)}</b>
-          <p className="mt-1 text-xs text-neutral-600">Balance moved from {formatMoney(snapshot.balanceBefore)} to {formatMoney(snapshot.balanceAfter)}.</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Opening balance <b data-testid={`${testIdPrefix}-opening`} className="block">{formatMoney(snapshot.balanceBefore)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Closing balance <b data-testid={`${testIdPrefix}-closing`} className="block">{formatMoney(snapshot.balanceAfter)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Total income <b data-testid={`${testIdPrefix}-income`} className="block text-primary">{formatMoney(snapshot.totalIncome)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Total expenses <b data-testid={`${testIdPrefix}-expenses`} className="block text-danger">{formatMoney(snapshot.totalExpenses)}</b></p>
-      </div>
-      <div className="rounded-2xl border border-line bg-white p-3">
-        <p className="mb-2 text-xs font-black uppercase text-neutral-500">Expenses</p>
-        <div className="space-y-1.5">
-          {expenses.map(([label, amount]) => (
-            <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2">
-              <span className="text-xs text-neutral-600">{label}</span>
-              <b className="shrink-0 text-sm text-danger">-{formatMoney(amount as number)}</b>
-            </div>
-          ))}
+        <div className="grid grid-cols-[1fr_auto] items-end gap-2 px-2.5 py-2">
+          <div>
+            <p className="text-[10px] font-black uppercase text-neutral-500">{positive ? "Period profit" : "Period loss"}</p>
+            <b data-testid={`${testIdPrefix}-result`} className={cn("block text-xl font-black leading-tight", positive ? "text-primary" : "text-danger")}>{formatMoney(snapshot.profit)}</b>
+          </div>
+          <p className="max-w-[9.4rem] text-right text-[9px] font-semibold leading-tight text-neutral-600">Balance movement<br />Balance moved from {formatMoney(snapshot.balanceBefore)} to {formatMoney(snapshot.balanceAfter)}</p>
         </div>
       </div>
-      <div className="rounded-2xl border border-line bg-white p-3">
-        <p className="mb-2 text-xs font-black uppercase text-neutral-500">Income</p>
-        <div className="space-y-1.5">
-          {income.map(([label, amount]) => (
-            <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2">
-              <span className="text-xs text-neutral-600">{label}</span>
-              <b className="shrink-0 text-sm text-primary">{formatMoney(amount as number)}</b>
-            </div>
-          ))}
+      <div className="grid grid-cols-4 gap-1 text-[10px]">
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Opening <b data-testid={`${testIdPrefix}-opening`} className="block truncate text-[11px]">{formatMoney(snapshot.balanceBefore)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Closing <b data-testid={`${testIdPrefix}-closing`} className="block truncate text-[11px]">{formatMoney(snapshot.balanceAfter)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Income <b data-testid={`${testIdPrefix}-income`} className="block truncate text-[11px] text-primary">{formatMoney(snapshot.totalIncome)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Expenses <b data-testid={`${testIdPrefix}-expenses`} className="block truncate text-[11px] text-danger">{formatMoney(snapshot.totalExpenses)}</b></p>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="rounded-xl border border-line bg-white p-1.5">
+          <p className="mb-1 text-[9px] font-black uppercase text-neutral-500">Expenses</p>
+          <div className="grid gap-0.5">
+            {compactExpenses.map(([label, amount]) => (
+              <div key={label} className="flex items-center justify-between gap-1 rounded-md bg-surface-muted px-1.5 py-0.5">
+                <span className="truncate text-[9px] text-neutral-600">{label}</span>
+                <b className="shrink-0 text-[10px] text-danger">-{formatMoney(amount as number)}</b>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-line bg-white p-1.5">
+          <p className="mb-1 text-[9px] font-black uppercase text-neutral-500">Income</p>
+          <div className="grid gap-0.5">
+            {compactIncome.map(([label, amount]) => (
+              <div key={label} className="flex items-center justify-between gap-1 rounded-md bg-surface-muted px-1.5 py-0.5">
+                <span className="truncate text-[9px] text-neutral-600">{label}</span>
+                <b className="shrink-0 text-[10px] text-primary">{formatMoney(amount as number)}</b>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -1385,28 +1255,21 @@ function TransferBudgetControls({ save }: { save: GameSave }) {
   const selectedMode = modes.find((item) => item.mode === mode) ?? modes[2];
   const selectedBudgetAmount = amountFor(selectedMode.factor);
   return (
-    <div className="mt-4 space-y-3">
-      {modes.map((item) => (
-        <button key={item.mode} onClick={() => setMode(item.mode)} className={cn("w-full rounded-lg border px-3 py-3 text-left", mode === item.mode ? "border-primary bg-emerald-50" : "border-line bg-white")}>
-          <div className="flex items-center justify-between gap-3">
-            <b>{item.label}</b>
-            <b>{formatMoney(amountFor(item.factor))}</b>
-          </div>
-          <p className="text-xs text-neutral-500">{item.detail}</p>
-          <p className="mt-1 text-xs font-bold text-neutral-500">
-            {item.mode === "max" || item.mode === "generous" ? "The manager will welcome this." : item.mode === "strict" || item.mode === "zero" ? "The manager may feel restricted." : "A workable middle ground."}
-          </p>
-        </button>
-      ))}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Money <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Wage bill <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
+    <div className="mt-2 grid gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
+        {modes.map((item) => (
+          <button key={item.mode} onClick={() => setMode(item.mode)} className={cn("rounded-lg border px-2 py-1.5 text-left", mode === item.mode ? "border-primary bg-emerald-50" : "border-line bg-white")}>
+            <b className="block text-[11px] leading-tight">{item.label}</b>
+            <span className="block truncate text-[10px] font-bold text-neutral-500">{formatMoney(amountFor(item.factor))}</span>
+          </button>
+        ))}
       </div>
-      <ImpactBox>
-        <b className="block">Selected budget impact</b>
-        Transfer budget {formatMoney(selectedBudgetAmount)}. The manager reaction depends on how much room this gives him in the market.
-      </ImpactBox>
-      <Button className="sticky bottom-0 w-full shadow-card" onClick={() => resolve({ mode })}>Set Transfer Budget</Button>
+      <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Money <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Wages <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1.5">Budget <b className="block">{formatMoney(selectedBudgetAmount)}</b></p>
+      </div>
+      <Button className="w-full shadow-card" onClick={() => resolve({ mode })}>Set Transfer Budget</Button>
     </div>
   );
 }
@@ -1426,15 +1289,15 @@ function ManagerContractControls({ save }: { save: GameSave }) {
   const newWageBill = currentWageBill - manager.wage + wage;
   const wageBillDelta = newWageBill - currentWageBill;
   return (
-    <div className="mt-4 space-y-4">
+    <div className="mt-3 space-y-2">
       <div className="grid grid-cols-2 gap-2 text-xs">
         <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage <b className="block">{formatWeeklyWage(manager.wage)}</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">Expected wage <b className="block">{formatWeeklyWage(expectedWage)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage bill <b className="block">{formatMoney(currentWageBill)}/w</b></p>
         <p className="rounded-lg bg-surface-muted px-3 py-2">New wage bill <b className="block">{formatMoney(newWageBill)}/w</b></p>
+        <p className="rounded-lg bg-surface-muted px-3 py-2">Change <b className="block">{formatSignedMoney(wageBillDelta)}/w</b></p>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
+        <p className="mb-1 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
         <div className="grid grid-cols-5 gap-2">
           {wageOptions.map((option) => (
             <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-2 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
@@ -1444,7 +1307,7 @@ function ManagerContractControls({ save }: { save: GameSave }) {
         </div>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
+        <p className="mb-1 text-xs font-bold uppercase text-neutral-500">Contract length</p>
         <div className="grid grid-cols-3 gap-2">
           {yearOptions.map((option) => (
             <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>
@@ -1453,12 +1316,8 @@ function ManagerContractControls({ save }: { save: GameSave }) {
           ))}
         </div>
       </div>
-      <ImpactBox>
-        <b className="block">Decision impact</b>
-        <span>Extend: weekly wage bill {formatSignedMoney(wageBillDelta)}/w, and the manager should feel backed.</span>
-        <span className="block">Let him leave: the board will expect a replacement before the club continues.</span>
-      </ImpactBox>
-      <DecisionActionRow>
+      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">A stronger offer makes the club look committed. Letting him leave forces a replacement.</p>
+      <DecisionActionRow className="mt-2">
         <Button onClick={() => resolve({ action: "extend", terms: { wage, years } })}>Extend Contract</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "release" })}>Let Him Leave</Button>
       </DecisionActionRow>
@@ -1472,9 +1331,9 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
   const expectedFee = proposal?.fee ?? player.value;
   const requestedWage = proposal?.requestedWage ?? Math.round(player.wage * 1.2);
   const requestedYears = proposal?.requestedYears ?? 3;
-  const feeOptions = uniqueMoneyOptions(expectedFee, [0.8, 0.9, 0.95, 1, 1.1], 100);
-  const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 0.95, 1, 1.1, 1.2], 50);
-  const yearOptions = contractYearOptions(requestedYears);
+  const feeOptions = uniqueMoneyOptions(expectedFee, [0.9, 1, 1.1], 100).slice(0, 3);
+  const wageOptions = uniqueMoneyOptions(requestedWage, [0.95, 1, 1.1], 50).slice(0, 3);
+  const yearOptions = Array.from(new Set([Math.max(1, requestedYears - 1), requestedYears, Math.min(5, requestedYears + 1)])).sort((a, b) => a - b);
   const [fee, setFee] = useState(expectedFee);
   const [wage, setWage] = useState(requestedWage);
   const [years, setYears] = useState(requestedYears);
@@ -1482,47 +1341,41 @@ function BuyNegotiationControls({ save, player, proposal }: { save: GameSave; pl
   const selectedWageBill = current.club.finances.weeklyWages + wage;
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Selling club <b className="block truncate">{sellingClub?.name ?? "Unknown"}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Target identity <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Expected fee <b className="block">{formatMoney(expectedFee)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Player wants <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
+    <div className="mt-2 grid gap-1.5">
+      <div className="grid grid-cols-2 gap-1 text-[10px]">
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Selling club <b className="block truncate text-[11px]">{sellingClub?.name ?? "Unknown"}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Target identity <b className="block text-[11px]">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Expected fee <b className="block text-[11px]">{formatMoney(expectedFee)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Wage ask <b className="block text-[11px]">{formatWeeklyWage(requestedWage)}</b></p>
       </div>
-      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">
-        The manager has put this player forward because he believes this target fits the squad plan. Walking away may frustrate him.
-      </p>
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Fee to club</p>
-        <div className="grid grid-cols-3 gap-2">
-          {feeOptions.map((option) => (
-            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", fee === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatMoney(option)}</button>
-          ))}
+      <div className="grid grid-cols-3 gap-1.5">
+        <div>
+          <p className="mb-1 text-[9px] font-bold uppercase text-neutral-500">Fee</p>
+          <div className="grid gap-1">
+            {feeOptions.map((option) => (
+              <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-1 py-1 text-[10px] font-bold", fee === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatMoney(option)}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[9px] font-bold uppercase text-neutral-500">Wage</p>
+          <div className="grid gap-1">
+            {wageOptions.map((option) => (
+              <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-1 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[9px] font-bold uppercase text-neutral-500">Years</p>
+          <div className="grid gap-1">
+            {yearOptions.map((option) => (
+              <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-1 text-[10px] font-bold", years === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{option}y</button>
+            ))}
+          </div>
         </div>
       </div>
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly wage</p>
-        <div className="grid grid-cols-3 gap-2">
-          {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Contract length</p>
-        <div className="grid grid-cols-5 gap-2">
-          {yearOptions.map((option) => (
-            <button key={option} onClick={() => setYears(option)} className={cn("rounded-lg border px-1 py-2 text-xs font-bold", years === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{option}y</button>
-          ))}
-        </div>
-      </div>
-      <ImpactBox>
-        <b className="block">Selected offer impact</b>
-        Upfront fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the signing is completed.
-      </ImpactBox>
-      <DecisionActionRow>
+      <p className="truncate rounded-lg bg-surface-muted px-2 py-1 text-[10px] text-neutral-600">Offer: {formatMoney(fee)} fee, {formatWeeklyWage(wage)}, {years}y. Wage bill {formatMoney(selectedWageBill)}/w.</p>
+      <DecisionActionRow className="mt-1 gap-2 pt-1.5">
         <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years } })}>Submit Offer</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
       </DecisionActionRow>
@@ -1536,8 +1389,8 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
   const loanIn = proposal?.loanDirection !== "out";
   const expectedFee = proposal?.fee ?? Math.round(player.value * 0.03);
   const requestedWage = proposal?.requestedWage ?? Math.abs(proposal?.wageDelta ?? Math.round(player.wage * 0.5));
-  const feeOptions = uniqueMoneyOptions(expectedFee, [0.8, 0.9, 1, 1.1, 1.2], 100);
-  const wageOptions = uniqueMoneyOptions(requestedWage, [0.75, 0.85, 1, 1.15, 1.3], 50);
+  const feeOptions = uniqueMoneyOptions(expectedFee, [0.9, 1, 1.1], 100).slice(0, 3);
+  const wageOptions = uniqueMoneyOptions(requestedWage, [0.85, 1, 1.15], 50).slice(0, 3);
   const [fee, setFee] = useState(expectedFee);
   const [wage, setWage] = useState(requestedWage);
   const sourceClub = proposal?.fromClubId ? save.clubs[proposal.fromClubId] : undefined;
@@ -1546,19 +1399,15 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
 
   if (!loanIn) {
     return (
-      <div className="mt-4 space-y-4">
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Loan club <b className="block truncate">{destinationClub?.name ?? "Unknown"}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Player <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Loan fee in <b className="block">{formatMoney(expectedFee)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly wage covered <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
+      <div className="mt-2 grid gap-1.5">
+        <div className="grid grid-cols-2 gap-1 text-[10px]">
+          <p className="rounded-lg bg-surface-muted px-2 py-1">Loan club <b className="block truncate text-[11px]">{destinationClub?.name ?? "Unknown"}</b></p>
+          <p className="rounded-lg bg-surface-muted px-2 py-1">Player <b className="block text-[11px]">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
+          <p className="rounded-lg bg-surface-muted px-2 py-1">Loan fee in <b className="block text-[11px]">{formatMoney(expectedFee)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-2 py-1">Weekly covered <b className="block text-[11px]">{formatWeeklyWage(requestedWage)}</b></p>
         </div>
-        <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager is comfortable letting him leave temporarily. The player returns at season end.</p>
-        <ImpactBox>
-          <b className="block">Accept loan impact</b>
-          Fee income {formatMoney(expectedFee)}; weekly wage bill drops by {formatMoney(requestedWage)}/w while the player is away.
-        </ImpactBox>
-        <DecisionActionRow>
+        <p className="rounded-lg bg-surface-muted px-2 py-1 text-[10px] text-neutral-600">The manager is comfortable with a temporary move. Fee in {formatMoney(expectedFee)} and wage pressure falls.</p>
+        <DecisionActionRow className="mt-1 gap-2 pt-1.5">
           <Button onClick={() => resolve({ action: "offer", terms: { fee: expectedFee, wage: requestedWage, years: 1 } })}>Accept Loan</Button>
           <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject</Button>
         </DecisionActionRow>
@@ -1567,37 +1416,31 @@ function LoanNegotiationControls({ save, player, proposal }: { save: GameSave; p
   }
 
   return (
-    <div className="mt-4 space-y-4">
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Parent club <b className="block truncate">{sourceClub?.name ?? "Unknown"}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Target <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Expected loan fee <b className="block">{formatMoney(expectedFee)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Wage contribution <b className="block">{formatWeeklyWage(requestedWage)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
-        <p className="rounded-lg bg-surface-muted px-3 py-2">Transfer budget <b className="block">{formatMoney(save.transferBudget?.amount ?? current.club.finances.balance)}</b></p>
+    <div className="mt-2 grid gap-1.5">
+      <div className="grid grid-cols-2 gap-1 text-[10px]">
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Parent club <b className="block truncate text-[11px]">{sourceClub?.name ?? "Unknown"}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Target <b className="block text-[11px]">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Expected loan fee <b className="block text-[11px]">{formatMoney(expectedFee)}</b></p>
+        <p className="rounded-lg bg-surface-muted px-2 py-1">Wage contribution <b className="block text-[11px]">{formatWeeklyWage(requestedWage)}</b></p>
       </div>
-      <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager wants short-term cover here. Weak terms or walking away may frustrate him.</p>
-      <ImpactBox>
-        <b className="block">Selected loan impact</b>
-        Upfront loan fee {formatMoney(fee)}; weekly wage bill would rise by {formatMoney(wage)}/w to {formatMoney(selectedWageBill)}/w if the loan is completed.
-      </ImpactBox>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Loan fee</p>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="mb-1 text-[9px] font-bold uppercase text-neutral-500">Loan fee</p>
+        <div className="grid grid-cols-3 gap-1">
           {feeOptions.map((option) => (
-            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", fee === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatMoney(option)}</button>
+            <button key={option} onClick={() => setFee(option)} className={cn("rounded-lg border px-1 py-1 text-[10px] font-bold", fee === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatMoney(option)}</button>
           ))}
         </div>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase text-neutral-500">Weekly contribution</p>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="mb-1 text-[9px] font-bold uppercase text-neutral-500">Weekly contribution</p>
+        <div className="grid grid-cols-3 gap-1">
           {wageOptions.map((option) => (
-            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-2 py-2 text-xs font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
+            <button key={option} onClick={() => setWage(option)} className={cn("rounded-lg border px-1 py-1 text-[10px] font-bold", wage === option ? "border-primary bg-primary text-white shadow-[0_8px_18px_rgba(21,153,71,0.18)]" : "border-line bg-white")}>{formatWeeklyWage(option)}</button>
           ))}
         </div>
       </div>
-      <DecisionActionRow>
+      <p className="truncate rounded-lg bg-surface-muted px-2 py-1 text-[10px] text-neutral-600">Selected: {formatMoney(fee)} fee and {formatWeeklyWage(wage)}. Wage bill {formatMoney(selectedWageBill)}/w.</p>
+      <DecisionActionRow className="mt-1 gap-2 pt-1.5">
         <Button onClick={() => resolve({ action: "offer", terms: { fee, wage, years: 1 } })}>Submit Loan</Button>
         <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Walk Away</Button>
       </DecisionActionRow>
@@ -1613,7 +1456,7 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
   const [minute, setMinute] = useState(0);
   useEffect(() => {
     if (minute >= 90) return;
-    const timer = window.setTimeout(() => setMinute((value) => Math.min(90, value + 1)), 90);
+    const timer = window.setTimeout(() => setMinute((value) => Math.min(90, value + 1)), 135);
     return () => window.clearTimeout(timer);
   }, [minute]);
   const visibleEvents = result.events.filter((event) => event.minute <= minute);
@@ -1625,9 +1468,9 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
   const visibleHomeOnTarget = Math.round(result.homeOnTarget * progress);
   const visibleAwayOnTarget = Math.round(result.awayOnTarget * progress);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[radial-gradient(circle_at_top,_#135f36,_#071510_70%)] p-4">
-      <div role="dialog" aria-modal="true" aria-labelledby="live-match-title" className="max-h-full w-full max-w-md overflow-hidden rounded-[1.4rem] border border-white/15 bg-white shadow-[0_28px_70px_rgba(0,0,0,0.36)]">
-        <div className="relative overflow-hidden bg-[linear-gradient(135deg,_#10241b,_#0f8139_62%,_#1aa24f)] px-4 py-4 text-white">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[radial-gradient(circle_at_top,_#135f36,_#071510_70%)] p-2">
+      <div role="dialog" aria-modal="true" aria-labelledby="live-match-title" className="flex h-full max-h-full w-full max-w-md flex-col overflow-hidden rounded-[1.4rem] border border-white/15 bg-white shadow-[0_28px_70px_rgba(0,0,0,0.36)]">
+        <div className="relative shrink-0 overflow-hidden bg-[linear-gradient(135deg,_#10241b,_#0f8139_62%,_#1aa24f)] px-4 py-4 text-white">
           <div className="pointer-events-none absolute inset-0 opacity-20 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.28)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.16)_58%_60%,transparent_60%)]" />
           <div className="relative flex items-center justify-between gap-3">
             <h2 id="live-match-title" className="rounded-full bg-white/14 px-3 py-1 text-[10px] font-black uppercase tracking-wide ring-1 ring-white/20">Live match</h2>
@@ -1639,8 +1482,8 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
             <p className="min-w-0 text-left text-sm font-black leading-tight">{away.name}</p>
           </div>
         </div>
-        <div className="max-h-[calc(100svh-10rem)] overflow-y-auto p-4">
-          <div className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-[linear-gradient(180deg,_#0e8f43,_#0b6f35)] p-4 text-white shadow-[0_12px_30px_rgba(16,36,27,0.14)]">
+        <div className="grid min-h-0 flex-1 grid-rows-[1fr_auto_auto] gap-3 p-3">
+          <div className="relative min-h-0 overflow-hidden rounded-2xl border border-emerald-200 bg-[linear-gradient(180deg,_#0e8f43,_#0b6f35)] p-4 text-white shadow-[0_12px_30px_rgba(16,36,27,0.14)]">
             <div className="pointer-events-none absolute inset-3 rounded-xl border border-white/35" />
             <div className="pointer-events-none absolute left-1/2 top-3 h-[calc(100%-1.5rem)] w-px bg-white/30" />
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35" />
@@ -1655,26 +1498,26 @@ function LiveMatchModal({ save, result }: { save: GameSave; result: MatchResult 
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
             <p className="rounded-xl bg-surface-muted px-2 py-3"><b>{result.possessionHome}%</b><span className="block text-[10px] font-bold uppercase text-neutral-500">Possession</span></p>
             <p className="rounded-xl bg-surface-muted px-2 py-3"><b>{visibleHomeShots}-{visibleAwayShots}</b><span className="block text-[10px] font-bold uppercase text-neutral-500">Shots</span></p>
             <p className="rounded-xl bg-surface-muted px-2 py-3"><b>{visibleHomeOnTarget}-{visibleAwayOnTarget}</b><span className="block text-[10px] font-bold uppercase text-neutral-500">On target</span></p>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f5faf6)] p-3">
+          <div className="rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f5faf6)] p-3">
             <p className="mb-2 text-xs font-black uppercase text-neutral-500">Match feed</p>
             <div className="space-y-2">
-              {visibleEvents.length === 0 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-500">No major events yet.</p> : visibleEvents.slice(-6).map((matchEvent, index) => (
-                <div key={`${matchEvent.minute}-${index}`} className={cn("flex items-center gap-2 rounded-xl px-3 py-2 text-sm", matchEvent.type === "goal" ? "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-100" : "bg-surface-muted")}>
-                  <PersonAvatar name={matchEvent.playerName} className="h-8 w-8 shrink-0 rounded-md text-[10px]" />
-                  <p className="min-w-0"><b>{matchEvent.minute}&apos;</b> {matchEvent.description}</p>
+              {visibleEvents.length === 0 ? <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-500">No major events yet.</p> : visibleEvents.slice(-5).map((matchEvent, index) => (
+                <div key={`${matchEvent.minute}-${index}`} className={cn("flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm", matchEvent.type === "goal" ? "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-100" : "bg-surface-muted")}>
+                  <PersonAvatar name={matchEvent.playerName} className="h-7 w-7 shrink-0 rounded-md text-[10px]" />
+                  <p className="min-w-0 truncate"><b>{matchEvent.minute}&apos;</b> {matchEvent.description}</p>
                 </div>
               ))}
               {minute >= 90 ? <p className="rounded-xl bg-emerald-950 px-3 py-2 text-sm font-bold text-white">90&apos; Final whistle.</p> : null}
             </div>
           </div>
-          {minute >= 90 ? <Button className="mt-5 w-full shadow-card" onClick={() => finishLiveMatch()}>Continue</Button> : null}
         </div>
+        {minute >= 90 ? <div className="shrink-0 border-t border-line p-3"><Button className="w-full shadow-card" onClick={() => finishLiveMatch()}>Continue</Button></div> : null}
       </div>
     </div>
   );
@@ -1686,73 +1529,45 @@ function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
   const outcomeTone = history.outcome === "promoted" ? "positive" : history.outcome === "relegated" ? "negative" : "neutral";
   const impact = history.seasonImpact;
   return (
-    <div className="mt-4 space-y-4">
+    <div className="mt-2 grid gap-1.5">
       <div className={cn(
-        "overflow-hidden rounded-2xl border shadow-[0_14px_30px_rgba(16,36,27,0.08)]",
+        "overflow-hidden rounded-xl border shadow-[0_10px_22px_rgba(16,36,27,0.08)]",
         outcomeTone === "positive" && "border-emerald-100 bg-[linear-gradient(135deg,_#ecfdf5,_#ffffff)]",
         outcomeTone === "negative" && "border-red-100 bg-[linear-gradient(135deg,_#fff1f2,_#ffffff)]",
         outcomeTone === "neutral" && "border-line bg-[linear-gradient(135deg,_#f5faf6,_#ffffff)]",
       )}>
         <div className={cn(
-          "flex items-center gap-3 px-4 py-4",
+          "flex items-center gap-2 px-3 py-2",
           outcomeTone === "positive" && "bg-emerald-950 text-white",
           outcomeTone === "negative" && "bg-red-950 text-white",
           outcomeTone === "neutral" && "bg-[linear-gradient(135deg,_#10241b,_#155f3a)] text-white",
         )}>
-          <span className={cn(
-            "grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-2xl font-black shadow-[0_10px_24px_rgba(0,0,0,0.18)]",
-            outcomeTone === "positive" && "text-primary",
-            outcomeTone === "negative" && "text-danger",
-            outcomeTone === "neutral" && "text-emerald-950",
-          )}>{ordinal(history.position)}</span>
+          <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-lg font-black", outcomeTone === "positive" && "text-primary", outcomeTone === "negative" && "text-danger", outcomeTone === "neutral" && "text-emerald-950")}>{ordinal(history.position)}</span>
           <div className="min-w-0">
             <p className="text-xs font-black uppercase text-white/70">{history.divisionName}</p>
-            <p className="text-xl font-black leading-tight">{outcomeLabel}</p>
-            <p className="mt-1 text-xs text-white/70">Next league: {history.nextDivisionName ?? history.divisionName}</p>
+            <p className="text-base font-black leading-tight">{outcomeLabel}</p>
+            <p className="truncate text-[11px] text-white/70">Next: {history.nextDivisionName ?? history.divisionName}</p>
           </div>
         </div>
-        <div className="grid grid-cols-4 border-t border-white/40 bg-white text-center text-xs">
-          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Pts</small>{history.points}</span>
-          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">W-D-L</small>{history.won ?? 0}-{history.drawn ?? 0}-{history.lost ?? 0}</span>
-          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">GD</small>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</span>
-          <span className="px-2 py-3 font-black"><small className="block text-[10px] text-neutral-500">Played</small>{history.played ?? 0}</span>
+        <div className="grid grid-cols-4 border-t border-white/40 bg-white text-center text-[11px]">
+          <span className="px-1.5 py-2 font-black"><small className="block text-[9px] text-neutral-500">Pts</small>{history.points}</span>
+          <span className="px-1.5 py-2 font-black"><small className="block text-[9px] text-neutral-500">W-D-L</small>{history.won ?? 0}-{history.drawn ?? 0}-{history.lost ?? 0}</span>
+          <span className="px-1.5 py-2 font-black"><small className="block text-[9px] text-neutral-500">GD</small>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</span>
+          <span className="px-1.5 py-2 font-black"><small className="block text-[9px] text-neutral-500">P</small>{history.played ?? 0}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         <EventMetricTile label="Season award" value={formatMoney(history.prizeMoney ?? 0)} tone={(history.prizeMoney ?? 0) > 0 ? "positive" : "neutral"} />
         <EventMetricTile label="Closing balance" value={formatMoney(history.balance)} tone={history.balance < 0 ? "negative" : "neutral"} />
-        <EventMetricTile label="Outcome" value={outcomeLabel} tone={outcomeTone} />
+        <EventMetricTile label="Cup run" value={history.cupSummary ?? "No cup record."} />
         <EventMetricTile label="Next league" value={history.nextDivisionName ?? history.divisionName} />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f6fbf7)]">
-        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-950 text-white"><Trophy size={19} /></span>
-          <div>
-            <p className="text-xs font-black uppercase text-primary">Cup run</p>
-            <p className="text-sm font-bold text-neutral-700">{history.cupSummary ?? "No cup record."}</p>
-          </div>
-        </div>
-        {history.trophies.length > 0 ? (
-          <div className="flex flex-wrap gap-2 px-4 py-3">
-            {history.trophies.map((trophy) => (
-              <span key={trophy} className="rounded-full bg-primary px-3 py-1.5 text-xs font-black text-white">{trophy}</span>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
       {impact ? (
-        <div className="rounded-2xl border border-line bg-white p-3">
-          <p className="mb-2 text-xs font-black uppercase text-neutral-500">Season impact</p>
-          <div className="grid grid-cols-2 gap-2">
-            <EventMetricTile label="Balance" value={formatSignedMoney(impact.balanceAfter - impact.balanceBefore)} tone={impact.balanceAfter >= impact.balanceBefore ? "positive" : "negative"} />
-            <EventMetricTile label="Board" value={`${formatSignedPoints(impact.boardConfidenceAfter - impact.boardConfidenceBefore)} (${impact.boardConfidenceBefore}% to ${impact.boardConfidenceAfter}%)`} tone={impact.boardConfidenceAfter >= impact.boardConfidenceBefore ? "positive" : "negative"} />
-            <EventMetricTile label="Trust" value={`${formatSignedPoints(impact.managerTrustAfter - impact.managerTrustBefore)} (${impact.managerTrustBefore}% to ${impact.managerTrustAfter}%)`} tone={impact.managerTrustAfter >= impact.managerTrustBefore ? "positive" : "negative"} />
-            <EventMetricTile label="Reputation" value={`${formatSignedPoints(impact.reputationAfter - impact.reputationBefore)} (${impact.reputationBefore} to ${impact.reputationAfter})`} tone={impact.reputationAfter >= impact.reputationBefore ? "positive" : "negative"} />
-          </div>
-        </div>
+        <p className="rounded-xl border border-line bg-white px-3 py-1.5 text-[11px] leading-4 text-neutral-600">
+          Season impact: balance {formatSignedMoney(impact.balanceAfter - impact.balanceBefore)}. Board mood {moodLabel(impact.boardConfidenceAfter)}. Manager mood {moodLabel(impact.managerTrustAfter)}.
+        </p>
       ) : null}
     </div>
   );
@@ -1761,14 +1576,14 @@ function SeasonSummaryPanel({ history }: { history: SeasonHistory }) {
 function EventMetricTile({ label, value, tone = "neutral" }: { label: string; value: ReactNode; tone?: "neutral" | "positive" | "negative" | "dark" }) {
   return (
     <p className={cn(
-      "min-w-0 rounded-xl px-3 py-3 text-xs",
+      "min-w-0 rounded-xl px-3 py-2 text-xs",
       tone === "positive" && "bg-emerald-50 text-emerald-950 ring-1 ring-emerald-100",
       tone === "negative" && "bg-red-50 text-red-950 ring-1 ring-red-100",
       tone === "dark" && "bg-emerald-950 text-white",
       tone === "neutral" && "bg-surface-muted text-neutral-700",
     )}>
       <span className={cn("block text-[10px] font-black uppercase", tone === "dark" ? "text-white/65" : "text-neutral-500")}>{label}</span>
-      <b className="mt-1 block break-words text-sm leading-tight">{value}</b>
+      <b className="mt-1 block truncate text-sm leading-tight">{value}</b>
     </p>
   );
 }
@@ -1816,7 +1631,7 @@ function SpecialEventPanel({ save }: { save: GameSave }) {
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 p-3">
-          <EventMetricTile label="Trust" value={`${current.club.managerTrust}%`} tone={current.club.managerTrust < 50 ? "negative" : "neutral"} />
+          <EventMetricTile label="Manager mood" value={moodLabel(current.club.managerTrust)} tone={current.club.managerTrust < 50 ? "negative" : "neutral"} />
           <EventMetricTile label={retirement ? "Contract" : "Budget"} value={retirement ? `${manager?.contractYears ?? 0}y` : save.transferBudget ? save.transferBudget.mode : "Unset"} />
           <EventMetricTile label={retirement ? "Wage" : "Balance"} value={retirement ? (manager ? formatWeeklyWage(manager.wage) : "-") : formatMoney(balance)} tone={!retirement && balance < 0 ? "negative" : "neutral"} />
         </div>
@@ -1879,7 +1694,7 @@ function SpecialEventPanel({ save }: { save: GameSave }) {
       <div className="mt-4 grid grid-cols-3 gap-2">
         <EventMetricTile label="Player" value={player.name} />
         <EventMetricTile label="Morale" value={`${player.morale}%`} tone={player.morale < 55 ? "negative" : "neutral"} />
-        <EventMetricTile label="Trust" value={`${current.club.managerTrust}%`} tone={current.club.managerTrust < 50 ? "negative" : "neutral"} />
+        <EventMetricTile label="Manager mood" value={moodLabel(current.club.managerTrust)} tone={current.club.managerTrust < 50 ? "negative" : "neutral"} />
       </div>
     );
   }
@@ -1909,35 +1724,36 @@ function EventModal({ save }: { save: GameSave }) {
   const result = event.type === "match_result" && save.lastMatch?.result ? save.lastMatch.result : undefined;
   const nextFixture = event.fixtureId ? save.fixtures.find((fixture) => fixture.id === event.fixtureId) : undefined;
   const presentation = buildEventPresentation(save)!;
+  const hasInlineActions = ["transfer_budget", "manager_contract_decision", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type);
 
   if (result && save.liveMatch && !save.liveMatch.finished) return <LiveMatchModal save={save} result={result} />;
 
   return (
-    <div className="absolute inset-0 z-30 grid place-items-center bg-[radial-gradient(circle_at_top,_rgba(15,129,57,0.24),_rgba(16,36,27,0.7))] p-4 backdrop-blur-[2px]">
-      <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="max-h-[calc(100svh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[1.35rem] border border-white/40 bg-white shadow-[0_28px_70px_rgba(16,36,27,0.32)]">
-        <div className={cn("relative overflow-hidden px-5 py-4", presentation.tone.header)}>
+    <div className="absolute inset-0 z-30 grid place-items-center bg-[radial-gradient(circle_at_top,_rgba(15,129,57,0.24),_rgba(16,36,27,0.7))] p-2 backdrop-blur-[2px]">
+      <div role="dialog" aria-modal="true" aria-labelledby="event-title" className="flex h-full max-h-full w-full max-w-md flex-col overflow-hidden rounded-[1.35rem] border border-white/40 bg-white shadow-[0_28px_70px_rgba(16,36,27,0.32)]">
+        <div className={cn("relative shrink-0 overflow-hidden px-4 py-3", presentation.tone.header)}>
           <div className="pointer-events-none absolute inset-0 opacity-20 [background:linear-gradient(120deg,transparent_0_42%,rgba(255,255,255,0.35)_42%_44%,transparent_44%_58%,rgba(255,255,255,0.18)_58%_60%,transparent_60%)]" />
           <div className="relative flex flex-wrap items-center gap-2">
             <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", presentation.tone.chip)}>{presentation.statusLabel}</span>
             <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ring-1", presentation.tone.chip)}>{presentation.category}</span>
             <span className="ml-auto rounded-full bg-black/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white/85 ring-1 ring-white/15">{presentation.queueLabel}</span>
           </div>
-          <h2 id="event-title" className="relative mt-3 text-2xl font-black leading-tight">{event.title}</h2>
+          <h2 id="event-title" className="relative mt-2 truncate text-xl font-black leading-tight">{event.title}</h2>
           <p className="relative mt-1 text-xs font-semibold text-white/75">{presentation.periodLabel}</p>
         </div>
 
-        <div className="p-5">
+        <div className="min-h-0 flex-1 overflow-hidden p-3">
           <EventEntityHeader save={save} />
-          <div className={cn("mt-4 rounded-2xl px-3 py-3 text-sm leading-6 ring-1", presentation.tone.accent)}>
-            {event.body}
+          <div className={cn("mt-2 rounded-xl px-3 py-2 text-sm leading-5 ring-1", presentation.tone.accent)}>
+            {shortCopy(event.body)}
           </div>
-          {presentation.showEventNote ? <p className="mt-3 rounded-2xl border border-line bg-surface-muted px-3 py-3 text-xs leading-5 text-neutral-600"><b className="block text-neutral-800">Context</b>{event.note}</p> : null}
+          {presentation.showEventNote ? <p className="mt-2 rounded-xl border border-line bg-surface-muted px-3 py-2 text-xs leading-4 text-neutral-600"><b className="block text-neutral-800">Context</b>{shortCopy(event.note, event.type === "match_result" ? 150 : 110, event.type === "match_result" ? 3 : 2)}</p> : null}
           <SpecialEventPanel save={save} />
 
         {event.type === "season_intro" ? (
-          <div className="mt-4 space-y-2">
+          <div className="mt-2 grid gap-1.5">
             {save.divisions.map((division) => (
-              <div key={division.id} className={cn("rounded-lg border px-3 py-2 text-sm", division.id === current.club.divisionId ? "border-primary bg-emerald-50 font-bold text-primary" : "border-line")}>
+              <div key={division.id} className={cn("rounded-lg border px-3 py-1.5 text-xs", division.id === current.club.divisionId ? "border-primary bg-emerald-50 font-bold text-primary" : "border-line")}>
                 Level {division.level}: {division.name}
               </div>
             ))}
@@ -1960,7 +1776,7 @@ function EventModal({ save }: { save: GameSave }) {
               <p className="rounded-lg bg-surface-muted px-3 py-2">Wage bill <b className="block">{formatMoney(current.club.finances.weeklyWages)}</b></p>
               <p className="rounded-lg bg-surface-muted px-3 py-2">Recommended <b className="block">{formatMoney(Math.round(current.club.finances.balance * 0.08))}</b></p>
             </div>
-            <ContractOfferControls player={player} requestedWage={requestedWage} requestedYears={requestedYears} currentWageBill={current.club.finances.weeklyWages} approve={(terms) => resolve({ action: "offer", terms })} reject={() => resolve({ action: "reject" })} />
+            <ContractOfferControls player={player} requestedWage={requestedWage} requestedYears={requestedYears} approve={(terms) => resolve({ action: "offer", terms })} reject={() => resolve({ action: "reject" })} />
           </>
         ) : null}
 
@@ -1975,27 +1791,24 @@ function EventModal({ save }: { save: GameSave }) {
         {event.type === "incoming_bid" ? (
           <>
           {player && proposal ? (
-            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-              <p className="rounded-lg bg-surface-muted px-3 py-2">Bidding club <b className="block truncate">{proposal.toClubId ? save.clubs[proposal.toClubId]?.name ?? "Unknown" : "Unknown"}</b></p>
-              <p className="rounded-lg bg-surface-muted px-3 py-2">Squad identity <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
-              <p className="rounded-lg bg-surface-muted px-3 py-2">Current wage <b className="block">{formatWeeklyWage(player.wage)}</b></p>
-              <p className="rounded-lg bg-surface-muted px-3 py-2">Contract left <b className="block">{player.contractYears}y</b></p>
+            <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px]">
+              <p className="rounded-lg bg-surface-muted px-2 py-1.5">Bidding club <b className="block truncate">{proposal.toClubId ? save.clubs[proposal.toClubId]?.name ?? "Unknown" : "Unknown"}</b></p>
+              <p className="rounded-lg bg-surface-muted px-2 py-1.5">Squad identity <b className="block">{displayPosition(player.position)} · {player.rating}/100 · Age {player.age}</b></p>
             </div>
           ) : null}
           {player && proposal ? (() => {
             const saleImpact = calculateSaleImpact(save, player, proposal.fee);
             return (
-              <ImpactBox className="mt-3">
-                <b className="block">Sale decision impact</b>
-                The manager {saleImpact.starter ? "will want the squad protected if this player leaves" : "is open to the sale if the fee is right"}.
-                <span className="block">{saleImpact.summary}</span>
-                <span className="block">Rejecting keeps the squad intact, but may close this market opportunity.</span>
+              <ImpactBox className="mt-2">
+                <b className="block">Sale decision</b>
+                Manager view: {saleImpact.starter ? "protect the squad if he leaves" : "open to a fair sale"}.
+                <span className="block truncate">{saleImpact.summary}</span>
               </ImpactBox>
             );
           })() : (
-            <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager&apos;s reaction depends on whether the fee matches the player&apos;s role in the squad.</p>
+            <p className="mt-2 rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">The manager&apos;s reaction depends on role and fee.</p>
           )}
-          <DecisionActionRow className="mt-5">
+          <DecisionActionRow className="mt-2">
             <Button onClick={() => resolve({ action: "accept" })}>Accept Bid</Button>
             <Button variant="secondary" onClick={() => resolve({ action: "reject" })}>Reject Bid</Button>
           </DecisionActionRow>
@@ -2083,46 +1896,46 @@ function EventModal({ save }: { save: GameSave }) {
 
         {result && save.lastMatch ? (
           <>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
+            <div className="mt-2 overflow-hidden rounded-2xl border border-line bg-[linear-gradient(180deg,_#ffffff,_#f3faf5)] shadow-[0_10px_24px_rgba(16,36,27,0.06)]">
               <div className="grid grid-cols-[1fr_auto_1fr] items-center text-center">
-                <div className="p-4">
+                <div className="p-2.5">
                   <p className="text-[10px] font-black uppercase text-neutral-500">Home</p>
                   <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.homeClubId].name}</p>
                 </div>
-                <div className="px-3 py-4">
-                  <p className="rounded-2xl bg-emerald-950 px-4 py-3 text-3xl font-black text-white">{result.homeGoals}-{result.awayGoals}</p>
+                <div className="px-2 py-2.5">
+                  <p className="rounded-2xl bg-emerald-950 px-3 py-2 text-2xl font-black text-white">{result.homeGoals}-{result.awayGoals}</p>
                 </div>
-                <div className="p-4">
+                <div className="p-2.5">
                   <p className="text-[10px] font-black uppercase text-neutral-500">Away</p>
                   <p className="mt-1 text-sm font-black leading-tight">{save.clubs[save.lastMatch.awayClubId].name}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 border-t border-line bg-white text-center text-xs">
-                <p className="px-2 py-2"><b className="block text-sm">{result.possessionHome}%</b><span className="text-neutral-500">Possession</span></p>
-                <p className="px-2 py-2"><b className="block text-sm">{result.homeShots}-{result.awayShots}</b><span className="text-neutral-500">Shots</span></p>
-                <p className="px-2 py-2"><b className="block text-sm">{result.homeOnTarget}-{result.awayOnTarget}</b><span className="text-neutral-500">On target</span></p>
+              <div className="grid grid-cols-3 border-t border-line bg-white text-center text-[11px]">
+                <p className="px-2 py-1.5"><b className="block text-xs">{result.possessionHome}%</b><span className="text-neutral-500">Possession</span></p>
+                <p className="px-2 py-1.5"><b className="block text-xs">{result.homeShots}-{result.awayShots}</b><span className="text-neutral-500">Shots</span></p>
+                <p className="px-2 py-1.5"><b className="block text-xs">{result.homeOnTarget}-{result.awayOnTarget}</b><span className="text-neutral-500">On target</span></p>
               </div>
             </div>
-            <div className="mt-4 space-y-2">
+            <div className="mt-2 grid gap-1.5">
               {result.events.length === 0 ? (
-                <div className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-neutral-600">No major match events recorded.</div>
-              ) : result.events.slice(0, 4).map((matchEvent, index) => (
-                <div key={`${matchEvent.minute}-${index}`} className="flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm">
-                  <PersonAvatar name={matchEvent.playerName} className="h-8 w-8 rounded-md text-[10px]" />
-                  <p>{matchEvent.minute}&apos; {matchEvent.description}</p>
+                <div className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-neutral-600">No major match events recorded.</div>
+              ) : result.events.slice(0, 3).map((matchEvent, index) => (
+                <div key={`${matchEvent.minute}-${index}`} className="flex items-center gap-2 rounded-lg bg-surface-muted px-2 py-1 text-[11px] leading-tight">
+                  <PersonAvatar name={matchEvent.playerName} className="h-6 w-6 rounded-md text-[9px]" />
+                  <p className="truncate">{matchEvent.minute}&apos; {matchEvent.description}</p>
                 </div>
               ))}
             </div>
           </>
         ) : null}
 
-        {!["transfer_budget", "manager_contract_decision", "contract_offer", "incoming_bid", "sale_ready", "youth_contract", "match_preview"].includes(event.type) ? (
-          <div className="mt-5 border-t border-line pt-3">
+        {nextFixture && event.type === "match_preview" ? <p className="mt-3 text-center text-xs text-neutral-500">{save.clubs[nextFixture.homeClubId].name} vs {save.clubs[nextFixture.awayClubId].name}</p> : null}
+        </div>
+        {!hasInlineActions ? (
+          <div className="shrink-0 border-t border-line bg-white p-2">
             <Button className="w-full shadow-card" onClick={() => resolve({ action: "continue" })}>Continue</Button>
           </div>
         ) : null}
-        {nextFixture && event.type === "match_preview" ? <p className="mt-3 text-center text-xs text-neutral-500">{save.clubs[nextFixture.homeClubId].name} vs {save.clubs[nextFixture.awayClubId].name}</p> : null}
-        </div>
       </div>
     </div>
   );
@@ -2152,7 +1965,7 @@ function FacilityModal({ save, facility, close }: { save: GameSave; facility?: F
   const downgradeCostBase = Array.from({ length: lowerLevels }).reduce<number>((sum, _, index) => sum + nextUpgradeCost(level - 1 - index, base), 0);
   const upkeepDecrease = Math.round(downgradeCostBase / divisor);
   const newWeeklyCost = current.club.finances.upkeep + upkeepIncrease;
-  const reducedWeeklyCost = Math.max(0, current.club.finances.upkeep - upkeepDecrease);
+  const bankAfterUpgrade = current.club.finances.balance - upgradeCost;
 
   async function upgrade() {
     if (isTraining) await upgradeTraining(levels);
@@ -2165,30 +1978,29 @@ function FacilityModal({ save, facility, close }: { save: GameSave; facility?: F
   }
 
   return (
-    <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-5">
-      <div role="dialog" aria-modal="true" aria-labelledby="facility-title" className="w-full rounded-xl bg-white p-5 shadow-2xl">
+    <div className="absolute inset-0 z-30 grid place-items-center bg-emerald-950/55 p-2">
+      <div role="dialog" aria-modal="true" aria-labelledby="facility-title" className="flex h-full max-h-full w-full flex-col overflow-hidden rounded-xl bg-white p-4 shadow-2xl">
         <p className="text-xs font-semibold uppercase text-primary">Facility management</p>
-        <h2 id="facility-title" className="mt-1 text-xl font-bold">{title}</h2>
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Current level <b className="block text-2xl">{level}/99</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Selected change <b className="block">+{targetLevels} / -{lowerLevels}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Facility weekly cost <b className="block">{formatMoney(currentFacilityWeeklyCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Target level <b className="block">{targetLevel}/99</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Cost to upgrade <b className="block">{formatMoney(upgradeCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">New club upkeep <b className="block">{formatMoney(newWeeklyCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Reduced level <b className="block">{reducedLevel}/99</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Reduced club upkeep <b className="block">{formatMoney(reducedWeeklyCost)}</b></p>
-          <p className="rounded-lg bg-surface-muted px-3 py-3">Bank balance <b className="block">{formatMoney(current.club.finances.balance)}</b></p>
+        <h2 id="facility-title" className="mt-1 text-lg font-bold">{title}</h2>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Current level <b className="block text-xl">{level}/99</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Selected <b className="block text-xl">+{targetLevels} / -{lowerLevels}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Target level <b className="block">{targetLevel}/99</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Reduced level <b className="block">{reducedLevel}/99</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Upgrade cost <b className="block">{formatMoney(upgradeCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Bank after <b className={cn("block", bankAfterUpgrade < 0 && "text-danger")}>{formatMoney(bankAfterUpgrade)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Upkeep now <b className="block">{formatMoney(current.club.finances.upkeep)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Upkeep after <b className="block">{formatMoney(newWeeklyCost)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Weekly saving <b className="block">{formatMoney(upkeepDecrease)}</b></p>
+          <p className="rounded-lg bg-surface-muted px-3 py-2">Facility cost <b className="block">{formatMoney(currentFacilityWeeklyCost)}</b></p>
         </div>
-        <div className="mt-4 grid grid-cols-5 gap-2">
+        <div className="mt-3 grid grid-cols-5 gap-2">
           {[1, 2, 3, 4, 5].map((option) => (
             <button key={option} onClick={() => setLevels(option)} className={cn("rounded-lg border py-2 text-xs font-black", levels === option ? "border-primary bg-primary text-white" : "border-line bg-white")}>{option} level{option > 1 ? "s" : ""}</button>
           ))}
         </div>
-        <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-5 text-neutral-600">
-          Lowering a level does not refund money, but it reduces weekly upkeep by {formatMoney(upkeepDecrease)}.
-        </p>
-        <div className="sticky bottom-0 mt-5 grid grid-cols-2 gap-3 bg-white pt-2">
+        <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-5 text-neutral-600">Lowering levels gives no refund. It only reduces weekly upkeep.</p>
+        <div className="mt-auto grid grid-cols-2 gap-3 bg-white pt-3">
           <Button onClick={upgrade} disabled={level >= 99 || current.club.finances.balance < upgradeCost}>Upgrade +{levels}</Button>
           <Button variant="secondary" onClick={downgrade} disabled={level <= 1}>Lower -{levels}</Button>
         </div>
@@ -2206,15 +2018,11 @@ export function GameClient() {
   const continueGame = useGameStore((state) => state.continueGame);
   const message = useGameStore((state) => state.message);
   const clearMessage = useGameStore((state) => state.clearMessage);
-  const [tab, setTab] = useState<Tab>("home");
+  const updateUiState = useGameStore((state) => state.updateUiState);
   const [facilityModal, setFacilityModal] = useState<FacilityKind | undefined>();
-  const contentRef = useRef<HTMLDivElement>(null);
   const setActiveTab = (nextTab: Tab) => {
     clearMessage();
-    setTab(nextTab);
-    window.requestAnimationFrame(() => {
-      contentRef.current?.scrollTo({ top: 0 });
-    });
+    void updateUiState({ activeTab: nextTab });
   };
 
   useEffect(() => {
@@ -2257,6 +2065,7 @@ export function GameClient() {
   }
 
   const showMessage = Boolean(message && !save.currentEvent && !facilityModal);
+  const tab = normalizeTab(save.ui?.activeTab);
 
   if (save.liveMatch && save.lastMatch?.result && !save.liveMatch.finished) {
     return (
@@ -2271,9 +2080,9 @@ export function GameClient() {
   return (
     <AppFrame>
       <div className={cn("relative flex min-h-0 flex-1 flex-col", save.settings.textSize === "large" && "fdp-large-text")}>
-      <Header save={save} tab={tab} setTab={setActiveTab} />
-      <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto p-4 pb-5">
-        {showMessage ? <div role="status" className="mb-3 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
+      <Header save={save} />
+      {showMessage ? <div role="status" className="absolute inset-x-3 top-[4.6rem] z-20 rounded-full border border-emerald-900/10 bg-emerald-950 px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_10px_22px_rgba(16,36,27,0.18)]">{message}</div> : null}
+      <div className="min-h-0 flex-1 overflow-hidden p-3">
         {tab === "home" && <HomeTab save={save} continueGame={continueGame} openFacility={setFacilityModal} setTab={setActiveTab} />}
         {tab === "standings" && <StandingsTab save={save} setTab={setActiveTab} />}
         {tab === "squad" && <SquadTab save={save} setTab={setActiveTab} />}

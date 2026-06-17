@@ -178,5 +178,10 @@ export const gameSaveSchema = z.object({
     sound: z.boolean(),
     textSize: z.enum(["normal", "large"]),
   }),
+  ui: z.object({
+    activeTab: z.string().default("home"),
+    pages: z.record(z.string(), z.number()).default({}),
+    panels: z.record(z.string(), z.string()).default({}),
+  }).default({ activeTab: "home", pages: {}, panels: {} }),
   gameOver: z.string().optional(),
 });

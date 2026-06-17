@@ -17,6 +17,9 @@ Implement Football Director Pro Full Core V1 as a web-first owner/chairman footb
 - Legacy `activeProposal` proposal handling has been removed; manager-led proposals now enter the same save-backed `eventQueue/currentEvent` path as every other chairman decision.
 - Current architecture pass has extracted the Continue event presentation read model into `src/components/event-presentation.ts`. Event-modal category, status, period, queue, tone, and note-visibility rules now live outside the main game client and are covered by `tests/event-presentation.test.ts`.
 - Current architecture pass has extracted the Career command seam into `src/game/career-commands.ts`. Store actions now delegate career mutations to command results and remain focused on persistence/state commits, with direct coverage in `tests/career-commands.test.ts`.
+- Current one-screen mobile polish pass is in progress: `/game` now uses a fixed `100svh` career shell with overflow-hidden tab content, compact Dashboard, paginated League/Roster/Manager/Stadium/History surfaces, compact Finance/Settings panels, no-scroll Continue/facility/live-match overlays, qualitative relationship copy, and save-backed UI tab/page state.
+- Latest one-screen polish checkpoint keeps the active goal open but verifies the current implementation slice: financial-report event cards are shorter and prioritize high-impact lines such as prize money/fees, match-result context keeps board/manager/stadium signals visible, paid-transfer and loan negotiation controls fit the fixed phone shell, Settings import feedback no longer duplicates behind the modal, and History shows the latest played cup round. Verified with `npm run lint`, `npm run build`, `npx vitest run --reporter=dot` (64 tests), full `npm run e2e` (17 tests), and an in-app browser smoke check reaching the compact Dashboard at `http://127.0.0.1:3000/game`.
+- Latest preview after the one-screen polish checkpoint: `https://football-director-fvo8xf3z8-mor-swisas-projects.vercel.app`.
 
 ## Implemented Milestone
 
@@ -29,19 +32,23 @@ Playable V1 includes:
 - Event cards now show player, manager, or club headers only when the event actually belongs to that entity, so club updates such as financial reports do not inherit a random manager header.
 - Event headers are now guarded in the UI as well as event data: manager portraits appear only on manager-subject events, so older queued club updates with a stored `managerId` still render as club updates.
 - Season summary now appears before the next season intro after a season transition, with finish, record, goal difference, season award, balance, promotion/relegation/stay status, next division, cup summary, and trophies.
-- Season summaries and History now preserve and display season-level impact deltas for balance, board confidence, manager trust, and club reputation.
+- Season summaries and History preserve season-level impact data while the current one-screen UI presents relationship outcomes qualitatively rather than exposing exact trust/board/reputation deltas.
 - Season-boundary acceptance coverage now verifies a relegation summary, negative season impact, next-division intro, and the first match preview in the new division.
 - Dashboard metric buttons are the primary navigation into League, Roster, Manager, Training, Youth, Finances, Stadium, and History; duplicate top/bottom navigation has been removed.
+- Dashboard metric buttons now include Settings and are sized for a single phone screen; the top header is informational only and no longer duplicates navigation actions.
 - Full league standings table for the user's division.
+- League standings are paginated for mobile so the user club page opens without requiring vertical scrolling.
 - League fixtures now use a true round-robin schedule, so every club in the user's division has one match per round and the Continue loop cannot stall on a no-user-fixture round.
 - League fixture IDs include the season, so the event queue can show match previews in later seasons even after the same round/slot was seen in an earlier season.
 - Simplified player positions to G/D/M/F with position badges.
 - Roster defaults to position order and supports manual sorting by `Pos`, `Player`, or `Rate`.
+- Roster sorting stays available by `Pos`, `Player`, or `Rate`, with paginated rows instead of a vertically scrolling list.
 - Dashboard and player-list surfaces now consistently label the section as `Roster`, with an in-page roster summary before the sortable player list.
-- Roster rows use a fixed Pos/Player/Rate layout with sticky sort controls.
+- Roster rows use a fixed Pos/Player/Rate layout with compact sort controls and pagination.
 - Roster rows now surface Morale, Form, and Fitness alongside age/contract/wage, so relationship and condition effects are inspectable after decisions.
 - New saves generate natural unique fictional club names without numeric suffixes, and loaded saves are normalized so duplicate club names and same-club player names receive stable display disambiguation.
 - Youth Academy and Training Ground are managed through dashboard modals instead of a separate Training page, with `+1` through `+5` level selection before confirming upgrades or downgrades.
+- Youth Academy and Training Ground modals now use a single-screen preview layout with target level, upgrade cost, upkeep before/after, bank-after-upgrade, and downgrade weekly saving.
 - Facility and stadium screens show selected level changes, costs, upkeep/capacity effects, and bank-impact context before actions.
 - Training and Youth upgrades now write finance transactions, refresh current financial snapshots, and appear under infrastructure spending. Downgrades still provide no refund but refresh finance context because upkeep changes.
 - Stadium upgrades and repairs now write finance transactions, refresh the current financial snapshot, and surface the spending under infrastructure so balance movement is traceable after the action.
@@ -87,10 +94,10 @@ Playable V1 includes:
 - Weekly finance processing and financial report line items now share one breakdown model, so displayed income/expenses reconcile with the actual balance movement and ticket sales remain visible even in loss-making home periods.
 - Bank warnings and debt-limit career stops now show the current balance, debt limit, and remaining headroom or over-limit amount.
 - Mandatory decision modals for event-queue decisions and missing-manager states; the season cannot continue until the user answers.
-- Informational update modals use normal footer actions when sticky buttons would cover long financial rows, while required decision controls stay easy to reach.
+- Informational update modals and required decisions now use compact no-scroll action areas; content is shortened or paginated instead of relying on sticky scrolling.
 - Transfer budget choices are available at transfer-window start: Max, Generous, Normal, Cautious, Strict, and Zero. The selected budget applies only to the active transfer window and expires outside transfer-window weeks.
 - Manager trust changes based on contract, budget, transfer, and sale decisions.
-- Chairman decision cards now surface selected trust, morale, wage-bill, balance, and replacement impact for the main decision types where those values can change, so relationship/economy movement is visible before confirming.
+- Chairman decision cards now surface practical wage-bill, balance, contract, fee, and qualitative relationship context before confirmation without revealing exact trust/fan deltas.
 - Browser acceptance now covers a weak squad-contract offer being rejected, including the pre-submit trust/morale warning, the contract-turned-down response, and the resulting lower morale in Roster.
 - Browser acceptance now covers a youth contract promotion: a youth player decision shows wage-bill impact, creates the promotion follow-up event, and the promoted player appears in Roster with updated morale/form/fitness.
 - Match simulation.
@@ -101,7 +108,7 @@ Playable V1 includes:
 - `/portrait-lab` exists as an internal visual audit surface for the generated player and manager portrait grid.
 - Finances, stadium, training, youth, history, achievements.
 - History now surfaces current-season record context before season-end history exists.
-- History now labels completed-season impact explicitly as board/trust/reputation point movement, so season consequences remain readable after the review modal is dismissed.
+- History now preserves completed-season context in paginated season records, while relationship feedback remains qualitative in the one-screen UI.
 - Capacitor config and mobile scripts.
 - Settings covers the original local/offline V1 needs: manual save, export copy/download, validated import into Slot 1, reset local career with confirmation, sound toggle, and normal/large text size.
 - Settings import/export now has browser acceptance coverage: invalid pasted JSON is rejected, a valid exported save can be modified and imported into Slot 1, the imported club identity appears immediately, and the Continue queue proceeds from that imported save.
@@ -199,6 +206,8 @@ Playable V1 includes:
 - Latest remaining-work answer: Web V1 no longer has broad original-scope gameplay systems left to invent. The remaining work is final clean-save acceptance from a real player session, targeted fixes for concrete original-scope defects or unclear feedback found there, finishing active Dashboard/Continue-surface design polish, final mobile/balance QA, Git/Vercel synchronization, and native Android/iOS binary builds after Java Runtime/JDK and full Xcode are available locally.
 - Current dashboard polish: the home surface now presents a stronger game-native career snapshot with a dark `Chairman's desk` hero, league record strip, balance pill, roster/manager/latest finance tiles, completed-season/trophy counters, a clearer `Next up` Continue card, recent-form summary, and a score-focused Last Result card. The engine/save behavior is unchanged. Verified with mobile screenshot inspection, `npm run lint`, `npm test` (46 tests), focused dashboard/mobile/coherence e2e, `npm run build`, full `npm run e2e` (16 tests), `npm run mobile:sync`, and the develop-web-game screenshot client.
 - Current entry-flow polish: `NewGameClient` now presents club creation as a game-native identity setup with a live badge/club preview, starter league/budget/cup tiles, icon-led identity fields, and kit preview cards. `LoadGameClient` now uses the same dark matchday header language, a stronger empty state with direct `Create Club`, and richer save cards with season/period/balance context. Verified with mobile screenshots, `npm run lint`, `npm test` (46 tests), `npm run build`, full `npm run e2e` (16 tests), `npm run mobile:sync`, and the develop-web-game screenshot client.
+- Current one-screen verification pass: compacted financial-report, paid-transfer, and loan decision cards so action buttons stay visible without internal scrolling; restored clear target identity labels; kept cup prize money visible in financial reports; restored match-result board/manager/stadium context with short qualitative copy; and removed duplicate import-status text while an import modal is open. Verified with `npm run lint`, `npm run build`, `npx vitest run --reporter=dot` (64 tests), full `npm run e2e` (17 tests), and an in-app browser smoke check.
+- Latest preview after one-screen verification: `https://football-director-fvo8xf3z8-mor-swisas-projects.vercel.app`.
 - Current hidden-relationship/portrait polish: Continue decisions and follow-up events no longer expose exact manager-trust, board-confidence, or morale deltas in player-facing copy. The engine still mutates those values and tests assert the internal state changes, but the UI now gives qualitative manager/player/supporter context instead. Procedural portraits were upgraded from simple cartoon faces to a more mature illustrated SVG template with angled faces, layered hair, lighting, stubble/glasses variants, neck/jersey detail, and deterministic seeding. Verified with a roster mobile screenshot, `npm run lint`, `npm test` (46 tests), `npm run build`, focused sale e2e, full `npm run e2e` (16 tests), `npm run mobile:sync`, and the develop-web-game screenshot client.
 - Current deeper portrait pass: `PersonAvatar` now uses a richer deterministic illustrated footballer template with unique SVG gradients, stronger face silhouettes, mirrored three-quarter poses, head tilt, ears, necks, jersey striping, stronger skin/hair lighting, more hair masses, stubble/beard/glasses/scar variants, and enlarged Roster portraits so details are visible in normal play. Verified with mobile Roster and Manager screenshot inspection, `npm run lint`, `npm test` (46 tests), `npm run build`, `npm run e2e` (16 tests), and `npm run mobile:sync`.
 - Latest preview after deeper portrait pass: `https://football-director-ll4kdgb8o-mor-swisas-projects.vercel.app`.

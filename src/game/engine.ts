@@ -217,9 +217,9 @@ function matchImpactNote(before: ReturnType<typeof relationshipSnapshot>, after:
   const boardDelta = after.boardConfidence - before.boardConfidence;
   const trustDelta = after.managerTrust - before.managerTrust;
   const stadiumDelta = after.stadiumCondition - before.stadiumCondition;
-  const boardMood = boardDelta > 0 ? "The board mood improved after the result." : boardDelta < 0 ? "The board is less comfortable after the result." : "The board reaction is steady.";
-  const managerMood = trustDelta > 0 ? "The manager will take encouragement from it." : trustDelta < 0 ? "The manager will not be pleased with it." : "The manager reaction is steady.";
-  const stadiumMood = stadiumDelta < 0 ? "Stadium wear increased after hosting football." : "Stadium condition is steady.";
+  const boardMood = boardDelta > 0 ? "Board improved." : boardDelta < 0 ? "Board uneasy." : "Board steady.";
+  const managerMood = trustDelta > 0 ? "Manager encouraged." : trustDelta < 0 ? "Manager frustrated." : "Manager steady.";
+  const stadiumMood = stadiumDelta < 0 ? "Stadium wear rose." : "Stadium steady.";
   return `${boardMood} ${managerMood} ${stadiumMood}`;
 }
 
@@ -358,6 +358,11 @@ function ensureUniqueDisplayNames(save: GameSave) {
 
 export function normalizeGameState(input: GameSave) {
   const save = clone(input);
+  save.ui = {
+    activeTab: save.ui?.activeTab ?? "home",
+    pages: save.ui?.pages ?? {},
+    panels: save.ui?.panels ?? {},
+  };
   ensureEventState(save);
   ensureManagerState(save);
   if (save.liveMatch && save.currentEvent?.type === "match_result") {

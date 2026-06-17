@@ -350,6 +350,12 @@ export interface GameSettings {
   textSize: "normal" | "large";
 }
 
+export interface GameUiState {
+  activeTab: string;
+  pages: Record<string, number>;
+  panels: Record<string, string>;
+}
+
 export interface GameSave {
   version: 1;
   id: string;
@@ -384,6 +390,7 @@ export interface GameSave {
   achievements: Achievement[];
   hallOfFame: string[];
   settings: GameSettings;
+  ui: GameUiState;
   gameOver?: string;
 }
 

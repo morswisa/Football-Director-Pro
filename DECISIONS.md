@@ -47,9 +47,9 @@
 - Matchday ticket income must scale by division level. Lower-league clubs should not receive top-flight ticket pricing from the same attendance model.
 - Lower-league season awards should be modest for poor finishes, with the stronger upside reserved for promotion and top finishes.
 - Season transition clarity is part of V1: after a season ends, the player must see the prior season summary before the next season intro, including prize money, promotion/relegation/stay status, next division, record, cup run, and trophies.
-- Season summaries must also explain season-level impact on balance, board confidence, manager trust, and club reputation because those values are core feedback loops for chairman performance.
+- Season summaries must explain season-level impact on balance and relationship mood without exposing exact hidden relationship formulas in player-facing copy.
 - Season-summary events should feel like a season review, not a compact data grid: lead with finish/outcome, then show record, money, next league, cup run, trophies, and relationship/economy impact as scannable cards.
-- Completed-season History must preserve that feedback with explicit `Season impact` wording and point units for board confidence, manager trust, and reputation.
+- Completed-season History must preserve season context in a paginated meta-progression surface; exact hidden relationship math remains internal simulation state.
 - Achievements are a V1 meta-progression surface and should be verified from real gameplay actions, not only rendered as a static list.
 - V1 balance must be backed by edge-case tests for systems that can end or derail a career: debt limits, manager churn, facility economics, and promotion/relegation movement.
 - Fixture generation must preserve one user-club league match per round; promotion/relegation must keep division sizes stable so the Continue loop cannot stall after a season transition.
@@ -75,7 +75,7 @@
 - Native mobile shells are portrait-only for V1 because all tested game surfaces and mockups are optimized around a phone portrait chairman loop.
 - Clean modern green/white UI inspired by the supplied mockups, with original layout/copy/assets.
 - Use lucide icons and shadcn-style primitives.
-- Keep the bottom navigation fixed inside a phone-sized frame while tab content scrolls.
+- Gameplay surfaces must fit inside one phone screen without vertical scrolling. If content does not fit, use compact cards, tabs, pagination, or shorter copy instead of adding scroll.
 - Use `Create Club` as the primary first-run entry point.
 - Expose primary club sections through dashboard metric buttons rather than duplicate top/bottom navigation.
 - Use `Roster` as the player-list label in UI.
@@ -87,12 +87,13 @@
 - Cup match previews use the same `See Match` / `Play Match` controls as league fixtures to preserve one consistent match flow.
 - Cup acceptance must prove the user-facing flow, not only engine mutation: draw, cup match preview, cup result, prize-money reporting, unchanged league record, History cup run, and Finances transaction visibility.
 - Match results must explain the relationship/facility consequences applied by the engine, so board confidence, manager trust, and stadium condition movement does not feel arbitrary.
+- Match-result context should use short qualitative signals for Board, Manager, and Stadium so the player understands what changed without seeing exact relationship math or overflowing the event card.
 - Relationship metrics must be explainable through repeated outcomes: wins and stable finances help board confidence/trust, losses and negative balances hurt them.
 - Dashboard should not show duplicate controls for the same feature; Training and Youth are opened from their metric cards only.
 - Dashboard hierarchy should keep the chairman summary and primary Continue/next-match action above secondary inspection metrics, so the core "one more period" loop remains visible in the first mobile viewport.
 - The visual system should stay clean green/white with restrained navy, blue, and amber accents. Accent color is used for hierarchy and section distinction, not as a full one-note palette.
-- Secondary pages should use a compact Dashboard back chip instead of a large full-width return card, preserving vertical space for inspection content.
-- Status messages should not cover bottom action controls. They render inside the scroll content as temporary banners rather than as bottom overlays.
+- Secondary pages use a compact Dashboard back chip plus pagination/action bars inside a fixed one-screen shell.
+- Status messages should not cover bottom action controls or consume layout height. They render as short top toasts and are hidden while blocking modals are active.
 - Status messages should not compete with blocking Continue decisions or facility overlays; hide them while a modal is active.
 - Transient status messages belong to the current surface only. When the player navigates to another game section, clear the old banner so stale save/action feedback does not reduce usable vertical space on secondary screens.
 - Empty states should use the same branded card/badge visual language as the rest of the app instead of plain placeholder panels.
@@ -101,19 +102,21 @@
 - Youth Academy and Training Ground are managed through dashboard popups, not a dedicated page.
 - Downgrading a facility gives no cash refund, but lowers weekly upkeep.
 - Facility popups allow preselecting `+1` through `+5` levels before applying an upgrade or downgrade.
-- Action-heavy modals should keep primary confirmation controls sticky at the bottom where possible so required decisions are not hidden below long content.
-- Informational update modals can use a normal footer button instead of a sticky action when sticky controls would obscure long financial/history content.
+- Action-heavy modals must fit without internal scrolling. Primary confirmation controls are visible in the card/action area; if content is too long, shorten it or paginate/tabs it rather than relying on sticky scrolling.
+- Informational update modals use compact summaries and visible action buttons without internal scrolling.
 - Dense negotiation modals should prioritize readability over always-sticky controls: show terms first, then selected impact, then grouped decision actions. Do not let sticky footers cover wage, fee, contract-length, or impact choices.
-- Settings lives as a secondary header action, not as a primary dashboard loop action, because it supports save/accessibility management rather than season progression.
+- Dense transfer and loan negotiations should compact vertically before adding scroll: reduce padding, keep attribution labels, and use tighter option groups so `Submit Offer`/`Submit Loan` and `Walk Away` remain visible inside the fixed phone shell.
+- Settings lives as a compact Dashboard metric action rather than a header action, keeping the top header informational and avoiding duplicate navigation controls.
 - Cost/action screens must label the period or effect they represent, such as season totals, weekly wages, upgrade cost, capacity gain, or manager payoff.
 - Direct infrastructure actions, including stadium upgrade and repair, must leave a finance trail through transactions and current-period infrastructure spending so balance changes are explainable.
 - Facility investment is infrastructure spending for reporting purposes. Training/Youth upgrades should be visible as same-period transactions; Training/Youth downgrades should not create income, but must refresh finance snapshots because weekly upkeep changes.
 - Financial surfaces must use `latestFinancialSnapshot` for period income, period expenses, and profit/loss so Dashboard, Finance, and financial event cards stay consistent.
 - Financial surfaces must also show opening balance and closing balance so the player can reconcile report profit/loss with the displayed club balance.
 - Financial reports should expose total income, total expenses, and result directly in the card, not only through line-item rows or note copy, because the player needs a quick period-level reconciliation before continuing.
+- Compact financial report cards may show only the most relevant non-zero line items, but high-impact attribution such as `Prize money`, transfer/loan `Fees in`, and `Fees out` must be prioritized over ordinary operating lines when present.
 - Finance summary screens should use compact metric tiles on mobile rather than narrow label/value tables, especially for long labels such as sponsorship or board confidence. The period gets its own full-width tile; core money figures stay scannable in a two-column tile grid.
 - Manager screens should use scan-friendly mobile cards because hiring/firing is an economic chairman decision. The current manager gets a strong identity header plus wage/contract/fire-cost/status tiles; candidates expose status, expected wage, rating, compensation, and core attributes as separate chips/tiles before negotiation.
-- Secondary section navigation should reset the scrollable content pane to the top. A tab should not inherit Dashboard or previous-section scroll position because that can hide the title/context of the new section.
+- Secondary section navigation is save-backed through `GameSave.ui`; page indexes and panel selections are explicit UI state instead of inherited scroll position.
 - Stadium upgrade/repair choices should use the same mobile cost/effect clarity as other chairman economy screens: show current capacity/condition, bank context, upgrade cost, resulting capacity/level, repair need, and repair result before the action.
 - History should feel like meta progression, not a raw text log. Preserve the same season/cup/trophy/achievement data, but present it through legacy counters, status chips, card-based season records, and visible achievement progress.
 - Settings should remain a secondary utility surface, but it should still use the game's mobile card language: local-career summary first, accessibility/save controls as scannable sections, JSON as a preview rather than the dominant first visual, and destructive reset actions with distinct danger styling.
@@ -122,7 +125,7 @@
 - Bankruptcy stops are blocking modal dialogs: once the debt limit is exceeded, the player must see the Board Decision and no Continue action should remain available.
 - Budget decisions should show a confirmation event before the next unrelated manager proposal to prevent context jumps.
 - Header period labels include both month and period number so repeated same-month decisions are clearly part of the same in-game period.
-- Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, and expected trust impact.
+- Transfer/bid decision surfaces must clearly attribute the player context: external target vs current squad player, source club, bidding club, position, rating, age, fee, wage, and manager sentiment.
 - Paid transfer acceptance is only complete when the browser proves the player appears in Roster and the fee remains visible in Finances after the decision response is dismissed.
 - Youth contract decisions are only accepted as covered when browser acceptance proves the decision event, promotion follow-up, and resulting Roster player state.
 - Confirmed sales must preserve world consistency: the sold player leaves the user club and joins the buying club rather than becoming unattached.
@@ -131,7 +134,7 @@
 - Sale acceptance is only complete when browser coverage proves the user-facing chain and consequences: sale-ready preview, sale-confirmed impact, replacement pressure, Roster removal, morale impact, and finance transaction visibility.
 - Event headers must match the event subject: financial and club updates use the club header, player decisions use the player header, and only manager-subject events use the manager header, even if incidental manager metadata exists on the event.
 - Walking away from an external transfer target must not use squad-contract rejection language.
-- Chairman decision surfaces should expose the practical impact of the selected choice before confirmation when the engine changes relationship or economy values, including manager trust, player morale, board confidence, balance, weekly wage bill, or required replacement state.
+- Chairman decision surfaces should expose practical economy/replacement context and qualitative relationship sentiment before confirmation, while exact trust, morale, board-confidence, and reputation math stays hidden.
 - Player morale, form, and fitness are part of the planned Roster inspection surface because contract and match decisions can change player state.
 - Live match playback is a blocking opaque full-screen state: club navigation resumes after the match result is completed, and the dashboard must not leak the final score behind the live view.
 - Live match presentation should feel like a match surface, not a generic modal: use a scoreboard header, pitch/timeline visual, compact stat tiles, and a match feed while preserving the no-control playback contract.
@@ -145,7 +148,7 @@
 - Continue event modals are a primary gameplay surface, not generic app dialogs. They should use a strong game-native header, event category/status chips, period context, and subject cards so the player can understand what kind of chairman decision/update is blocking the loop. Club update cards must avoid manager-trust wording unless the event is explicitly manager-subject; use club-level context such as balance, board, and reputation instead.
 - Dense chairman decision controls should render terms and impact before the action row. Use larger selectable option grids where numbers matter, avoid sticky footers that cover decision content, and keep the final confirm/reject controls grouped after the impact summary.
 - High-frequency informational Continue events should use game-native summary cards, not plain lists. Financial reports lead with profit/loss and balance movement before line items; match previews/results lead with fixture or score context before event commentary. Avoid visible instructional copy that explains what buttons do when the button labels and layout already communicate it.
-- Lower-frequency Continue events should also carry immediate context when the event changes the player's mental model. Bank warnings show balance, debt limit, and headroom; manager frustration/retirement hints show trust and budget/contract context; Hall of Fame, sale confirmation, youth promotion, and contract responses show player/economy relationship context without introducing new decisions.
+- Lower-frequency Continue events should also carry immediate context when the event changes the player's mental model. Bank warnings show balance, debt limit, and headroom; manager frustration/retirement hints show qualitative manager mood and budget/contract context; Hall of Fame, sale confirmation, youth promotion, and contract responses show player/economy relationship context without introducing new decisions.
 - Dashboard is the between-events career snapshot, not a generic app dashboard. It should summarize league position, record, finances, roster/manager strength, career legacy, next action, recent form, and last result in one game-native surface while keeping `Continue` immediately accessible on mobile.
 - Entry surfaces should feel like starting or reopening a chairman file, not generic app forms. New Game should foreground live club identity and kit/badge preview before creation, while Load Game should use career-file cards with season and money context plus a direct route to create a club when empty.
 - Relationship math is private simulation state. Chairman decisions may hint at likely manager, player, board, or supporter sentiment, but should not reveal exact trust, morale, board-confidence, or reputation deltas in player-facing copy.
@@ -164,7 +167,7 @@
 - The immediate portrait implementation should introduce a renderer-agnostic `FaceGenome` layer before replacing the current SVG renderer, so the same identity contract can drive SVG, bitmap, FaceVerse, FLAME, or a custom hybrid renderer.
 - `FaceGenome` is now the source of truth for procedural portrait identity. React components may render it as SVG today, but future offline or bitmap portrait generation should consume the same genome fields instead of reintroducing renderer-local random picks.
 - The current `FaceGenome` is intentionally derived at render time from existing stable person ids/names, so the implementation does not require a save migration or bitmap storage.
-- Dense Continue decisions may use a sticky in-modal action row when the decision content is long, because required chairman choices must remain visible on mobile and the player should not miss the confirm/reject controls after reading the decision terms.
+- Dense Continue decisions must keep confirm/reject actions visible without scroll. `DecisionActionRow` is non-sticky and content must be compact enough to fit the phone screen.
 - Player-facing relationship copy should remain qualitative. Transfer target notes can say the manager put a player forward because he fits the squad plan and may be frustrated if the club walks away, but the UI should not expose exact manager-trust or morale deltas.
 - The current SVG FaceGenome renderer should favor mature readable footballer portraits over maximum feature variety. Player facial hair is now biased toward clean/stubble; heavier moustache/beard/goatee variety is reserved mainly for managers.
 - Long-run season simulation tests are allowed a 120s timeout because they exercise multiple event-queue seasons, human-style decisions, balance bands, promotion/history boundaries, and direct engine seasons. The timeout is a test-stability budget only; assertions and simulation behavior must remain unchanged.

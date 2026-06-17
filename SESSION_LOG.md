@@ -1,5 +1,18 @@
 # Session Log
 
+## 2026-06-17
+
+- Started the One-Screen Mobile Chairman Game polish pass.
+- Converted `/game` toward a fixed phone-screen shell: the active tab surface now uses overflow-hidden content, Dashboard is compact, section navigation lives in Dashboard metric buttons, and status messages render as a short toast instead of consuming layout height.
+- Added save-backed `ui` state for active tab, page indexes, and panel selections so tab/page/event context can survive save/load normalization.
+- Reworked League, Roster, Manager, Stadium, and History into paginated one-screen panels; Finance and Settings now use compact panel/tabs instead of long scroll surfaces.
+- Reworked Continue-event presentation toward no-scroll cards with shorter copy, compact entity headers, qualitative relationship language, compact financial rows, and visible action groups.
+- Slowed live match playback to one-minute ticks every 135ms, limited the feed to the last five events, and kept full-time Continue in a fixed bottom action area.
+- Updated Playwright mobile health checks to assert no page-level vertical scrolling in addition to horizontal overflow and broken text checks.
+- Closed the remaining one-screen regressions found by the expanded Playwright pass: compacted financial report rows, buy negotiation controls, and loan negotiation controls; prioritized prize money/fees in compact financial reports; restored clear `Target identity` attribution; made match-result context preserve board, manager, and stadium signals; and removed duplicate Settings import feedback while the import modal is open.
+- Verified the current one-screen checkpoint with `npm run lint`, `npm run build`, focused Playwright reruns, full `npm run e2e` (17 passed), `npx vitest run --reporter=dot` (64 passed), and an in-app browser smoke check that created a default club and reached the compact Dashboard on the local dev server.
+- Deployed the one-screen polish checkpoint to Vercel preview: `https://football-director-fvo8xf3z8-mor-swisas-projects.vercel.app`.
+
 ## 2026-05-28
 
 - Confirmed the original workspace was empty and not a Git repository.

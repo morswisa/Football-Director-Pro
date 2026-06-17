@@ -28,7 +28,8 @@ export type CareerCommand =
   | { type: "upgrade_youth"; levels?: number }
   | { type: "downgrade_training"; levels?: number }
   | { type: "downgrade_youth"; levels?: number }
-  | { type: "update_settings"; settings: Partial<GameSave["settings"]> };
+  | { type: "update_settings"; settings: Partial<GameSave["settings"]> }
+  | { type: "update_ui_state"; ui: Partial<GameSave["ui"]> };
 
 export interface CareerCommandResult {
   save: GameSave;
@@ -110,6 +111,18 @@ export function runCareerCommand(current: GameSave, command: CareerCommand): Car
           updatedAt: new Date().toISOString(),
         },
         message: "Settings updated.",
+      };
+    case "update_ui_state":
+      return {
+        save: {
+          ...current,
+          ui: {
+            activeTab: command.ui.activeTab ?? current.ui?.activeTab ?? "home",
+            pages: { ...(current.ui?.pages ?? {}), ...(command.ui.pages ?? {}) },
+            panels: { ...(current.ui?.panels ?? {}), ...(command.ui.panels ?? {}) },
+          },
+          updatedAt: new Date().toISOString(),
+        },
       };
   }
 }
